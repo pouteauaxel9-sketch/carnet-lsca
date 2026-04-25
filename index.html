@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carnet d'evaluation - Football</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="topnav" aria-label="Navigation principale">
+    <span class="nav-logo">Carnet Formation</span>
+    <div class="nav-cat-tabs" id="nav-cat-tabs" role="tablist" aria-label="Categories"></div>
+    <div class="nav-right">
+      <label class="sr-only" for="season-sel">Choisir une saison</label>
+      <select class="season-sel" id="season-sel" aria-label="Choix de la saison"></select>
+      <button class="btn" id="refresh-btn" type="button">Actualiser</button>
+      <button class="btn" id="print-btn" type="button">Imprimer</button>
+      <button class="btn" id="export-btn" type="button">Exporter JSON</button>
+      <label class="btn btn-ghost" for="import-file">Importer JSON</label>
+      <input id="import-file" class="sr-only" type="file" accept="application/json">
+    </div>
+  </nav>
+
+  <div class="main-layout">
+    <aside class="sidebar" aria-label="Liste des joueurs">
+      <div class="sb-head">
+        <div class="sb-search-wrap">
+          <label class="sr-only" for="sb-search">Rechercher un joueur</label>
+          <input class="sb-search" id="sb-search" type="search" placeholder="Rechercher un joueur...">
+          <button class="search-clear" id="search-clear" type="button" aria-label="Effacer la recherche">x</button>
+        </div>
+        <div class="sb-meta">
+          <span id="sb-count">0 joueur</span>
+          <span id="sb-season-chip">Saison</span>
+        </div>
+      </div>
+      <div class="sb-filters" id="sb-filters" aria-label="Filtres"></div>
+      <div class="player-list" id="player-list"></div>
+    </aside>
+
+    <main class="main-content" id="main-content">
+      <div class="empty-state">
+        <p>Selectionne un joueur dans la liste pour afficher son carnet, suivre sa progression et saisir ses observations de saison.</p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast" aria-live="polite"></div>
+
+<script src="supabase-config.js"></script>
+<script src="supabase-service.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

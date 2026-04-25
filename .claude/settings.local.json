@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:mayenne.fff.fr)",
+      "WebFetch(domain:api.allorigins.win)",
+      "WebFetch(domain:corsproxy.io)"
+    ]
+  }
+}

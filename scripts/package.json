@@ -1,0 +1,12 @@
+{
+  "name": "fff-scraper",
+  "version": "1.0.0",
+  "description": "Scraper automatique FFF District Mayenne",
+  "scripts": {
+    "scrape": "node scrape-fff.js",
+    "debug": "FFF_DEBUG=1 node scrape-fff.js"
+  },
+  "dependencies": {
+    "puppeteer": "^22.0.0"
+  }
+}
