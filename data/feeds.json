@@ -1,4 +1,101 @@
 {
-  "lastUpdated": null,
-  "feeds": {}
+  "lastUpdated": "2026-04-25T13:12:12.910Z",
+  "feeds": {
+    "u13": {
+      "standings": [
+        {
+          "rank": "1",
+          "team": "GJ LSCA  LOUVERNE",
+          "points": 33,
+          "played": 1
+        },
+        {
+          "rank": "2",
+          "team": "GJ HBG FC",
+          "points": 19,
+          "played": 2
+        },
+        {
+          "rank": "3",
+          "team": "LAVAL ASPTT",
+          "points": 2,
+          "played": 3
+        },
+        {
+          "rank": "4",
+          "team": "GJ BAS MAINE ANDOUIL 2",
+          "points": -9,
+          "played": 4
+        },
+        {
+          "rank": "5",
+          "team": "LAVAL JS MAGHREB",
+          "points": -1,
+          "played": 5
+        },
+        {
+          "rank": "6",
+          "team": "GJ ST P. LA COUR 3S",
+          "points": 10,
+          "played": 6
+        },
+        {
+          "rank": "7",
+          "team": "LAVAL STADE MAY FEMI 3",
+          "points": -17,
+          "played": 7
+        },
+        {
+          "rank": "8",
+          "team": "LAVAL US",
+          "points": -37,
+          "played": 8
+        },
+        {
+          "rank": "1",
+          "team": "GJ LSCA  LOUVERNE 21",
+          "points": 36,
+          "played": 1
+        },
+        {
+          "rank": "2",
+          "team": "GJ BAS MAINE ANDOUIL 21",
+          "points": 9,
+          "played": 2
+        },
+        {
+          "rank": "3",
+          "team": "GJ VAL DE JOUANNE 21",
+          "points": 15,
+          "played": 3
+        },
+        {
+          "rank": "4",
+          "team": "GJ HAUT-ANJOU 21",
+          "points": 17,
+          "played": 4
+        },
+        {
+          "rank": "5",
+          "team": "ST BERTHEVIN US 21",
+          "points": -10,
+          "played": 5
+        },
+        {
+          "rank": "6",
+          "team": "ÉVRONNAIS CA 21",
+          "points": -31,
+          "played": 6
+        },
+        {
+          "rank": "7",
+          "team": "GJ PAYS DE CHATEAU-G 22",
+          "points": -36,
+          "played": 7
+        }
+      ],
+      "upcoming": [],
+      "past": []
+    }
+  }
 }
