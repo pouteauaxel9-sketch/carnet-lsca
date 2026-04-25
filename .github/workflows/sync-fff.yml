@@ -2,9 +2,7 @@ name: Sync FFF Data
 
 on:
   schedule:
-    # Lundi 6h00 UTC = 7h00 heure française (heure d'été)
     - cron: '0 6 * * 1'
-  # Permet de lancer manuellement depuis l'onglet "Actions" sur GitHub
   workflow_dispatch:
 
 jobs:
