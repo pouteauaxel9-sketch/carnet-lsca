@@ -198,10 +198,14 @@ function normalizeMatch(raw, source, isUpcoming) {
 async function main() {
   console.log('\n🚀 Démarrage du scraper FFF...\n');
 
-  const browser = await puppeteer.launch({
+  const launchOptions = {
     headless: 'new',
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
-  });
+  };
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  const browser = await puppeteer.launch(launchOptions);
 
   const feeds = {};
 

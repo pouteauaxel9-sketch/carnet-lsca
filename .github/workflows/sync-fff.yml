@@ -15,24 +15,18 @@ jobs:
       - name: Checkout du repo
         uses: actions/checkout@v4
 
-      - name: Vérifier Node.js
-        run: node --version && npm --version
+      - name: Installer Chromium système
+        run: sudo apt-get install -y chromium-browser
 
       - name: Installer les dépendances
         run: npm install
         working-directory: scripts
 
-      - name: Installer Chromium pour Puppeteer
-        run: npx puppeteer browsers install chrome
-        working-directory: scripts
-        env:
-          PUPPETEER_CACHE_DIR: /home/runner/.cache/puppeteer
-
       - name: Lancer le scraper
         run: node scrape-fff.js
         working-directory: scripts
         env:
-          PUPPETEER_CACHE_DIR: /home/runner/.cache/puppeteer
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
 
       - name: Committer les données mises à jour
         run: |
