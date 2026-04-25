@@ -5,7 +5,7 @@ const MANUAL_FEEDS_KEY = 'cfb6_feeds';
 // URL brute vers data/feeds.json dans ton dépôt GitHub public.
 // Format : 'https://raw.githubusercontent.com/TON_USERNAME/TON_REPO/main/data/feeds.json'
 // Laisser vide tant que le repo n'est pas créé.
-const GITHUB_DATA_URL = '';
+const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/pouteauaxel9-sketch/carnet-lsca/main/data/feeds.json';
 const CAT_LABELS = { u13: 'U13', u11: 'U11', u9: 'U9' };
 const SEASONS = ['2025-2026', '2024-2025', '2023-2024'];
 const AC = [
