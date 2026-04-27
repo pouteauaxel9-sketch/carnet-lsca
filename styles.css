@@ -438,6 +438,62 @@ textarea:focus-visible{
   border-radius:999px
 }
 
+/* ── Classements groupés par championnat ──────────────────────────── */
+.standings-group{margin-bottom:14px}
+.standings-group:last-child{margin-bottom:0}
+.standings-comp-header{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:5px 10px;
+  border-radius:6px;
+  margin-bottom:6px;
+  border-left:3px solid var(--comp-border,#2E7D32);
+  background:var(--comp-bg,#E8F5E9)
+}
+.standings-comp-header[data-level="district"]{
+  --comp-bg:#E8F5E9;--comp-border:#2E7D32;--comp-text:#1B5E20;--comp-badge-bg:#2E7D32
+}
+.standings-comp-header[data-level="ligue"]{
+  --comp-bg:#E3F2FD;--comp-border:#1565C0;--comp-text:#0D47A1;--comp-badge-bg:#1565C0
+}
+.standings-comp-header[data-level="national"]{
+  --comp-bg:#FCE4EC;--comp-border:#C2185B;--comp-text:#880E4F;--comp-badge-bg:#C2185B
+}
+.standings-comp-badge{
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.6px;
+  color:#fff;
+  background:var(--comp-badge-bg,#2E7D32);
+  padding:2px 7px;
+  border-radius:999px;
+  white-space:nowrap;
+  flex-shrink:0
+}
+.standings-comp-name{
+  font-size:11px;
+  font-weight:600;
+  color:var(--comp-text,#1B5E20);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+.standings-group-rows{display:grid;gap:6px}
+.standing-row--ours{
+  background:rgba(15,110,86,0.06);
+  border-radius:8px;
+  border-left:3px solid #0F6E56;
+  padding-left:6px
+}
+.standing-row--ours .standing-rank{
+  background:rgba(15,110,86,0.12);
+  color:#0F6E56;
+  border-color:rgba(15,110,86,0.3)
+}
+.standing-row--ours strong{color:#0F6E56}
+
 .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
 .card-head h2{font-size:20px;letter-spacing:-0.4px}
 .fixture-list,

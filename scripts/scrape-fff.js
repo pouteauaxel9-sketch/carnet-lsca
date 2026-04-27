@@ -20,6 +20,8 @@ const SOURCES = [
     category: 'u13',
     label: 'U13 A',
     officialName: 'GJ LSCA LOUVERNE',
+    competitionLabel: 'Championnat U13 — Poule 2',
+    competitionLevel: 'district',
     urls: {
       ranking: 'https://mayenne.fff.fr/competitions?tab=ranking&id=437629&phase=2&poule=2&type=ch',
       agenda:  'https://mayenne.fff.fr/competitions?tab=agenda&id=437629&phase=2&poule=2&type=ch',
@@ -31,6 +33,8 @@ const SOURCES = [
     category: 'u13',
     label: 'U12',
     officialName: 'GJ LSCA LOUVERNE 21',
+    competitionLabel: 'Championnat U12 — Poule 1',
+    competitionLevel: 'district',
     urls: {
       ranking: 'https://mayenne.fff.fr/competitions?tab=ranking&id=437631&phase=2&poule=1&type=ch',
       agenda:  'https://mayenne.fff.fr/competitions?tab=agenda&id=437631&phase=2&poule=1&type=ch',
@@ -228,10 +232,19 @@ async function main() {
       const standings = await extractStandings(page, source.urls.ranking, `${source.key}_ranking`);
       if (standings.length) {
         console.log(`  ✅ ${standings.length} équipes trouvées`);
+        // Remplace toutes les lignes de cette source avant d'ajouter les nouvelles
+        feeds[source.category].standings = feeds[source.category].standings.filter(
+          s => s.source !== source.key
+        );
         for (const row of standings) {
-          const idx = feeds[source.category].standings.findIndex(e => e.team === row.team);
-          if (idx >= 0) feeds[source.category].standings[idx] = row;
-          else feeds[source.category].standings.push(row);
+          const teamUpper = (row.team || '').toUpperCase();
+          feeds[source.category].standings.push({
+            ...row,
+            source: source.key,
+            competition: source.competitionLabel,
+            competitionLevel: source.competitionLevel,
+            isOurTeam: teamUpper.includes('LSCA') || teamUpper.includes('LOUVERNE')
+          });
         }
       } else {
         console.log('  ⚠️  Aucun classement trouvé');

@@ -893,24 +893,52 @@ function renderMatchCard(title, kicker, matches, isUpcoming) {
 }
 
 function renderStandingsCard(standings) {
-  const rows = standings.length
-    ? standings.map(item => `
-        <div class="standing-row">
-          <div class="standing-rank">${h(item.rank)}</div>
-          <div class="standing-info">
-            <strong>${h(item.team)}</strong>
-            ${item.played !== '-' ? `<span>${h(item.played)} mj</span>` : ''}
-          </div>
-          ${item.points !== '-' ? `<span class="standing-pts">${h(item.points)} pts</span>` : ''}
-        </div>`).join('')
-    : renderDashEmptyState('Classement non disponible', 'Clique sur Modifier pour saisir les données FFF.');
+  if (!standings.length) {
+    return `
+    <section class="dashboard-card">
+      <div class="card-head">
+        <div><div class="card-kicker">Classement</div><h2>Classements</h2></div>
+        <button class="card-edit-btn" type="button" data-action="open-modal" data-modal-type="standings" data-modal-cat="${state.cat}">Modifier</button>
+      </div>
+      <div class="standings-list">${renderDashEmptyState('Classement non disponible', 'Clique sur Modifier pour saisir les données FFF.')}</div>
+    </section>`;
+  }
+
+  // Grouper par championnat (ordre d'apparition)
+  const groupMap = new Map();
+  for (const item of standings) {
+    const key = item.competition || 'Classement';
+    if (!groupMap.has(key)) groupMap.set(key, { level: item.competitionLevel || 'district', rows: [] });
+    groupMap.get(key).rows.push(item);
+  }
+
+  const groupsHtml = Array.from(groupMap.entries()).map(([label, g]) => {
+    const rowsHtml = g.rows.map(item => `
+      <div class="standing-row${item.isOurTeam ? ' standing-row--ours' : ''}">
+        <div class="standing-rank">${h(item.rank)}</div>
+        <div class="standing-info">
+          <strong>${h(item.team)}</strong>
+          ${item.played !== '-' ? `<span>${h(item.played)} mj</span>` : ''}
+        </div>
+        ${item.points !== '-' ? `<span class="standing-pts">${h(item.points)}</span>` : ''}
+      </div>`).join('');
+    return `
+      <div class="standings-group">
+        <div class="standings-comp-header" data-level="${h(g.level)}">
+          <span class="standings-comp-badge">${g.level === 'ligue' ? 'Ligue' : g.level === 'national' ? 'National' : 'District'}</span>
+          <span class="standings-comp-name">${h(label)}</span>
+        </div>
+        <div class="standings-group-rows">${rowsHtml}</div>
+      </div>`;
+  }).join('');
+
   return `
     <section class="dashboard-card">
       <div class="card-head">
         <div><div class="card-kicker">Classement</div><h2>Classements</h2></div>
         <button class="card-edit-btn" type="button" data-action="open-modal" data-modal-type="standings" data-modal-cat="${state.cat}">Modifier</button>
       </div>
-      <div class="standings-list">${rows}</div>
+      <div class="standings-list">${groupsHtml}</div>
     </section>`;
 }
 
