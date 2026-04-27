@@ -169,97 +169,66 @@ async function extractMatches(page, url, label, isUpcoming) {
   await loadPage(page, url, label);
 
   return page.evaluate((isUpcoming) => {
-    const results = [];
+    const MONTHS = {
+      janvier:1, février:2, fevrier:2, mars:3, avril:4, mai:5, juin:6,
+      juillet:7, août:8, aout:8, septembre:9, octobre:10, novembre:11, décembre:12, decembre:12
+    };
 
-    function parseDate(text) {
-      const m = text.match(/(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})/);
-      return m ? `${m[1]}/${m[2]}/${m[3]}` : null;
+    function parseFFFDate(text) {
+      // "samedi 09 mai 2026 - 13H30" ou "samedi 09 mai 2026"
+      const m = text.toLowerCase().match(/(\d{1,2})\s+([a-zéûô]+)\s+(\d{4})/);
+      if (!m) return null;
+      const month = MONTHS[m[2]];
+      if (!month) return null;
+      return `${m[1].padStart(2,'0')}/${String(month).padStart(2,'0')}/${m[3]}`;
     }
-    function parseTime(text) {
-      const m = text.match(/(\d{2})[h:](\d{2})/);
+
+    function parseFFFTime(text) {
+      const m = text.match(/(\d{2})[Hh](\d{2})/);
       return m ? `${m[1]}h${m[2]}` : null;
     }
-    function parseScore(text) {
-      const m = text.match(/(\d+)\s*[-–]\s*(\d+)/);
+
+    function parseScoreFromImages(scoreEl) {
+      if (!scoreEl) return '-';
+      const imgs = Array.from(scoreEl.querySelectorAll('img.number'));
+      if (imgs.length >= 2) {
+        // src ressemble à "/wp-content/.../scores/origin/4.png"
+        const getNum = img => {
+          const src = img.getAttribute('src') || '';
+          const m = src.match(/\/(\d+)\.png/);
+          return m ? m[1] : null;
+        };
+        const g1 = getNum(imgs[0]);
+        const g2 = getNum(imgs[1]);
+        if (g1 !== null && g2 !== null) return `${g1} - ${g2}`;
+      }
+      // Fallback texte
+      const txt = scoreEl.textContent.replace(/\s+/g, ' ').trim();
+      const m = txt.match(/(\d+)\s*[-–]\s*(\d+)/);
       return m ? `${m[1]} - ${m[2]}` : '-';
     }
-    function isTeamCell(c) {
-      return c.length > 2 && isNaN(parseInt(c)) && !/^\d{2}[\/h]/.test(c) && !c.match(/^\d+\s*[-–]\s*\d+$/);
-    }
 
-    // ── Stratégie 1 : tables ─────────────────────────────────────────
-    const tables = Array.from(document.querySelectorAll('table'));
-    for (const table of tables) {
-      const headerRow = table.querySelector('thead tr, tr:first-child');
-      const headers = headerRow
-        ? Array.from(headerRow.querySelectorAll('th, td')).map(th => th.textContent.trim().toLowerCase())
-        : [];
+    const blocks = Array.from(document.querySelectorAll('.confrontation'));
+    const results = [];
 
-      const findCol = (...keys) => {
-        for (const k of keys) {
-          const i = headers.findIndex(h => h.includes(k));
-          if (i >= 0) return i;
-        }
-        return -1;
-      };
+    for (const block of blocks) {
+      const dateEl = block.querySelector('.date');
+      if (!dateEl) continue;
 
-      const colHome  = findCol('dom', 'recevant', 'équipe 1', 'equipe 1', 'local');
-      const colAway  = findCol('ext', 'visit', 'équipe 2', 'equipe 2', 'visiteur');
-      const colScore = findCol('score', 'résultat', 'resultat');
+      const dateRaw = dateEl.textContent.replace(/\s+/g, ' ').trim();
+      const date = parseFFFDate(dateRaw);
+      if (!date) continue;
 
-      const dataRows = Array.from(table.querySelectorAll('tbody tr'))
-        .filter(r => r.querySelectorAll('td').length >= 3);
-      if (!dataRows.length) continue;
+      const time = parseFFFTime(dateRaw);
+      const home = block.querySelector('.equipe1 .name')?.textContent.trim() || '-';
+      const away = block.querySelector('.equipe2 .name')?.textContent.trim() || '-';
 
-      for (const row of dataRows) {
-        const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim());
-        const text  = cells.join(' ');
+      if (home === '-' && away === '-') continue;
 
-        const date = parseDate(text);
-        if (!date) continue;
+      const scoreEl = block.querySelector('.score_match');
+      const score = isUpcoming ? '-' : parseScoreFromImages(scoreEl);
 
-        let home, away;
-        if (colHome >= 0 && colAway >= 0) {
-          home = cells[colHome] || '-';
-          away = cells[colAway] || '-';
-        } else {
-          const teams = cells.filter(isTeamCell);
-          home = teams[0] || '-';
-          away = teams[1] || '-';
-        }
-        if (home === '-' && away === '-') continue;
-
-        const score = (!isUpcoming && colScore >= 0)
-          ? parseScore(cells[colScore] || text)
-          : (!isUpcoming ? parseScore(text) : '-');
-
-        results.push({ date, time: parseTime(text), home, away, score });
-      }
-      if (results.length) break;
-    }
-
-    // ── Stratégie 2 : blocs divs ─────────────────────────────────────
-    if (!results.length) {
-      const blocks = Array.from(document.querySelectorAll(
-        '.match, .rencontre, .fixture, .agenda-item, .result-item, [class*="match"], [class*="rencontre"]'
-      ));
-      for (const block of blocks) {
-        const text  = block.textContent.trim();
-        const date  = parseDate(text);
-        if (!date) continue;
-
-        const spans = Array.from(block.querySelectorAll('span, strong, p'))
-          .map(el => el.textContent.trim())
-          .filter(t => t.length > 2 && isNaN(parseInt(t)) && !/^\d{2}[\/h]/.test(t) && !t.match(/^\d+\s*[-–]\s*\d+$/));
-
-        results.push({
-          date,
-          time:  parseTime(text),
-          home:  spans[0] || '-',
-          away:  spans[1] || '-',
-          score: isUpcoming ? '-' : parseScore(text)
-        });
-      }
+      results.push({ date, time, home, away, score });
     }
 
     return results.slice(0, 10);
