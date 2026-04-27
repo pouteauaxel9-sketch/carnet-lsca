@@ -318,6 +318,7 @@ async function main() {
         console.log(`  ✅ ${rawUpcoming.length} matchs trouvés`);
         for (const m of rawUpcoming) {
           const norm = normalizeMatch(m, source, true);
+          if (!norm.isHome && !(m.away || '').toUpperCase().includes('LSCA') && !(m.away || '').toUpperCase().includes('LOUVERNE')) continue;
           if (!feeds[source.category].upcoming.some(e => e.date === norm.date && e.opponent === norm.opponent)) {
             feeds[source.category].upcoming.push(norm);
           }
@@ -337,6 +338,7 @@ async function main() {
         console.log(`  ✅ ${rawPast.length} résultats trouvés`);
         for (const m of rawPast) {
           const norm = normalizeMatch(m, source, false);
+          if (!norm.isHome && !(m.away || '').toUpperCase().includes('LSCA') && !(m.away || '').toUpperCase().includes('LOUVERNE')) continue;
           if (!feeds[source.category].past.some(e => e.date === norm.date && e.opponent === norm.opponent)) {
             feeds[source.category].past.push(norm);
           }
