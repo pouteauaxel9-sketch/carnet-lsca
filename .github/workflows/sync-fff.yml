@@ -22,11 +22,20 @@ jobs:
         run: npm install
         working-directory: scripts
 
-      - name: Lancer le scraper
+      - name: Lancer le scraper (mode debug)
         run: node scrape-fff.js
         working-directory: scripts
         env:
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
+          FFF_DEBUG: "1"
+
+      - name: Upload fichiers debug
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fff-debug
+          path: scripts/debug/
+          retention-days: 3
 
       - name: Committer les données mises à jour
         run: |
