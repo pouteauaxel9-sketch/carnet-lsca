@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-04-27T12:40:13.460Z",
+  "lastUpdated": "2026-04-27T12:51:53.258Z",
   "feeds": {
     "u13": {
       "standings": [
@@ -244,8 +244,153 @@
           "isOurTeam": false
         }
       ],
-      "upcoming": [],
-      "past": []
+      "upcoming": [
+        {
+          "date": "09/05/2026",
+          "time": "13h30",
+          "team": "U13 A",
+          "home": "LAVAL JS MAGHREB",
+          "away": "GJ ST P. LA COUR 3S",
+          "isHome": false,
+          "opponent": "LAVAL JS MAGHREB",
+          "score": "-",
+          "competition": "Championnat U13 — Poule 2"
+        },
+        {
+          "date": "09/05/2026",
+          "time": "13h30",
+          "team": "U13 A",
+          "home": "LAVAL STADE MAY FEMI  3",
+          "away": "GJ BAS MAINE ANDOUIL  2",
+          "isHome": false,
+          "opponent": "LAVAL STADE MAY FEMI  3",
+          "score": "-",
+          "competition": "Championnat U13 — Poule 2"
+        },
+        {
+          "date": "09/05/2026",
+          "time": "13h30",
+          "team": "U13 A",
+          "home": "GJ LSCA  LOUVERNE",
+          "away": "LAVAL ASPTT",
+          "isHome": true,
+          "opponent": "LAVAL ASPTT",
+          "score": "-",
+          "competition": "Championnat U13 — Poule 2"
+        },
+        {
+          "date": "09/05/2026",
+          "time": "13h30",
+          "team": "U13 A",
+          "home": "LAVAL US",
+          "away": "GJ HBG FC",
+          "isHome": false,
+          "opponent": "LAVAL US",
+          "score": "-",
+          "competition": "Championnat U13 — Poule 2"
+        },
+        {
+          "date": "09/05/2026",
+          "time": "13h30",
+          "team": "U12",
+          "home": "GJ BAS MAINE ANDOUIL  21",
+          "away": "ÉVRONNAIS CA  21",
+          "isHome": true,
+          "opponent": "ÉVRONNAIS CA  21",
+          "score": "-",
+          "competition": "Championnat U12 — Poule 1"
+        },
+        {
+          "date": "09/05/2026",
+          "time": "11h15",
+          "team": "U12",
+          "home": "GJ HAUT-ANJOU  21",
+          "away": "GJ VAL DE JOUANNE  21",
+          "isHome": true,
+          "opponent": "GJ VAL DE JOUANNE  21",
+          "score": "-",
+          "competition": "Championnat U12 — Poule 1"
+        },
+        {
+          "date": "09/05/2026",
+          "time": "13h30",
+          "team": "U12",
+          "home": "GJ LSCA  LOUVERNE  21",
+          "away": "ST BERTHEVIN US  21",
+          "isHome": true,
+          "opponent": "ST BERTHEVIN US  21",
+          "score": "-",
+          "competition": "Championnat U12 — Poule 1"
+        },
+        {
+          "date": "09/05/2026",
+          "time": null,
+          "team": "U12",
+          "home": "Exempt",
+          "away": "GJ PAYS DE CHATEAU-G  22",
+          "isHome": false,
+          "opponent": "Exempt",
+          "score": "-",
+          "competition": "Championnat U12 — Poule 1"
+        }
+      ],
+      "past": [
+        {
+          "date": "25/04/2026",
+          "time": "13h30",
+          "team": "U12",
+          "home": "GJ BAS MAINE ANDOUIL  21",
+          "away": "GJ VAL DE JOUANNE  21",
+          "isHome": true,
+          "opponent": "GJ VAL DE JOUANNE  21",
+          "score": "5 - 1",
+          "competition": "Championnat U12 — Poule 1"
+        },
+        {
+          "date": "11/04/2026",
+          "time": "13h30",
+          "team": "U13 A",
+          "home": "GJ HBG FC",
+          "away": "GJ BAS MAINE ANDOUIL  2",
+          "isHome": true,
+          "opponent": "GJ BAS MAINE ANDOUIL  2",
+          "score": "4 - 3",
+          "competition": "Championnat U13 — Poule 2"
+        },
+        {
+          "date": "11/04/2026",
+          "time": "13h30",
+          "team": "U13 A",
+          "home": "LAVAL STADE MAY FEMI  3",
+          "away": "LAVAL JS MAGHREB",
+          "isHome": false,
+          "opponent": "LAVAL STADE MAY FEMI  3",
+          "score": "4 - 6",
+          "competition": "Championnat U13 — Poule 2"
+        },
+        {
+          "date": "11/04/2026",
+          "time": "13h30",
+          "team": "U13 A",
+          "home": "GJ ST P. LA COUR 3S",
+          "away": "GJ LSCA  LOUVERNE",
+          "isHome": true,
+          "opponent": "GJ LSCA  LOUVERNE",
+          "score": "3 - 2",
+          "competition": "Championnat U13 — Poule 2"
+        },
+        {
+          "date": "08/04/2026",
+          "time": "16h00",
+          "team": "U13 A",
+          "home": "LAVAL ASPTT",
+          "away": "LAVAL US",
+          "isHome": false,
+          "opponent": "LAVAL ASPTT",
+          "score": "1 - 0",
+          "competition": "Championnat U13 — Poule 2"
+        }
+      ]
     }
   }
 }
