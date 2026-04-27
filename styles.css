@@ -546,8 +546,7 @@ textarea:focus-visible{
 .fixture-list,
 .standings-list,
 .info-list,
-.team-list{display:grid;gap:10px}
-.fixture-item,
+.team-list{display:grid;gap:8px}
 .standing-row,
 .info-item,
 .team-item{
@@ -556,23 +555,84 @@ textarea:focus-visible{
   border-radius:12px;
   padding:12px
 }
-.fixture-item{
-  display:grid;
-  grid-template-columns:1fr auto 1fr;
-  gap:12px;
-  align-items:center
-}
-.fixture-item strong,
-.standing-row strong{display:block;font-size:13px}
-.fixture-item span,
-.standing-row span{display:block;font-size:11px;color:var(--text3);margin-top:2px}
 .info-item strong{font-size:13px}
-.fixture-mid{
-  min-width:62px;
-  text-align:center;
+
+/* ── Carte match ──────────────────────────────────────────────────── */
+.fixture-item{
+  background:#fff;
+  border:1px solid var(--border1);
+  border-radius:12px;
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:6px
+}
+.fixture-item.fixture-win{border-left:3px solid #2E7D32}
+.fixture-item.fixture-draw{border-left:3px solid #888}
+.fixture-item.fixture-loss{border-left:3px solid #C62828}
+.fixture-meta{
+  display:flex;
+  align-items:center;
+  gap:6px
+}
+.fixture-date{
+  font-size:11px;
+  color:var(--text3);
+  flex:1
+}
+.fixture-loc{
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+  padding:2px 6px;
+  border-radius:999px
+}
+.fixture-loc--home{background:#E8F5E9;color:#1B5E20}
+.fixture-loc--away{background:#E3F2FD;color:#0D47A1}
+.fixture-result-badge{
+  font-size:9px;
+  font-weight:700;
+  padding:2px 7px;
+  border-radius:999px
+}
+.fixture-result-win{background:#E8F5E9;color:#1B5E20}
+.fixture-result-draw{background:#F5F5F5;color:#555}
+.fixture-result-loss{background:#FFEBEE;color:#C62828}
+.fixture-teams{
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+.fixture-team{
+  flex:1;
+  font-size:12px;
+  font-weight:600;
+  color:var(--text2);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.fixture-team:last-child{text-align:right}
+.fixture-team--ours{color:#0F6E56;font-weight:700}
+.fixture-score{
   font-family:'DM Mono',monospace;
   font-size:13px;
-  color:var(--text2)
+  font-weight:700;
+  color:var(--text1);
+  white-space:nowrap;
+  padding:3px 10px;
+  background:var(--bg2);
+  border-radius:6px;
+  border:1px solid var(--border1);
+  flex-shrink:0
+}
+.fixture-item.fixture-win .fixture-score{background:#E8F5E9;color:#1B5E20;border-color:#A5D6A7}
+.fixture-item.fixture-draw .fixture-score{background:#F5F5F5;color:#555;border-color:#ddd}
+.fixture-item.fixture-loss .fixture-score{background:#FFEBEE;color:#C62828;border-color:#FFCDD2}
+.fixture-comp{
+  font-size:10px;
+  color:var(--text3)
 }
 .standing-row{
   display:flex;

@@ -866,18 +866,43 @@ function renderMatchList(matches, isUpcoming) {
       'Configure les sources FFF pour activer la synchronisation.'
     );
   }
-  return `<div class="fixture-list">${matches.map(match => `
-    <div class="fixture-item">
-      <div>
-        <strong>${h(match.team)}</strong>
-        <span>${h(match.competition)}</span>
+  return `<div class="fixture-list">${matches.map(match => {
+    let resultClass = '';
+    let resultBadge = '';
+    if (!isUpcoming && match.score && match.score !== '-') {
+      const parts = match.score.split('-').map(s => parseInt(s.trim()));
+      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        const ourGoals  = match.isHome ? parts[0] : parts[1];
+        const theirGoals = match.isHome ? parts[1] : parts[0];
+        if (ourGoals > theirGoals)  { resultClass = 'fixture-win';  resultBadge = 'V'; }
+        else if (ourGoals === theirGoals) { resultClass = 'fixture-draw'; resultBadge = 'N'; }
+        else                         { resultClass = 'fixture-loss'; resultBadge = 'D'; }
+      }
+    }
+    const homeLabel = h(match.home || match.team);
+    const awayLabel = h(match.away || match.opponent);
+    const ourSideClass = (name) => {
+      if (!match.home) return '';
+      return name === homeLabel && match.isHome ? 'fixture-team--ours' :
+             name === awayLabel && !match.isHome ? 'fixture-team--ours' : '';
+    };
+    return `
+    <div class="fixture-item ${resultClass}">
+      <div class="fixture-meta">
+        <span class="fixture-date">${h(match.date)}${match.time ? ` · ${h(match.time)}` : ''}</span>
+        ${match.isHome !== undefined
+          ? `<span class="fixture-loc ${match.isHome ? 'fixture-loc--home' : 'fixture-loc--away'}">${match.isHome ? 'Dom' : 'Ext'}</span>`
+          : ''}
+        ${resultBadge ? `<span class="fixture-result-badge fixture-result-${resultClass.replace('fixture-','')}">${resultBadge}</span>` : ''}
       </div>
-      <div class="fixture-mid">${isUpcoming ? 'vs' : h(match.score)}</div>
-      <div>
-        <strong>${h(match.opponent)}</strong>
-        <span>${h(match.date)}</span>
+      <div class="fixture-teams">
+        <span class="fixture-team ${ourSideClass(homeLabel)}">${homeLabel}</span>
+        <span class="fixture-score">${isUpcoming ? 'vs' : h(match.score)}</span>
+        <span class="fixture-team ${ourSideClass(awayLabel)}">${awayLabel}</span>
       </div>
-    </div>`).join('')}</div>`;
+      <div class="fixture-comp">${h(match.competition || '')}</div>
+    </div>`;
+  }).join('')}</div>`;
 }
 
 function renderMatchCard(title, kicker, matches, isUpcoming) {

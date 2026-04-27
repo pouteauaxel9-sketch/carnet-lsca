@@ -171,58 +171,93 @@ async function extractMatches(page, url, label, isUpcoming) {
   return page.evaluate((isUpcoming) => {
     const results = [];
 
-    // Stratégie 1 : lignes de tableau
-    const tableRows = Array.from(document.querySelectorAll('table tr'));
-    for (const row of tableRows) {
-      const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim());
-      if (cells.length < 3) continue;
-
-      const text = cells.join(' ');
-      const dateMatch = text.match(/(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})/);
-      if (!dateMatch) continue;
-
-      const date       = `${dateMatch[1]}/${dateMatch[2]}/${dateMatch[3]}`;
-      const scoreMatch = text.match(/(\d+)\s*[-–]\s*(\d+)/);
-      const score      = scoreMatch ? `${scoreMatch[1]} - ${scoreMatch[2]}` : '-';
-
-      const teams = cells.filter(c =>
-        c.length > 2 && isNaN(parseInt(c)) && !/^\d{2}\//.test(c) && !c.match(/^\d+[-–]\d+$/)
-      );
-
-      if (teams.length < 1) continue;
-      results.push({
-        date,
-        home:  teams[0] || '-',
-        away:  teams[1] || '-',
-        score: isUpcoming ? '-' : score,
-        raw:   cells
-      });
+    function parseDate(text) {
+      const m = text.match(/(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})/);
+      return m ? `${m[1]}/${m[2]}/${m[3]}` : null;
+    }
+    function parseTime(text) {
+      const m = text.match(/(\d{2})[h:](\d{2})/);
+      return m ? `${m[1]}h${m[2]}` : null;
+    }
+    function parseScore(text) {
+      const m = text.match(/(\d+)\s*[-–]\s*(\d+)/);
+      return m ? `${m[1]} - ${m[2]}` : '-';
+    }
+    function isTeamCell(c) {
+      return c.length > 2 && isNaN(parseInt(c)) && !/^\d{2}[\/h]/.test(c) && !c.match(/^\d+\s*[-–]\s*\d+$/);
     }
 
-    // Stratégie 2 : blocs divs (si aucune table trouvée)
+    // ── Stratégie 1 : tables ─────────────────────────────────────────
+    const tables = Array.from(document.querySelectorAll('table'));
+    for (const table of tables) {
+      const headerRow = table.querySelector('thead tr, tr:first-child');
+      const headers = headerRow
+        ? Array.from(headerRow.querySelectorAll('th, td')).map(th => th.textContent.trim().toLowerCase())
+        : [];
+
+      const findCol = (...keys) => {
+        for (const k of keys) {
+          const i = headers.findIndex(h => h.includes(k));
+          if (i >= 0) return i;
+        }
+        return -1;
+      };
+
+      const colHome  = findCol('dom', 'recevant', 'équipe 1', 'equipe 1', 'local');
+      const colAway  = findCol('ext', 'visit', 'équipe 2', 'equipe 2', 'visiteur');
+      const colScore = findCol('score', 'résultat', 'resultat');
+
+      const dataRows = Array.from(table.querySelectorAll('tbody tr'))
+        .filter(r => r.querySelectorAll('td').length >= 3);
+      if (!dataRows.length) continue;
+
+      for (const row of dataRows) {
+        const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim());
+        const text  = cells.join(' ');
+
+        const date = parseDate(text);
+        if (!date) continue;
+
+        let home, away;
+        if (colHome >= 0 && colAway >= 0) {
+          home = cells[colHome] || '-';
+          away = cells[colAway] || '-';
+        } else {
+          const teams = cells.filter(isTeamCell);
+          home = teams[0] || '-';
+          away = teams[1] || '-';
+        }
+        if (home === '-' && away === '-') continue;
+
+        const score = (!isUpcoming && colScore >= 0)
+          ? parseScore(cells[colScore] || text)
+          : (!isUpcoming ? parseScore(text) : '-');
+
+        results.push({ date, time: parseTime(text), home, away, score });
+      }
+      if (results.length) break;
+    }
+
+    // ── Stratégie 2 : blocs divs ─────────────────────────────────────
     if (!results.length) {
       const blocks = Array.from(document.querySelectorAll(
         '.match, .rencontre, .fixture, .agenda-item, .result-item, [class*="match"], [class*="rencontre"]'
       ));
       for (const block of blocks) {
-        const text = block.textContent.trim();
-        const dateMatch = text.match(/(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})/);
-        if (!dateMatch) continue;
+        const text  = block.textContent.trim();
+        const date  = parseDate(text);
+        if (!date) continue;
 
-        const date       = `${dateMatch[1]}/${dateMatch[2]}/${dateMatch[3]}`;
-        const scoreMatch = text.match(/(\d+)\s*[-–]\s*(\d+)/);
-        const score      = scoreMatch ? `${scoreMatch[1]} - ${scoreMatch[2]}` : '-';
-
-        const spans = Array.from(block.querySelectorAll('span, strong, div'))
+        const spans = Array.from(block.querySelectorAll('span, strong, p'))
           .map(el => el.textContent.trim())
-          .filter(t => t.length > 2 && isNaN(parseInt(t)) && !/^\d{2}\//.test(t));
+          .filter(t => t.length > 2 && isNaN(parseInt(t)) && !/^\d{2}[\/h]/.test(t) && !t.match(/^\d+\s*[-–]\s*\d+$/));
 
         results.push({
           date,
+          time:  parseTime(text),
           home:  spans[0] || '-',
           away:  spans[1] || '-',
-          score: isUpcoming ? '-' : score,
-          raw:   [text]
+          score: isUpcoming ? '-' : parseScore(text)
         });
       }
     }
@@ -234,13 +269,18 @@ async function extractMatches(page, url, label, isUpcoming) {
 // ─── Normalisation vers le format attendu par l'app ───────────────────────────
 
 function normalizeMatch(raw, source, isUpcoming) {
-  const isHome = raw.home?.toUpperCase().includes(source.officialName.split(' ')[0].toUpperCase());
+  const nameKey = source.officialName.split(' ')[0].toUpperCase();
+  const isHome  = (raw.home || '').toUpperCase().includes(nameKey);
   return {
     date:        raw.date,
+    time:        raw.time || null,
     team:        source.label,
+    home:        raw.home,
+    away:        raw.away,
+    isHome,
     opponent:    isHome ? raw.away : raw.home,
     score:       raw.score,
-    competition: 'Championnat District Mayenne'
+    competition: source.competitionLabel
   };
 }
 
