@@ -926,11 +926,12 @@ function renderStandingsCard(standings) {
       </tr>`).join('');
     const levelLabel = g.level === 'ligue' ? 'Ligue' : g.level === 'national' ? 'National' : 'District';
     return `
-      <div class="standings-group">
-        <div class="standings-comp-header" data-level="${h(g.level)}">
+      <details class="standings-group" open>
+        <summary class="standings-comp-header" data-level="${h(g.level)}">
           <span class="standings-comp-badge">${levelLabel}</span>
           <span class="standings-comp-name">${h(label)}</span>
-        </div>
+          <span class="standings-comp-chevron">▾</span>
+        </summary>
         <div class="standings-table-wrap">
           <table class="standings-table">
             <thead><tr>
@@ -940,7 +941,7 @@ function renderStandingsCard(standings) {
             <tbody>${rowsHtml}</tbody>
           </table>
         </div>
-      </div>`;
+      </details>`;
   }).join('');
 
   return `

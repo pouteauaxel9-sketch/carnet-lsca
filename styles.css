@@ -439,18 +439,21 @@ textarea:focus-visible{
 }
 
 /* ── Classements groupés par championnat ──────────────────────────── */
-.standings-group{margin-bottom:14px}
+.standings-group{margin-bottom:10px;border-radius:8px;overflow:hidden;border:1px solid var(--border1)}
 .standings-group:last-child{margin-bottom:0}
+.standings-group[open] .standings-comp-chevron{transform:rotate(180deg)}
 .standings-comp-header{
   display:flex;
   align-items:center;
   gap:8px;
-  padding:5px 10px;
-  border-radius:6px;
-  margin-bottom:6px;
+  padding:8px 12px;
   border-left:3px solid var(--comp-border,#2E7D32);
-  background:var(--comp-bg,#E8F5E9)
+  background:var(--comp-bg,#E8F5E9);
+  cursor:pointer;
+  list-style:none;
+  user-select:none
 }
+.standings-comp-header::-webkit-details-marker{display:none}
 .standings-comp-header[data-level="district"]{
   --comp-bg:#E8F5E9;--comp-border:#2E7D32;--comp-text:#1B5E20;--comp-badge-bg:#2E7D32
 }
@@ -476,11 +479,18 @@ textarea:focus-visible{
   font-size:11px;
   font-weight:600;
   color:var(--comp-text,#1B5E20);
-  white-space:nowrap;
+  flex:1;
   overflow:hidden;
-  text-overflow:ellipsis
+  text-overflow:ellipsis;
+  white-space:nowrap
 }
-.standings-table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border1)}
+.standings-comp-chevron{
+  font-size:12px;
+  color:var(--comp-text,#1B5E20);
+  transition:transform 0.2s ease;
+  flex-shrink:0
+}
+.standings-table-wrap{overflow-x:auto}
 .standings-table{
   width:100%;
   border-collapse:collapse;
