@@ -34,4 +34,5 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add data/feeds.json
           git diff --staged --quiet || git commit -m "sync: données FFF du $(date +'%d/%m/%Y') [skip ci]"
+          git pull --rebase
           git push
