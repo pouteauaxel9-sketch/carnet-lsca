@@ -86,7 +86,6 @@ async function extractStandings(page, url, label) {
   await loadPage(page, url, label);
 
   return page.evaluate(() => {
-    // Cherche la table la plus pertinente (la plus grande avec du contenu textuel)
     const tables = Array.from(document.querySelectorAll('table'));
     const ranked = tables
       .map(t => ({ el: t, rows: t.querySelectorAll('tr').length }))
@@ -96,22 +95,70 @@ async function extractStandings(page, url, label) {
     if (!ranked.length) return [];
 
     const table = ranked[0].el;
-    const rows = Array.from(table.querySelectorAll('tr')).slice(1); // skip header
 
-    return rows.map(row => {
+    // Lire l'en-tête pour identifier les colonnes
+    const headerRow = table.querySelector('thead tr') || table.querySelector('tr');
+    const headers = headerRow
+      ? Array.from(headerRow.querySelectorAll('th, td')).map(th => th.textContent.trim().toLowerCase())
+      : [];
+
+    // Correspondance label → index de colonne
+    function findCol(...keys) {
+      for (const k of keys) {
+        const i = headers.findIndex(h => h === k || h.includes(k));
+        if (i >= 0) return i;
+      }
+      return -1;
+    }
+
+    const col = {
+      rank: findCol('pl', 'pos', '#', 'rang'),
+      team: findCol('équipe', 'equipe', 'club'),
+      pts:  findCol('pts', 'points'),
+      jo:   findCol('jo', 'mj', 'j'),
+      won:  findCol('g', 'v', 'gagnés'),
+      draw: findCol('n', 'nul'),
+      lost: findCol('p', 'perd'),
+      bp:   findCol('bp', 'but+'),
+      bc:   findCol('bc', 'but-'),
+      dif:  findCol('dif', 'diff', '+/-'),
+    };
+
+    // Fallback : structure FFF standard Pl|Equipe|Pts|Jo|G|N|P|F|BP|BC|Pé|Dif
+    if (col.pts === -1) {
+      Object.assign(col, { rank:0, team:1, pts:2, jo:3, won:4, draw:5, lost:6, bp:8, bc:9, dif:11 });
+    }
+
+    const dataRows = Array.from(table.querySelectorAll('tbody tr'))
+      .filter(r => r.querySelectorAll('td').length > 3);
+
+    // Fallback si pas de tbody
+    const rows = dataRows.length
+      ? dataRows
+      : Array.from(table.querySelectorAll('tr')).slice(1);
+
+    return rows.map((row, i) => {
       const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim());
       if (cells.length < 3) return null;
 
-      // Heuristique colonnes : rang | équipe | joués | ... | points
-      const rank   = cells[0] || '-';
-      const team   = cells[1] || cells[2] || '-';
-      // Points = dernière colonne numérique
-      const nums   = cells.map(c => parseInt(c)).filter(n => !isNaN(n));
-      const points = nums.length ? nums[nums.length - 1] : '-';
-      const played = nums.length > 1 ? nums[0] : '-';
+      const get = idx => (idx >= 0 && idx < cells.length) ? cells[idx] : '-';
 
+      const rank = get(col.rank) || String(i + 1);
+      const team = get(col.team);
       if (!team || team.length < 2) return null;
-      return { rank, team, points, played };
+
+      return {
+        rank,
+        team,
+        points:       get(col.pts),
+        played:       get(col.jo),
+        won:          get(col.won),
+        draw:         get(col.draw),
+        lost:         get(col.lost),
+        goalsFor:     get(col.bp),
+        goalsAgainst: get(col.bc),
+        diff:         get(col.dif)
+      };
     }).filter(Boolean);
   });
 }

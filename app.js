@@ -914,21 +914,32 @@ function renderStandingsCard(standings) {
 
   const groupsHtml = Array.from(groupMap.entries()).map(([label, g]) => {
     const rowsHtml = g.rows.map(item => `
-      <div class="standing-row${item.isOurTeam ? ' standing-row--ours' : ''}">
-        <div class="standing-rank">${h(item.rank)}</div>
-        <div class="standing-info">
-          <strong>${h(item.team)}</strong>
-          ${item.played !== '-' ? `<span>${h(item.played)} mj</span>` : ''}
-        </div>
-        ${item.points !== '-' ? `<span class="standing-pts">${h(item.points)}</span>` : ''}
-      </div>`).join('');
+      <tr class="${item.isOurTeam ? 'standings-row--ours' : ''}">
+        <td class="st-rank">${h(item.rank)}</td>
+        <td class="st-team">${h(item.team)}</td>
+        <td class="st-pts">${h(item.points)}</td>
+        <td>${h(item.played)}</td>
+        <td>${h(item.won ?? '-')}</td>
+        <td>${h(item.draw ?? '-')}</td>
+        <td>${h(item.lost ?? '-')}</td>
+        <td class="st-dif">${h(item.diff ?? '-')}</td>
+      </tr>`).join('');
+    const levelLabel = g.level === 'ligue' ? 'Ligue' : g.level === 'national' ? 'National' : 'District';
     return `
       <div class="standings-group">
         <div class="standings-comp-header" data-level="${h(g.level)}">
-          <span class="standings-comp-badge">${g.level === 'ligue' ? 'Ligue' : g.level === 'national' ? 'National' : 'District'}</span>
+          <span class="standings-comp-badge">${levelLabel}</span>
           <span class="standings-comp-name">${h(label)}</span>
         </div>
-        <div class="standings-group-rows">${rowsHtml}</div>
+        <div class="standings-table-wrap">
+          <table class="standings-table">
+            <thead><tr>
+              <th>Pl</th><th class="st-team">Équipe</th>
+              <th>Pts</th><th>Jo</th><th>G</th><th>N</th><th>P</th><th>Dif</th>
+            </tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
       </div>`;
   }).join('');
 
