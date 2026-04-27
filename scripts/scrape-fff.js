@@ -237,9 +237,13 @@ async function extractMatches(page, url, label, isUpcoming) {
 
 // ─── Normalisation vers le format attendu par l'app ───────────────────────────
 
+function isOurTeam(name) {
+  const u = (name || '').toUpperCase();
+  return u.includes('LSCA') || u.includes('LOUVERNE');
+}
+
 function normalizeMatch(raw, source, isUpcoming) {
-  const nameKey = source.officialName.split(' ')[0].toUpperCase();
-  const isHome  = (raw.home || '').toUpperCase().includes(nameKey);
+  const isHome = isOurTeam(raw.home);
   return {
     date:        raw.date,
     time:        raw.time || null,
@@ -318,7 +322,7 @@ async function main() {
         console.log(`  ✅ ${rawUpcoming.length} matchs trouvés`);
         for (const m of rawUpcoming) {
           const norm = normalizeMatch(m, source, true);
-          if (!norm.isHome && !(m.away || '').toUpperCase().includes('LSCA') && !(m.away || '').toUpperCase().includes('LOUVERNE')) continue;
+          if (!isOurTeam(m.home) && !isOurTeam(m.away)) continue;
           if (!feeds[source.category].upcoming.some(e => e.date === norm.date && e.opponent === norm.opponent)) {
             feeds[source.category].upcoming.push(norm);
           }
@@ -338,7 +342,7 @@ async function main() {
         console.log(`  ✅ ${rawPast.length} résultats trouvés`);
         for (const m of rawPast) {
           const norm = normalizeMatch(m, source, false);
-          if (!norm.isHome && !(m.away || '').toUpperCase().includes('LSCA') && !(m.away || '').toUpperCase().includes('LOUVERNE')) continue;
+          if (!isOurTeam(m.home) && !isOurTeam(m.away)) continue;
           if (!feeds[source.category].past.some(e => e.date === norm.date && e.opponent === norm.opponent)) {
             feeds[source.category].past.push(norm);
           }
