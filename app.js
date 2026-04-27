@@ -889,6 +889,7 @@ function renderMatchList(matches, isUpcoming) {
     return `
     <div class="fixture-item ${resultClass}">
       <div class="fixture-meta">
+        ${match.team ? `<span class="fixture-team-badge">${h(match.team)}</span>` : ''}
         <span class="fixture-date">${h(match.date)}${match.time ? ` · ${h(match.time)}` : ''}</span>
         ${match.isHome !== undefined
           ? `<span class="fixture-loc ${match.isHome ? 'fixture-loc--home' : 'fixture-loc--away'}">${match.isHome ? 'Dom' : 'Ext'}</span>`

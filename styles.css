@@ -590,6 +590,17 @@ textarea:focus-visible{
 }
 .fixture-loc--home{background:#E8F5E9;color:#1B5E20}
 .fixture-loc--away{background:#E3F2FD;color:#0D47A1}
+.fixture-team-badge{
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+  padding:2px 7px;
+  border-radius:999px;
+  background:#0F6E56;
+  color:#fff;
+  flex-shrink:0
+}
 .fixture-result-badge{
   font-size:9px;
   font-weight:700;
