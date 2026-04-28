@@ -2,17 +2,12 @@ const APP_KEY = 'cfb6_state';
 const SAVE_DELAY = 500;
 const MANUAL_FEEDS_KEY = 'cfb6_feeds';
 
-// Exposer les constantes globales pour les modules externes
-window.SEASONS    = ['2025-2026', '2024-2025', '2023-2024'];
-window.CAT_LABELS = { u13: 'U13', u11: 'U11', u9: 'U9' };
-window.PILLARS    = null; // sera alimenté après la déclaration de PILLARS
-
 // URL brute vers data/feeds.json dans ton dépôt GitHub public.
 // Format : 'https://raw.githubusercontent.com/TON_USERNAME/TON_REPO/main/data/feeds.json'
 // Laisser vide tant que le repo n'est pas créé.
 const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/pouteauaxel9-sketch/carnet-lsca/main/data/feeds.json';
-const CAT_LABELS = window.CAT_LABELS;
-const SEASONS = window.SEASONS;
+const CAT_LABELS = { u13: 'U13', u11: 'U11', u9: 'U9' };
+const SEASONS = ['2025-2026', '2024-2025', '2023-2024'];
 const AC = [
   ['#E6F1FB','#0C447C'],
   ['#EAF3DE','#27500A'],
@@ -175,9 +170,11 @@ const JDATA = {
 
 const WEIGHTS = { technique:0.35, tactique:0.25, physique:0.20, mental:0.15, perso:0.05 };
 
-// Exposer PILLARS et JDATA pour les modules externes
-window.PILLARS = PILLARS;
-window.JDATA   = JDATA;
+// Exposer les constantes pour les modules externes (chargés après app.js)
+window.SEASONS    = SEASONS;
+window.CAT_LABELS = CAT_LABELS;
+window.PILLARS    = PILLARS;
+window.JDATA      = JDATA;
 
 let state = {
   view:'dashboard',
