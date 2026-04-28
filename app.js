@@ -2,12 +2,17 @@ const APP_KEY = 'cfb6_state';
 const SAVE_DELAY = 500;
 const MANUAL_FEEDS_KEY = 'cfb6_feeds';
 
+// Exposer les constantes globales pour les modules externes
+window.SEASONS    = ['2025-2026', '2024-2025', '2023-2024'];
+window.CAT_LABELS = { u13: 'U13', u11: 'U11', u9: 'U9' };
+window.PILLARS    = null; // sera alimenté après la déclaration de PILLARS
+
 // URL brute vers data/feeds.json dans ton dépôt GitHub public.
 // Format : 'https://raw.githubusercontent.com/TON_USERNAME/TON_REPO/main/data/feeds.json'
 // Laisser vide tant que le repo n'est pas créé.
 const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/pouteauaxel9-sketch/carnet-lsca/main/data/feeds.json';
-const CAT_LABELS = { u13: 'U13', u11: 'U11', u9: 'U9' };
-const SEASONS = ['2025-2026', '2024-2025', '2023-2024'];
+const CAT_LABELS = window.CAT_LABELS;
+const SEASONS = window.SEASONS;
 const AC = [
   ['#E6F1FB','#0C447C'],
   ['#EAF3DE','#27500A'],
@@ -170,6 +175,10 @@ const JDATA = {
 
 const WEIGHTS = { technique:0.35, tactique:0.25, physique:0.20, mental:0.15, perso:0.05 };
 
+// Exposer PILLARS et JDATA pour les modules externes
+window.PILLARS = PILLARS;
+window.JDATA   = JDATA;
+
 let state = {
   view:'dashboard',
   cat:'u13',
@@ -187,6 +196,9 @@ let state = {
   remoteClubData:null,
   data:{ u13:{}, u11:{}, u9:{} }
 };
+
+// Exposer state pour les modules externes (objet muté en place, référence stable)
+window.appState = state;
 
 let rchart = null;
 let historyChart = null;
@@ -1389,12 +1401,20 @@ function renderPlayerView() {
   const profileTone = getPlayerTone(pid);
   const compareOptions = players().filter(player => player.name !== pid).map(player => `<option value="${h(player.name)}" ${state.comparePlayer === player.name ? 'selected' : ''}>${h(player.name)}</option>`).join('');
   const viewTabs = [['quick', 'Vue rapide'],['detail', 'Vue detaillee']].map(([key, label]) => `<button class="view-chip ${state.viewMode === key ? 'on' : ''}" type="button" data-action="set-view-mode" data-view-mode="${key}">${label}</button>`).join('');
-  const sectionTabs = [['profil', 'Profil'],['jonglerie', 'Jonglerie'],['evaluation', 'Evaluation']].map(([key, label]) => `<button class="stab ${state.selSection === key ? 'on' : ''}" type="button" data-action="set-section" data-section="${key}">${label}${key === 'evaluation' && score > 0 ? ' (' + score + '%)' : ''}</button>`).join('');
+  const sectionTabs = [
+    ['profil', 'Profil'],
+    ['jonglerie', 'Jonglerie'],
+    ['evaluation', 'Evaluation'],
+    ['seance', 'Séances'],
+    ['observation', 'Observations']
+  ].map(([key, label]) => `<button class="stab ${state.selSection === key ? 'on' : ''}" type="button" data-action="set-section" data-section="${key}">${label}${key === 'evaluation' && score > 0 ? ' (' + score + '%)' : ''}</button>`).join('');
 
   let body = '';
   if (state.viewMode === 'quick') body = quickViewBody(pid);
   else if (state.selSection === 'profil') body = profileBody(pid);
   else if (state.selSection === 'jonglerie') body = juggleBody(pid);
+  else if (state.selSection === 'seance') body = window.SeanceModule?.renderBody(pid) ?? '<p>Module séances non chargé.</p>';
+  else if (state.selSection === 'observation') body = window.ObsModule?.renderBody(pid) ?? '<p>Module observations non chargé.</p>';
   else body = evaluationBody(pid);
 
   return `
@@ -1474,9 +1494,16 @@ function renderMain() {
     const hasRadar = values.some(value => value > 0) || compareValues.some(value => value > 0);
     if (hasRadar) drawRadar(state.selPlayer, values, compareValues);
     drawHistoryChart(state.selPlayer);
+    // Modules afterRender (graphes séances / observations)
+    if (state.selSection !== 'seance') window.SeanceModule?.destroyCharts();
+    if (state.selSection !== 'observation') window.ObsModule?.destroyCharts();
+    window.SeanceModule?.afterRender(state.selPlayer);
+    window.ObsModule?.afterRender(state.selPlayer);
   } else {
     if (rchart) { rchart.destroy(); rchart = null; }
     if (historyChart) { historyChart.destroy(); historyChart = null; }
+    window.SeanceModule?.destroyCharts();
+    window.ObsModule?.destroyCharts();
   }
 }
 
@@ -1849,6 +1876,22 @@ function loadAll() {
   }
 }
 
+// Exposer les utilitaires pour les modules externes
+window.appUtils = {
+  h, q, qq, showToast, schedulePersist,
+  renderMain, renderAll, saveAppState
+};
+
+// Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
+document.addEventListener('click', event => {
+  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim]');
+  if (!mt) return;
+  if (mt.dataset.seanceAction   && window.SeanceModule?.handleAction(mt))   return;
+  if (mt.dataset.obsAction      && window.ObsModule?.handleAction(mt))      return;
+  if (mt.dataset.educatorAction && window.EducatorModule?.handleAction(mt)) return;
+  if (mt.dataset.obsDim)          window.ObsModule?.handleDimClick(mt);
+});
+
 document.addEventListener('click', event => {
   const target = event.target.closest('[data-action]');
   if (!target) return;
@@ -1899,7 +1942,11 @@ document.addEventListener('click', event => {
   if (action === 'delete-obj') { deleteObj(Number(target.dataset.index)); return; }
   if (action === 'set-rating') { setRating(target.dataset.pillar, Number(target.dataset.index), Number(target.dataset.value)); return; }
   if (action === 'save-player') { savePlayerNow(); return; }
-  if (action === 'print-report') { generateReport(); return; }
+  if (action === 'print-report') {
+    if (window.PDFModule) window.PDFModule.generate(state.selPlayer);
+    else generateReport();
+    return;
+  }
   if (action === 'clear-player-photo') { clearPlayerPhoto(); return; }
 
   if (action === 'open-modal') {
