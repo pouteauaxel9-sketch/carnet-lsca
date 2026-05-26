@@ -48,6 +48,36 @@ const DEBUG      = process.env.FFF_DEBUG === '1';
 const OUTPUT     = path.join(__dirname, '..', 'data', 'feeds.json');
 const DEBUG_DIR  = path.join(__dirname, 'debug');
 
+// Nombre de semaines à parcourir (configurables via env)
+// - PAST_WEEKS : on remonte N semaines en arrière depuis aujourd'hui pour récupérer tous les résultats
+// - UPCOMING_WEEKS : on regarde M semaines en avant pour les matchs à venir
+const PAST_WEEKS     = parseInt(process.env.FFF_PAST_WEEKS     || '16', 10);
+const UPCOMING_WEEKS = parseInt(process.env.FFF_UPCOMING_WEEKS || '6', 10);
+
+// Renvoie { begin, end } au format DD/MM/YYYY pour la semaine décalée de weekOffset
+// (0 = semaine en cours, -1 = précédente, +1 = suivante).
+function weekRangeForOffset(weekOffset) {
+  const now = new Date();
+  const day = now.getDay(); // 0 = dimanche, 1 = lundi…
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday + weekOffset * 7);
+  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+  const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  return { begin: fmt(monday), end: fmt(sunday) };
+}
+
+function buildWeekUrl(baseUrl, { begin, end }) {
+  try {
+    const url = new URL(baseUrl);
+    url.searchParams.set('beginWeek', begin);
+    url.searchParams.set('endweek',   end);
+    return url.toString();
+  } catch {
+    // URL non parseable, on l'utilise telle quelle
+    return baseUrl;
+  }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseDate(str) {
@@ -314,45 +344,49 @@ async function main() {
       console.error(`  ❌ Erreur classement: ${e.message}`);
     }
 
-    // Matchs à venir
-    try {
-      console.log('  Matchs à venir...');
-      const rawUpcoming = await extractMatches(page, source.urls.agenda, `${source.key}_agenda`, true);
-      if (rawUpcoming.length) {
-        console.log(`  ✅ ${rawUpcoming.length} matchs trouvés`);
+    // Matchs à venir : on parcourt les UPCOMING_WEEKS prochaines semaines
+    console.log(`  Matchs à venir (${UPCOMING_WEEKS + 1} semaines)...`);
+    let totalUpcoming = 0;
+    for (let w = 0; w <= UPCOMING_WEEKS; w++) {
+      const week = weekRangeForOffset(w);
+      const url = buildWeekUrl(source.urls.agenda, week);
+      try {
+        const rawUpcoming = await extractMatches(page, url, `${source.key}_agenda_w${w}`, true);
         for (const m of rawUpcoming) {
           const norm = normalizeMatch(m, source, true);
           if (!isOurTeam(m.home) && !isOurTeam(m.away)) continue;
           if (!feeds[source.category].upcoming.some(e => e.date === norm.date && e.opponent === norm.opponent)) {
             feeds[source.category].upcoming.push(norm);
+            totalUpcoming++;
           }
         }
-      } else {
-        console.log('  ⚠️  Aucun match à venir trouvé');
+      } catch (e) {
+        console.warn(`    Sem +${w} (${week.begin}-${week.end}) : ${e.message}`);
       }
-    } catch (e) {
-      console.error(`  ❌ Erreur agenda: ${e.message}`);
     }
+    console.log(`  ✅ ${totalUpcoming} matchs à venir ajoutés`);
 
-    // Résultats
-    try {
-      console.log('  Résultats...');
-      const rawPast = await extractMatches(page, source.urls.results, `${source.key}_results`, false);
-      if (rawPast.length) {
-        console.log(`  ✅ ${rawPast.length} résultats trouvés`);
+    // Résultats : on remonte PAST_WEEKS semaines en arrière
+    console.log(`  Résultats (${PAST_WEEKS + 1} semaines passées)...`);
+    let totalPast = 0;
+    for (let w = 0; w >= -PAST_WEEKS; w--) {
+      const week = weekRangeForOffset(w);
+      const url = buildWeekUrl(source.urls.results, week);
+      try {
+        const rawPast = await extractMatches(page, url, `${source.key}_results_w${w}`, false);
         for (const m of rawPast) {
           const norm = normalizeMatch(m, source, false);
           if (!isOurTeam(m.home) && !isOurTeam(m.away)) continue;
           if (!feeds[source.category].past.some(e => e.date === norm.date && e.opponent === norm.opponent)) {
             feeds[source.category].past.push(norm);
+            totalPast++;
           }
         }
-      } else {
-        console.log('  ⚠️  Aucun résultat trouvé');
+      } catch (e) {
+        console.warn(`    Sem ${w} (${week.begin}-${week.end}) : ${e.message}`);
       }
-    } catch (e) {
-      console.error(`  ❌ Erreur résultats: ${e.message}`);
     }
+    console.log(`  ✅ ${totalPast} résultats ajoutés`);
 
     await page.close();
   }

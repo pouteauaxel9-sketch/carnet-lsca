@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -19,9 +20,13 @@
       <label class="sr-only" for="season-sel">Choisir une saison</label>
       <select class="season-sel" id="season-sel" aria-label="Choix de la saison"></select>
       <button class="btn" id="refresh-btn" type="button">Actualiser</button>
-      <button class="btn" id="print-btn" type="button">Imprimer</button>
-      <button class="btn" id="export-btn" type="button">Exporter JSON</button>
-      <label class="btn btn-ghost" for="import-file">Importer JSON</label>
+      <button class="btn" id="export-xlsx-btn" type="button" title="Exporter en Excel">Excel</button>
+      <button class="btn btn-ghost" id="more-actions-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Plus d'actions">⋯</button>
+      <div class="more-menu" id="more-menu" hidden role="menu">
+        <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">Importer JSON</button>
+        <button class="more-menu-item" type="button" data-action="trigger-export-json" role="menuitem">Exporter JSON</button>
+        <button class="more-menu-item" type="button" data-action="trigger-print" role="menuitem">Imprimer la page</button>
+      </div>
       <input id="import-file" class="sr-only" type="file" accept="application/json">
     </div>
   </nav>
@@ -37,6 +42,10 @@
         <div class="sb-meta">
           <span id="sb-count">0 joueur</span>
           <span id="sb-season-chip">Saison</span>
+        </div>
+        <div class="sb-actions">
+          <button class="sb-action-btn" type="button" data-action="open-roster-create" title="Ajouter un joueur">+ Joueur</button>
+          <button class="sb-action-btn sb-action-btn--ghost" type="button" data-action="open-roster-manage" title="Gérer l'effectif">Gérer l'effectif</button>
         </div>
       </div>
       <div class="sb-filters" id="sb-filters" aria-label="Filtres"></div>
@@ -59,6 +68,13 @@
 <script src="auth-local.js"></script>
 <script src="evaluation-seance.js"></script>
 <script src="observation-match.js"></script>
+<script src="roster.js"></script>
+<script src="post-match.js"></script>
+<script src="feeds-form.js"></script>
+<script src="excel-export.js"></script>
+<script src="team-view.js"></script>
+<script src="transverse-view.js"></script>
+<script src="attendance.js"></script>
 <script src="pdf-report.js"></script>
 </body>
 </html>
