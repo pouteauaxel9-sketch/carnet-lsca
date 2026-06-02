@@ -1,422 +1,252 @@
 /**
- * Scraper FFF — District Mayenne
- * Récupère classements, matchs à venir et résultats pour chaque équipe configurée.
- * Lancé automatiquement chaque lundi via GitHub Actions.
+ * Scraper FFF — version API directe (api-dofa.fff.fr)
  *
- * Pour tester manuellement :
- *   node scrape-fff.js           → mode normal
- *   FFF_DEBUG=1 node scrape-fff.js → sauvegarde screenshots + HTML pour debug
+ * Plus de Puppeteer : on attaque directement l'API JSON officielle FFF
+ * (api-dofa.fff.fr). Elle expose tous les résultats de la phase et le
+ * classement courant. Rapide, robuste, pas de rendu navigateur à attendre.
+ *
+ * Endpoints utilisés :
+ *   GET /api/compets/{compet}/phases/{phase}/poules/{poule}/classement_journees
+ *   GET /api/compets/{compet}/phases/{phase}/poules/{poule}/resultat
+ *       ?ma_dat[after]=YYYY-MM-DD&ma_dat[before]=YYYY-MM-DD
+ *   GET /api/compets/{compet}/phases/{phase}/poules/{poule}/matchs
+ *       ?ma_dat[after]=YYYY-MM-DD&ma_dat[before]=YYYY-MM-DD
+ *
+ * Réponses au format Hydra (paginé via hydra:view.hydra:next).
+ *
+ * Nécessite Node 18+ pour `fetch` natif. GitHub Actions ubuntu-latest a Node 20.
  */
 
-const puppeteer = require('puppeteer');
-const fs = require('fs');
+const fs   = require('fs');
 const path = require('path');
 
-// ─── Configuration des sources ────────────────────────────────────────────────
-// Doit correspondre à TEAM_SOURCE_CONFIG dans app.js
+const API_BASE = 'https://api-dofa.fff.fr';
+const OUTPUT   = path.join(__dirname, '..', 'data', 'feeds.json');
+
+// Plage temporelle à scraper pour les résultats.
+// On part en septembre pour couvrir toute la phase, et on va jusqu'en juin.
+const SEASON_START = process.env.FFF_SEASON_START || '2025-09-01';
+const SEASON_END   = process.env.FFF_SEASON_END   || '2026-06-30';
+
+// Configuration des sources : chaque équipe scrapée a son (compet, phase, poule)
 const SOURCES = [
   {
-    key: 'u13a',
-    category: 'u13',
-    label: 'U13 A',
-    officialName: 'GJ LSCA LOUVERNE',
+    key: 'u13a', category: 'u13', label: 'U13 A',
+    compet: 437629, phase: 2, poule: 2,
     competitionLabel: 'Championnat U13 — Poule 2',
     competitionLevel: 'district',
-    urls: {
-      ranking: 'https://mayenne.fff.fr/competitions?tab=ranking&id=437629&phase=2&poule=2&type=ch',
-      agenda:  'https://mayenne.fff.fr/competitions?tab=agenda&id=437629&phase=2&poule=2&type=ch',
-      results: 'https://mayenne.fff.fr/competitions?tab=resultat&id=437629&phase=2&poule=2&type=ch'
-    }
   },
   {
-    key: 'u12',
-    category: 'u13',
-    label: 'U12',
-    officialName: 'GJ LSCA LOUVERNE 21',
+    key: 'u12',  category: 'u13', label: 'U12',
+    compet: 437631, phase: 2, poule: 1,
     competitionLabel: 'Championnat U12 — Poule 1',
     competitionLevel: 'district',
-    urls: {
-      ranking: 'https://mayenne.fff.fr/competitions?tab=ranking&id=437631&phase=2&poule=1&type=ch',
-      agenda:  'https://mayenne.fff.fr/competitions?tab=agenda&id=437631&phase=2&poule=1&type=ch',
-      results: 'https://mayenne.fff.fr/competitions?tab=resultat&id=437631&phase=2&poule=1&type=ch'
-    }
-  }
-  // Ajouter U13 B / U13 C ici quand leurs sources seront disponibles
+  },
 ];
 
-const DEBUG      = process.env.FFF_DEBUG === '1';
-const OUTPUT     = path.join(__dirname, '..', 'data', 'feeds.json');
-const DEBUG_DIR  = path.join(__dirname, 'debug');
+const HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (compatible; carnet-lsca-scraper/2.0)',
+  'Accept':     'application/ld+json, application/json;q=0.9',
+};
 
-// Nombre de semaines à parcourir (configurables via env)
-// - PAST_WEEKS : on remonte N semaines en arrière depuis aujourd'hui pour récupérer tous les résultats
-// - UPCOMING_WEEKS : on regarde M semaines en avant pour les matchs à venir
-const PAST_WEEKS     = parseInt(process.env.FFF_PAST_WEEKS     || '16', 10);
-const UPCOMING_WEEKS = parseInt(process.env.FFF_UPCOMING_WEEKS || '6', 10);
+/* ─── utils ───────────────────────────────────────────────────────────────── */
 
-// Renvoie { begin, end } au format DD/MM/YYYY pour la semaine décalée de weekOffset
-// (0 = semaine en cours, -1 = précédente, +1 = suivante).
-function weekRangeForOffset(weekOffset) {
-  const now = new Date();
-  const day = now.getDay(); // 0 = dimanche, 1 = lundi…
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday + weekOffset * 7);
-  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
-  const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-  return { begin: fmt(monday), end: fmt(sunday) };
+async function fetchJson(url) {
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`HTTP ${res.status} sur ${url}`);
+  return res.json();
 }
 
-function buildWeekUrl(baseUrl, { begin, end }) {
-  try {
-    const url = new URL(baseUrl);
-    url.searchParams.set('beginWeek', begin);
-    url.searchParams.set('endweek',   end);
-    return url.toString();
-  } catch {
-    // URL non parseable, on l'utilise telle quelle
-    return baseUrl;
+async function fetchAllPages(baseUrl) {
+  const all = [];
+  let url = baseUrl;
+  let guard = 0;
+  while (url && guard++ < 50) {
+    const j = await fetchJson(url);
+    if (Array.isArray(j['hydra:member'])) all.push(...j['hydra:member']);
+    const next = j['hydra:view']?.['hydra:next'];
+    url = next ? API_BASE + next : null;
   }
+  return all;
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function parseDate(str) {
-  if (!str) return null;
-  const m = str.match(/(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})/);
-  return m ? `${m[1]}/${m[2]}/${m[3]}` : null;
-}
-
-function parseScore(str) {
-  if (!str) return null;
-  const m = str.match(/(\d+)\s*[-–]\s*(\d+)/);
-  return m ? `${m[1]} - ${m[2]}` : null;
-}
-
-function isTeamName(str) {
-  return str && str.length > 2 && isNaN(parseInt(str)) && !/^\d{2}\//.test(str);
-}
-
-async function loadPage(page, url, label) {
-  console.log(`    → ${url}`);
-  await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
-  // Attente supplémentaire pour le rendu dynamique
-  await new Promise(r => setTimeout(r, 2500));
-
-  if (DEBUG) {
-    if (!fs.existsSync(DEBUG_DIR)) fs.mkdirSync(DEBUG_DIR, { recursive: true });
-    await page.screenshot({ path: path.join(DEBUG_DIR, `${label}.png`), fullPage: true });
-    fs.writeFileSync(path.join(DEBUG_DIR, `${label}.html`), await page.content());
-    console.log(`    [debug] screenshot + HTML sauvegardés`);
-  }
-}
-
-// ─── Extraction classement ────────────────────────────────────────────────────
-
-async function extractStandings(page, url, label) {
-  await loadPage(page, url, label);
-
-  return page.evaluate(() => {
-    const tables = Array.from(document.querySelectorAll('table'));
-    const ranked = tables
-      .map(t => ({ el: t, rows: t.querySelectorAll('tr').length }))
-      .filter(({ rows }) => rows > 3)
-      .sort((a, b) => b.rows - a.rows);
-
-    if (!ranked.length) return [];
-
-    const table = ranked[0].el;
-
-    // Lire l'en-tête pour identifier les colonnes
-    const headerRow = table.querySelector('thead tr') || table.querySelector('tr');
-    const headers = headerRow
-      ? Array.from(headerRow.querySelectorAll('th, td')).map(th => th.textContent.trim().toLowerCase())
-      : [];
-
-    // Correspondance label → index de colonne
-    function findCol(...keys) {
-      for (const k of keys) {
-        const i = headers.findIndex(h => h === k || h.includes(k));
-        if (i >= 0) return i;
-      }
-      return -1;
-    }
-
-    const col = {
-      rank: findCol('pl', 'pos', '#', 'rang'),
-      team: findCol('équipe', 'equipe', 'club'),
-      pts:  findCol('pts', 'points'),
-      jo:   findCol('jo', 'mj', 'j'),
-      won:  findCol('g', 'v', 'gagnés'),
-      draw: findCol('n', 'nul'),
-      lost: findCol('p', 'perd'),
-      bp:   findCol('bp', 'but+'),
-      bc:   findCol('bc', 'but-'),
-      dif:  findCol('dif', 'diff', '+/-'),
-    };
-
-    // Fallback : structure FFF standard Pl|Equipe|Pts|Jo|G|N|P|F|BP|BC|Pé|Dif
-    if (col.pts === -1) {
-      Object.assign(col, { rank:0, team:1, pts:2, jo:3, won:4, draw:5, lost:6, bp:8, bc:9, dif:11 });
-    }
-
-    const dataRows = Array.from(table.querySelectorAll('tbody tr'))
-      .filter(r => r.querySelectorAll('td').length > 3);
-
-    // Fallback si pas de tbody
-    const rows = dataRows.length
-      ? dataRows
-      : Array.from(table.querySelectorAll('tr')).slice(1);
-
-    return rows.map((row, i) => {
-      const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim());
-      if (cells.length < 3) return null;
-
-      const get = idx => (idx >= 0 && idx < cells.length) ? cells[idx] : '-';
-
-      const rank = get(col.rank) || String(i + 1);
-      const team = get(col.team);
-      if (!team || team.length < 2) return null;
-
-      return {
-        rank,
-        team,
-        points:       get(col.pts),
-        played:       get(col.jo),
-        won:          get(col.won),
-        draw:         get(col.draw),
-        lost:         get(col.lost),
-        goalsFor:     get(col.bp),
-        goalsAgainst: get(col.bc),
-        diff:         get(col.dif)
-      };
-    }).filter(Boolean);
-  });
-}
-
-// ─── Extraction matchs (agenda + résultats) ───────────────────────────────────
-
-async function extractMatches(page, url, label, isUpcoming) {
-  await loadPage(page, url, label);
-
-  return page.evaluate((isUpcoming) => {
-    const MONTHS = {
-      janvier:1, février:2, fevrier:2, mars:3, avril:4, mai:5, juin:6,
-      juillet:7, août:8, aout:8, septembre:9, octobre:10, novembre:11, décembre:12, decembre:12
-    };
-
-    function parseFFFDate(text) {
-      // "samedi 09 mai 2026 - 13H30" ou "samedi 09 mai 2026"
-      const m = text.toLowerCase().match(/(\d{1,2})\s+([a-zéûô]+)\s+(\d{4})/);
-      if (!m) return null;
-      const month = MONTHS[m[2]];
-      if (!month) return null;
-      return `${m[1].padStart(2,'0')}/${String(month).padStart(2,'0')}/${m[3]}`;
-    }
-
-    function parseFFFTime(text) {
-      const m = text.match(/(\d{2})[Hh](\d{2})/);
-      return m ? `${m[1]}h${m[2]}` : null;
-    }
-
-    function parseScoreFromImages(scoreEl) {
-      if (!scoreEl) return '-';
-      const imgs = Array.from(scoreEl.querySelectorAll('img.number'));
-      if (imgs.length >= 2) {
-        // src ressemble à "/wp-content/.../scores/origin/4.png"
-        const getNum = img => {
-          const src = img.getAttribute('src') || '';
-          const m = src.match(/\/(\d+)\.png/);
-          return m ? m[1] : null;
-        };
-        const g1 = getNum(imgs[0]);
-        const g2 = getNum(imgs[1]);
-        if (g1 !== null && g2 !== null) return `${g1} - ${g2}`;
-      }
-      // Fallback texte
-      const txt = scoreEl.textContent.replace(/\s+/g, ' ').trim();
-      const m = txt.match(/(\d+)\s*[-–]\s*(\d+)/);
-      return m ? `${m[1]} - ${m[2]}` : '-';
-    }
-
-    const blocks = Array.from(document.querySelectorAll('.confrontation'));
-    const results = [];
-
-    for (const block of blocks) {
-      const dateEl = block.querySelector('.date');
-      if (!dateEl) continue;
-
-      const dateRaw = dateEl.textContent.replace(/\s+/g, ' ').trim();
-      const date = parseFFFDate(dateRaw);
-      if (!date) continue;
-
-      const time = parseFFFTime(dateRaw);
-      const home = block.querySelector('.equipe1 .name')?.textContent.trim() || '-';
-      const away = block.querySelector('.equipe2 .name')?.textContent.trim() || '-';
-
-      if (home === '-' && away === '-') continue;
-
-      const scoreEl = block.querySelector('.score_match');
-      const score = isUpcoming ? '-' : parseScoreFromImages(scoreEl);
-
-      results.push({ date, time, home, away, score });
-    }
-
-    return results.slice(0, 10);
-  }, isUpcoming);
-}
-
-// ─── Normalisation vers le format attendu par l'app ───────────────────────────
 
 function isOurTeam(name) {
   const u = (name || '').toUpperCase();
   return u.includes('LSCA') || u.includes('LOUVERNE');
 }
 
-function normalizeMatch(raw, source, isUpcoming) {
-  const isHome = isOurTeam(raw.home);
+function toDdMmYyyy(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function normalizeMatch(m, source) {
+  const home = (m.home?.short_name || m.home?.club?.club_name || '?').trim();
+  const away = (m.away?.short_name || m.away?.club?.club_name || '?').trim();
+  const isHome = isOurTeam(home);
+  const opponent = isHome ? away : home;
+
+  const date = toDdMmYyyy(m.date);
+  let time = null;
+  if (typeof m.time === 'string' && m.time.length >= 4) {
+    time = m.time.slice(0, 5).replace(':', 'h');
+  } else if (m.date && m.date.includes('T')) {
+    const t = m.date.split('T')[1];
+    if (t && t !== '00:00:00+00:00') time = t.slice(0, 5).replace(':', 'h');
+  }
+
+  const status = (m.status || '').toUpperCase();
+  const hasScore = m.home_score != null && m.away_score != null
+                   && status !== 'A'      // À venir
+                   && status !== 'P'      // Programmé
+                   && !m.seems_postponed;
+  const score = hasScore ? `${m.home_score} - ${m.away_score}` : '-';
+
   return {
-    date:        raw.date,
-    time:        raw.time || null,
-    team:        source.label,
-    home:        raw.home,
-    away:        raw.away,
-    isHome,
-    opponent:    isHome ? raw.away : raw.home,
-    score:       raw.score,
-    competition: source.competitionLabel
+    date, time,
+    team: source.label,
+    home, away, isHome,
+    opponent,
+    score,
+    competition: source.competitionLabel,
+    status: m.status_label || m.status || '',
   };
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+function sortByDateAsc(a, b)  { return parseFr(a.date) - parseFr(b.date); }
+function sortByDateDesc(a, b) { return parseFr(b.date) - parseFr(a.date); }
+function parseFr(s) {
+  if (!s) return 0;
+  const [d, m, y] = s.split('/').map(Number);
+  return new Date(y, m - 1, d).getTime();
+}
+
+/* ─── pipeline par source ─────────────────────────────────────────────────── */
+
+async function scrapeStandings(feedsCat, source) {
+  console.log('  Classement...');
+  try {
+    const list = await fetchAllPages(
+      `${API_BASE}/api/compets/${source.compet}/phases/${source.phase}/poules/${source.poule}/classement_journees`
+    );
+    list.sort((a, b) => (a.rank || 99) - (b.rank || 99));
+    let added = 0;
+    for (const row of list) {
+      const teamName = (row.equipe?.short_name || row.equipe?.club_name || row.equipe?.club?.name || '?').trim();
+      feedsCat.standings.push({
+        rank: String(row.rank ?? '-'),
+        team: teamName,
+        points: String(row.point_count ?? '-'),
+        played: String(row.total_games_count ?? '-'),
+        won:    String(row.won_games_count  ?? '-'),
+        draw:   String(row.draw_games_count ?? '-'),
+        lost:   String(row.lost_games_count ?? '-'),
+        goalsFor:     String(row.goals_for_count     ?? '-'),
+        goalsAgainst: String(row.goals_against_count ?? '-'),
+        diff:         String(row.goals_diff          ?? '-'),
+        source:           source.key,
+        competition:      source.competitionLabel,
+        competitionLevel: source.competitionLevel,
+        isOurTeam:        isOurTeam(teamName),
+      });
+      added++;
+    }
+    console.log(`  ✅ ${added} équipes`);
+  } catch (e) {
+    console.error('  ❌ Classement: ' + e.message);
+  }
+}
+
+async function scrapeResults(feedsCat, source) {
+  console.log('  Résultats...');
+  try {
+    const url = `${API_BASE}/api/compets/${source.compet}/phases/${source.phase}/poules/${source.poule}/resultat`
+              + `?ma_dat[after]=${SEASON_START}&ma_dat[before]=${SEASON_END}`;
+    const list = await fetchAllPages(url);
+    let added = 0;
+    for (const m of list) {
+      if (!isOurTeam(m.home?.short_name) && !isOurTeam(m.away?.short_name)) continue;
+      const norm = normalizeMatch(m, source);
+      if (!feedsCat.past.some(e => e.date === norm.date && e.opponent === norm.opponent && e.team === norm.team)) {
+        feedsCat.past.push(norm);
+        added++;
+      }
+    }
+    console.log(`  ✅ ${added} résultats`);
+  } catch (e) {
+    console.error('  ❌ Résultats: ' + e.message);
+  }
+}
+
+async function scrapeUpcoming(feedsCat, source) {
+  console.log('  Matchs à venir...');
+  try {
+    const after = todayIso();
+    // L'endpoint /matchs renvoie tous les matchs (joués + à venir).
+    // On filtre par date >= aujourd'hui pour ne garder que les futurs.
+    const url = `${API_BASE}/api/compets/${source.compet}/phases/${source.phase}/poules/${source.poule}/matchs`
+              + `?ma_dat[after]=${after}&ma_dat[before]=${SEASON_END}`;
+    const list = await fetchAllPages(url);
+    let added = 0;
+    for (const m of list) {
+      if (!isOurTeam(m.home?.short_name) && !isOurTeam(m.away?.short_name)) continue;
+      // On ne garde que les matchs sans score / non joués
+      const status = (m.status || '').toUpperCase();
+      const played = m.home_score != null && m.away_score != null
+                     && status !== 'A' && status !== 'P' && !m.seems_postponed;
+      if (played) continue;
+      const norm = normalizeMatch(m, source);
+      if (!feedsCat.upcoming.some(e => e.date === norm.date && e.opponent === norm.opponent && e.team === norm.team)) {
+        feedsCat.upcoming.push(norm);
+        added++;
+      }
+    }
+    console.log(`  ✅ ${added} matchs à venir`);
+  } catch (e) {
+    console.error('  ❌ Matchs à venir: ' + e.message);
+  }
+}
+
+/* ─── main ────────────────────────────────────────────────────────────────── */
 
 async function main() {
-  console.log('\n🚀 Démarrage du scraper FFF...\n');
-
-  const launchOptions = {
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
-  };
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-  }
-  const browser = await puppeteer.launch(launchOptions);
+  console.log('\n🚀 Scraper FFF (API JSON) — Plage ' + SEASON_START + ' → ' + SEASON_END + '\n');
 
   const feeds = {};
-
   for (const source of SOURCES) {
-    console.log(`\n📊 ${source.label} (${source.category.toUpperCase()})`);
-
-    if (!feeds[source.category]) {
-      feeds[source.category] = { standings: [], upcoming: [], past: [] };
-    }
-
-    const page = await browser.newPage();
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-    );
-    await page.setExtraHTTPHeaders({ 'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8' });
-
-    // Classement
-    try {
-      console.log('  Classement...');
-      const standings = await extractStandings(page, source.urls.ranking, `${source.key}_ranking`);
-      if (standings.length) {
-        console.log(`  ✅ ${standings.length} équipes trouvées`);
-        // Remplace toutes les lignes de cette source avant d'ajouter les nouvelles
-        feeds[source.category].standings = feeds[source.category].standings.filter(
-          s => s.source !== source.key
-        );
-        for (const row of standings) {
-          const teamUpper = (row.team || '').toUpperCase();
-          feeds[source.category].standings.push({
-            ...row,
-            source: source.key,
-            competition: source.competitionLabel,
-            competitionLevel: source.competitionLevel,
-            isOurTeam: teamUpper.includes('LSCA') || teamUpper.includes('LOUVERNE')
-          });
-        }
-      } else {
-        console.log('  ⚠️  Aucun classement trouvé');
-        if (!DEBUG) console.log('     → Lance FFF_DEBUG=1 node scrape-fff.js pour diagnostiquer');
-      }
-    } catch (e) {
-      console.error(`  ❌ Erreur classement: ${e.message}`);
-    }
-
-    // Matchs à venir : on parcourt les UPCOMING_WEEKS prochaines semaines
-    console.log(`  Matchs à venir (${UPCOMING_WEEKS + 1} semaines)...`);
-    let totalUpcoming = 0;
-    for (let w = 0; w <= UPCOMING_WEEKS; w++) {
-      const week = weekRangeForOffset(w);
-      const url = buildWeekUrl(source.urls.agenda, week);
-      try {
-        const rawUpcoming = await extractMatches(page, url, `${source.key}_agenda_w${w}`, true);
-        for (const m of rawUpcoming) {
-          const norm = normalizeMatch(m, source, true);
-          if (!isOurTeam(m.home) && !isOurTeam(m.away)) continue;
-          if (!feeds[source.category].upcoming.some(e => e.date === norm.date && e.opponent === norm.opponent)) {
-            feeds[source.category].upcoming.push(norm);
-            totalUpcoming++;
-          }
-        }
-      } catch (e) {
-        console.warn(`    Sem +${w} (${week.begin}-${week.end}) : ${e.message}`);
-      }
-    }
-    console.log(`  ✅ ${totalUpcoming} matchs à venir ajoutés`);
-
-    // Résultats : on remonte PAST_WEEKS semaines en arrière
-    console.log(`  Résultats (${PAST_WEEKS + 1} semaines passées)...`);
-    let totalPast = 0;
-    for (let w = 0; w >= -PAST_WEEKS; w--) {
-      const week = weekRangeForOffset(w);
-      const url = buildWeekUrl(source.urls.results, week);
-      try {
-        const rawPast = await extractMatches(page, url, `${source.key}_results_w${w}`, false);
-        for (const m of rawPast) {
-          const norm = normalizeMatch(m, source, false);
-          if (!isOurTeam(m.home) && !isOurTeam(m.away)) continue;
-          if (!feeds[source.category].past.some(e => e.date === norm.date && e.opponent === norm.opponent)) {
-            feeds[source.category].past.push(norm);
-            totalPast++;
-          }
-        }
-      } catch (e) {
-        console.warn(`    Sem ${w} (${week.begin}-${week.end}) : ${e.message}`);
-      }
-    }
-    console.log(`  ✅ ${totalPast} résultats ajoutés`);
-
-    await page.close();
+    console.log(`📊 ${source.label} (${source.category.toUpperCase()})`);
+    if (!feeds[source.category]) feeds[source.category] = { standings: [], upcoming: [], past: [] };
+    await scrapeStandings(feeds[source.category], source);
+    await scrapeResults  (feeds[source.category], source);
+    await scrapeUpcoming (feeds[source.category], source);
+    console.log('');
   }
 
-  await browser.close();
-
-  // Tri des dates
+  // Tri final
   for (const cat of Object.values(feeds)) {
-    const toDate = str => {
-      const [d, m, y] = str.split('/').map(Number);
-      return new Date(y, m - 1, d);
-    };
-    cat.upcoming.sort((a, b) => toDate(a.date) - toDate(b.date));
-    cat.past.sort((a, b) => toDate(b.date) - toDate(a.date));
+    cat.upcoming.sort(sortByDateAsc);
+    cat.past.sort(sortByDateDesc);
   }
 
   // Sauvegarde
   const dir = path.dirname(OUTPUT);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(OUTPUT, JSON.stringify({
+    lastUpdated: new Date().toISOString(),
+    feeds,
+  }, null, 2));
 
-  const output = { lastUpdated: new Date().toISOString(), feeds };
-  fs.writeFileSync(OUTPUT, JSON.stringify(output, null, 2));
-
-  const stats = Object.entries(feeds).map(([cat, d]) =>
-    `${cat.toUpperCase()}: ${d.standings.length} classement, ${d.upcoming.length} à venir, ${d.past.length} résultats`
-  ).join(' | ');
-
-  console.log(`\n✅ Sauvegardé → data/feeds.json`);
-  console.log(`   ${stats}`);
-  console.log(`   Mis à jour le ${new Date().toLocaleString('fr-FR')}\n`);
+  console.log('✅ data/feeds.json sauvegardé');
+  Object.entries(feeds).forEach(([cat, d]) => {
+    console.log(`   ${cat.toUpperCase()}: ${d.standings.length} équipes · ${d.upcoming.length} à venir · ${d.past.length} résultats`);
+  });
+  console.log(`   ${new Date().toLocaleString('fr-FR')}\n`);
 }
 
 main().catch(err => {

@@ -1035,7 +1035,7 @@ function renderList() {
           ${prof?.photo ? `<img src="${prof.photo}" alt="${h(pid)}">` : `<span>${h(ini(pid))}</span>`}
         </div>
         <div class="pli-info">
-          <div class="pli-name">${h(pid)}</div>
+          <div class="pli-name">${h(pid)}${(() => { const cs = window.InjuryModule?.currentStatus?.(pid, state.cat); if (!cs) return ''; const td = window.InjuryModule.TYPES.find(t => t.key === cs.type) || {}; return ` <span class="pli-inj" title="${h(td.label || '')}">${td.icon || '⚠'}</span>`; })()}</div>
           <div class="pli-sub">${h(sub)}</div>
         </div>
       </button>
@@ -1441,6 +1441,7 @@ function renderCategoryPlayerTable() {
         <div class="cat-table-name">
           <span class="cat-table-av" style="background:${col[0]};color:${col[1]}">${e.prof?.photo ? `<img src="${e.prof.photo}" alt="">` : h(ini(e.name))}</span>
           <span>${h(e.name)}</span>
+          ${(() => { const cs = window.InjuryModule?.currentStatus?.(e.name, state.cat); if (!cs) return ''; const td = window.InjuryModule.TYPES.find(t => t.key === cs.type) || {}; return `<span class="cat-table-inj" title="${h(td.label || '')}${cs.zone ? ' · ' + h(cs.zone) : ''}">${td.icon || '⚠'}</span>`; })()}
         </div>
       </td>
       <td>${h(e.prof.poste1 || '—')}</td>
@@ -1655,6 +1656,7 @@ function profileBody(pid) {
       </div>
     </div>
     ${renderMorphoHistory(prof)}
+    ${window.InjuryModule?.renderWidget(pid) || ''}
     ${window.AttendanceModule?.renderWidget(pid) || ''}
 
     <div class="form-section-title">Objectifs de saison</div>
@@ -2368,7 +2370,7 @@ window.appUtils = {
 
 // Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
 document.addEventListener('click', event => {
-  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action]');
+  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action]');
   if (!mt) return;
   // Les <select>, <input>, <textarea> gèrent leurs propres événements (change / input).
   // Sans ce skip, cliquer sur un select déclenche le handler avec value="" et ferme le menu.
@@ -2380,6 +2382,7 @@ document.addEventListener('click', event => {
   if (mt.dataset.postmatchAction  && window.PostMatchModule?.handleAction(mt))  return;
   if (mt.dataset.feedsAction      && window.FeedsFormModule?.handleAction(mt))  return;
   if (mt.dataset.attendanceAction && window.AttendanceModule?.handleAction(mt)) return;
+  if (mt.dataset.injuryAction     && window.InjuryModule?.handleAction(mt))     return;
   if (mt.dataset.obsDim)            window.ObsModule?.handleDimClick(mt);
 });
 

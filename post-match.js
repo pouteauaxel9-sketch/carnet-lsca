@@ -293,6 +293,13 @@
 
   function renderLine(pid) {
     const line = session.lines[pid] || { present: false, dimensions: {}, comment: '', temps: '', stats: {} };
+    const injStatus = window.InjuryModule?.currentStatus?.(pid, session.cat);
+    const injBadge = injStatus
+      ? (() => {
+          const td = (window.InjuryModule?.TYPES || []).find(t => t.key === injStatus.type) || {};
+          return ` <span class="pm-inj-badge" title="${h(td.label || '')}${injStatus.zone ? ' · ' + h(injStatus.zone) : ''}">${td.icon || '⚠'}</span>`;
+        })()
+      : '';
     const dimsBtns = dims().map(d => {
       const cur = line.dimensions[d.key] ?? '';
       const btns = dimOpts().map(o => {
@@ -325,7 +332,7 @@
           <input type="checkbox" ${line.present ? 'checked' : ''}
             data-postmatch-action="toggle-presence" data-pid="${h(pid)}">
         </label>
-        <span class="postmatch-name">${h(pid)}
+        <span class="postmatch-name">${h(pid)}${injBadge}
           ${summaryBits.length ? `<span class="pm-mini-summary">${summaryBits.join('')}</span>` : ''}
         </span>
         <input class="postmatch-temps" type="number" min="0" max="120" placeholder="—"
@@ -645,13 +652,11 @@
 
     utils()?.schedulePersist('Saisie post-match enregistrée');
     utils()?.showToast(created + ' observation' + (created > 1 ? 's' : '') + ' créée' + (created > 1 ? 's' : ''));
-
     session = null;
     renderModal();
     utils()?.renderAll();
   }
 
-  /* events globaux */
   document.addEventListener('input', e => {
     if (!session) return;
     handleMetaInput(e.target);

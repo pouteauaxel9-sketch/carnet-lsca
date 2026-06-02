@@ -15,18 +15,14 @@ jobs:
       - name: Checkout du repo
         uses: actions/checkout@v4
 
-      - name: Installer Chromium système
-        run: sudo apt-get install -y chromium-browser
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Installer les dépendances
-        run: npm install
-        working-directory: scripts
-
-      - name: Lancer le scraper
+      - name: Lancer le scraper (API JSON, sans Puppeteer)
         run: node scrape-fff.js
         working-directory: scripts
-        env:
-          PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
 
       - name: Committer les données mises à jour
         run: |

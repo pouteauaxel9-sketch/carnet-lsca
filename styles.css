@@ -2892,3 +2892,62 @@ textarea:focus-visible{
   border-radius:999px;
   white-space:nowrap
 }
+
+/* PWA — encart "Installer l'app" */
+#install-pwa-item {
+  background: linear-gradient(135deg, #185fa5, #4d9be0);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  transition: filter 0.12s ease;
+}
+#install-pwa-item:hover {
+  filter: brightness(1.08);
+  background: linear-gradient(135deg, #185fa5, #4d9be0);
+}
+
+/* Indispo / blessure */
+.inj-card { margin-top: 14px }
+.inj-status-current { margin: 8px 0 12px }
+.inj-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid;
+}
+.inj-status-pill--ok {
+  background: var(--green-light);
+  color: var(--green-dark);
+  border-color: var(--green);
+}
+.inj-recent { display: flex; flex-direction: column; gap: 4px }
+.inj-row {
+  display: grid;
+  grid-template-columns: 24px 140px 1fr 90px 50px 24px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--bg2);
+  font-size: 12px;
+}
+.inj-icon { text-align: center; font-size: 14px }
+.inj-period { color: var(--text3); font-weight: 600 }
+.inj-type { color: var(--text1); font-weight: 600 }
+.inj-sev { font-weight: 700 }
+.inj-days { text-align: right; color: var(--text3); font-weight: 600 }
+
+.cat-table-inj,
+.pli-inj,
+.pm-inj-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 13px;
+  vertical-align: middle;
+}

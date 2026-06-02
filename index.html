@@ -2,8 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carnet d'evaluation - Football</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#185fa5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Carnet LSCA">
+<title>Carnet Formation — GJ LSCA / Louverné</title>
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -23,6 +28,7 @@
       <button class="btn" id="export-xlsx-btn" type="button" title="Exporter en Excel">Excel</button>
       <button class="btn btn-ghost" id="more-actions-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Plus d'actions">⋯</button>
       <div class="more-menu" id="more-menu" hidden role="menu">
+        <button class="more-menu-item" type="button" data-action="install-pwa" role="menuitem" id="install-pwa-item" hidden>📱 Installer l'application</button>
         <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">Importer JSON</button>
         <button class="more-menu-item" type="button" data-action="trigger-export-json" role="menuitem">Exporter JSON</button>
         <button class="more-menu-item" type="button" data-action="trigger-print" role="menuitem">Imprimer la page</button>
@@ -75,6 +81,8 @@
 <script src="team-view.js"></script>
 <script src="transverse-view.js"></script>
 <script src="attendance.js"></script>
+<script src="injury.js"></script>
 <script src="pdf-report.js"></script>
+<script src="pwa.js"></script>
 </body>
 </html>
