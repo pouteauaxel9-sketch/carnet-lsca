@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-02T18:59:56.661Z",
+  "lastUpdated": "2026-06-02T19:10:04.472Z",
   "feeds": {
     "u13": {
       "standings": [
@@ -266,7 +266,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "GJ VAL DE JOUANNE",
-          "score": "-",
+          "score": "2 - 6",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -278,7 +278,7 @@
           "away": "LAVAL ASPTT",
           "isHome": true,
           "opponent": "LAVAL ASPTT",
-          "score": "-",
+          "score": "5 - 3",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -290,7 +290,7 @@
           "away": "ST BERTHEVIN US",
           "isHome": true,
           "opponent": "ST BERTHEVIN US",
-          "score": "-",
+          "score": "9 - 2",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -302,7 +302,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "GJ ST P. LA COUR 3S",
-          "score": "-",
+          "score": "3 - 2",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -314,7 +314,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "GJ PAYS DE CHATEAU-G",
-          "score": "-",
+          "score": "3 - 8",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -326,7 +326,7 @@
           "away": "LAVAL JS MAGHREB",
           "isHome": true,
           "opponent": "LAVAL JS MAGHREB",
-          "score": "-",
+          "score": "8 - 3",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -350,7 +350,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "LAVAL STADE MAY FEMI",
-          "score": "-",
+          "score": "4 - 3",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -362,7 +362,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "GJ BAS MAINE ANDOUIL",
-          "score": "-",
+          "score": "3 - 2",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -374,7 +374,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "LAVAL US",
-          "score": "-",
+          "score": "2 - 7",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -386,7 +386,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "GJ HAUT-ANJOU",
-          "score": "-",
+          "score": "2 - 6",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -398,7 +398,7 @@
           "away": "GJ BAS MAINE ANDOUIL",
           "isHome": true,
           "opponent": "GJ BAS MAINE ANDOUIL",
-          "score": "-",
+          "score": "3 - 3",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -410,7 +410,7 @@
           "away": "ÉVRONNAIS CA",
           "isHome": true,
           "opponent": "ÉVRONNAIS CA",
-          "score": "-",
+          "score": "7 - 0",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -422,7 +422,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "LAVAL ASPTT",
-          "score": "-",
+          "score": "0 - 2",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -434,7 +434,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "ST BERTHEVIN US",
-          "score": "-",
+          "score": "2 - 2",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -446,7 +446,7 @@
           "away": "GJ ST P. LA COUR 3S",
           "isHome": true,
           "opponent": "GJ ST P. LA COUR 3S",
-          "score": "-",
+          "score": "5 - 1",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -458,7 +458,7 @@
           "away": "GJ PAYS DE CHATEAU-G",
           "isHome": true,
           "opponent": "GJ PAYS DE CHATEAU-G",
-          "score": "-",
+          "score": "9 - 1",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -470,7 +470,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "LAVAL JS MAGHREB",
-          "score": "-",
+          "score": "2 - 7",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -494,7 +494,7 @@
           "away": "LAVAL STADE MAY FEMI",
           "isHome": true,
           "opponent": "LAVAL STADE MAY FEMI",
-          "score": "-",
+          "score": "5 - 1",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -506,7 +506,7 @@
           "away": "GJ BAS MAINE ANDOUIL",
           "isHome": true,
           "opponent": "GJ BAS MAINE ANDOUIL",
-          "score": "-",
+          "score": "3 - 1",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -518,7 +518,7 @@
           "away": "LAVAL US",
           "isHome": true,
           "opponent": "LAVAL US",
-          "score": "-",
+          "score": "6 - 1",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -530,7 +530,7 @@
           "away": "GJ HAUT-ANJOU",
           "isHome": true,
           "opponent": "GJ HAUT-ANJOU",
-          "score": "-",
+          "score": "4 - 2",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -542,7 +542,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "GJ BAS MAINE ANDOUIL",
-          "score": "-",
+          "score": "2 - 7",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -554,7 +554,7 @@
           "away": "GJ LSCA  LOUVERNE",
           "isHome": false,
           "opponent": "ÉVRONNAIS CA",
-          "score": "-",
+          "score": "2 - 7",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         },
@@ -566,7 +566,7 @@
           "away": "GJ HBG FC",
           "isHome": true,
           "opponent": "GJ HBG FC",
-          "score": "-",
+          "score": "2 - 2",
           "competition": "Championnat U13 — Poule 2",
           "status": "/"
         },
@@ -578,7 +578,7 @@
           "away": "GJ VAL DE JOUANNE",
           "isHome": true,
           "opponent": "GJ VAL DE JOUANNE",
-          "score": "-",
+          "score": "4 - 0",
           "competition": "Championnat U12 — Poule 1",
           "status": "/"
         }
