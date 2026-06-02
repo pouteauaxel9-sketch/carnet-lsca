@@ -110,11 +110,11 @@ function normalizeMatch(m, source) {
     if (t && t !== '00:00:00+00:00') time = t.slice(0, 5).replace(':', 'h');
   }
 
-  const status = (m.status || '').toUpperCase();
-  const hasScore = m.home_score != null && m.away_score != null
-                   && status !== 'A'      // À venir
-                   && status !== 'P'      // Programmé
-                   && !m.seems_postponed;
+  // Note : la valeur `status` côté API FFF n'indique PAS "à venir" comme on
+  // pourrait le croire (le code "A" signifie "Achevé"/"Acquis"). On ne filtre
+  // donc que sur la présence d'un score réel et le flag seems_postponed.
+  // Pour les matchs futurs, l'endpoint renverra home_score/away_score à null.
+  const hasScore = m.home_score != null && m.away_score != null && !m.seems_postponed;
   const score = hasScore ? `${m.home_score} - ${m.away_score}` : '-';
 
   return {
@@ -207,10 +207,8 @@ async function scrapeUpcoming(feedsCat, source) {
     let added = 0;
     for (const m of list) {
       if (!isOurTeam(m.home?.short_name) && !isOurTeam(m.away?.short_name)) continue;
-      // On ne garde que les matchs sans score / non joués
-      const status = (m.status || '').toUpperCase();
-      const played = m.home_score != null && m.away_score != null
-                     && status !== 'A' && status !== 'P' && !m.seems_postponed;
+      // On ne garde que les matchs sans score (donc pas encore joués)
+      const played = m.home_score != null && m.away_score != null && !m.seems_postponed;
       if (played) continue;
       const norm = normalizeMatch(m, source);
       if (!feedsCat.upcoming.some(e => e.date === norm.date && e.opponent === norm.opponent && e.team === norm.team)) {
