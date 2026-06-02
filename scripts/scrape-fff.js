@@ -44,16 +44,25 @@ const SOURCES = [
   },
 ];
 
+// User-Agent et headers crédibles : sans ça, l'API FFF derrière Cloudflare
+// peut renvoyer 403 ou couper la connexion sans réponse.
 const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (compatible; carnet-lsca-scraper/2.0)',
-  'Accept':     'application/ld+json, application/json;q=0.9',
+  'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept':          'application/ld+json, application/json;q=0.9, */*;q=0.8',
+  'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+  'Referer':         'https://mayenne.fff.fr/',
+  'Origin':          'https://mayenne.fff.fr',
 };
 
 /* ─── utils ───────────────────────────────────────────────────────────────── */
 
 async function fetchJson(url) {
   const res = await fetch(url, { headers: HEADERS });
-  if (!res.ok) throw new Error(`HTTP ${res.status} sur ${url}`);
+  if (!res.ok) {
+    let body = '';
+    try { body = (await res.text()).slice(0, 300); } catch {}
+    throw new Error(`HTTP ${res.status} sur ${url}\n  body: ${body}`);
+  }
   return res.json();
 }
 
@@ -160,6 +169,7 @@ async function scrapeStandings(feedsCat, source) {
     console.log(`  ✅ ${added} équipes`);
   } catch (e) {
     console.error('  ❌ Classement: ' + e.message);
+    console.error('     ' + (e.stack || '').split('\n').slice(0, 3).join('\n     '));
   }
 }
 
@@ -181,6 +191,7 @@ async function scrapeResults(feedsCat, source) {
     console.log(`  ✅ ${added} résultats`);
   } catch (e) {
     console.error('  ❌ Résultats: ' + e.message);
+    console.error('     ' + (e.stack || '').split('\n').slice(0, 3).join('\n     '));
   }
 }
 
@@ -210,13 +221,29 @@ async function scrapeUpcoming(feedsCat, source) {
     console.log(`  ✅ ${added} matchs à venir`);
   } catch (e) {
     console.error('  ❌ Matchs à venir: ' + e.message);
+    console.error('     ' + (e.stack || '').split('\n').slice(0, 3).join('\n     '));
   }
 }
 
 /* ─── main ────────────────────────────────────────────────────────────────── */
 
 async function main() {
-  console.log('\n🚀 Scraper FFF (API JSON) — Plage ' + SEASON_START + ' → ' + SEASON_END + '\n');
+  console.log('\n🚀 Scraper FFF (API JSON) — Plage ' + SEASON_START + ' → ' + SEASON_END);
+  console.log('   Node ' + process.version + ' · fetch ' + (typeof fetch === 'function' ? 'natif' : 'INDISPONIBLE'));
+  console.log('');
+
+  // Test de connectivité : si l'API rejette, on plante TOUT DE SUITE
+  // au lieu de générer un feeds.json vide silencieusement.
+  console.log('🔌 Test API...');
+  try {
+    const probe = await fetchJson(`${API_BASE}/api/compets/${SOURCES[0].compet}`);
+    console.log('  ✅ API joignable · compet "' + (probe?.name || '?') + '" saison ' + (probe?.season || '?'));
+  } catch (e) {
+    console.error('  ❌ API injoignable, abort.');
+    console.error('  ' + e.message);
+    process.exit(1);
+  }
+  console.log('');
 
   const feeds = {};
   for (const source of SOURCES) {
@@ -228,13 +255,11 @@ async function main() {
     console.log('');
   }
 
-  // Tri final
   for (const cat of Object.values(feeds)) {
     cat.upcoming.sort(sortByDateAsc);
     cat.past.sort(sortByDateDesc);
   }
 
-  // Sauvegarde
   const dir = path.dirname(OUTPUT);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(OUTPUT, JSON.stringify({
@@ -251,5 +276,6 @@ async function main() {
 
 main().catch(err => {
   console.error('\n❌ Erreur fatale:', err.message);
+  console.error(err.stack);
   process.exit(1);
 });
