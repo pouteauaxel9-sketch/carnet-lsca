@@ -2951,3 +2951,223 @@ textarea:focus-visible{
   font-size: 13px;
   vertical-align: middle;
 }
+
+/* Profilage automatique */
+.profiling-card { margin-top: 14px }
+.profiling-empty {
+  padding: 14px;
+  color: var(--text3);
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+}
+.profiling-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.profiling-tag {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid;
+  border-radius: 10px;
+  font-size: 11px;
+  min-width: 160px;
+  background: var(--bg2);
+  cursor: help;
+}
+.profiling-tag strong { font-size: 12px; font-weight: 700 }
+.profiling-tag span { font-size: 10px; opacity: 0.85; line-height: 1.4 }
+
+/* Vue Analyses : groupage par profil */
+.profile-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.profile-group {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border1);
+}
+.profile-group-head {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.profile-group-count {
+  background: rgba(255, 255, 255, 0.6);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+.profile-group-list {
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.profile-player-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.profile-player-chip:hover {
+  background: var(--blue-light);
+  border-color: var(--blue);
+  color: var(--blue-dark);
+}
+
+/* Dashboard responsable technique */
+.directeur-shell { display: flex; flex-direction: column; gap: 16px }
+.directeur-hero {
+  background: linear-gradient(135deg, #0c447c 0%, #185fa5 60%, #4d9be0 100%);
+  color: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 18px;
+  box-shadow: var(--shadow);
+}
+.directeur-hero h1 { font-size: 30px; margin: 6px 0 8px }
+.directeur-hero p { color: rgba(255,255,255,0.8); max-width: 680px; line-height: 1.55 }
+.directeur-alert-counter strong { color: var(--text1); }
+.directeur-alert-counter.has-alerts strong { color: #d85a30 }
+
+.directeur-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 900px){ .directeur-grid { grid-template-columns: 1fr } }
+.directeur-grid .span-2 { grid-column: span 2 }
+@media (max-width: 900px){ .directeur-grid .span-2 { grid-column: span 1 } }
+
+/* Alertes */
+.directeur-alerts-card.directeur-alerts-active {
+  border-left: 4px solid #d85a30;
+}
+.alert-rows { display: flex; flex-direction: column; gap: 10px; margin-top: 6px }
+.alert-row {
+  background: var(--bg2);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.alert-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.alert-row-head strong { color: var(--text1) }
+.alert-row-head span { color: var(--text3); font-weight: 700 }
+.alert-chips { display: flex; flex-wrap: wrap; gap: 6px }
+.alert-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.alert-chip:hover { border-color: var(--blue); background: var(--blue-light); color: var(--blue-dark) }
+.alert-chip-cat {
+  background: var(--bg2);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  color: var(--text3);
+}
+.alert-more { font-size: 11px; color: var(--text3); padding: 5px; align-self: center }
+
+/* Détail blessures */
+.injury-detail-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px }
+.injury-detail-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto 50px;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg2);
+  border: 1px solid var(--border1);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s;
+}
+.injury-detail-row:hover { background: var(--red-light); border-color: var(--red) }
+.injury-detail-icon { font-size: 18px; text-align: center }
+.injury-detail-name strong { display: block; font-size: 13px }
+.injury-detail-name small { display: block; font-size: 10px; color: var(--text3); text-transform: uppercase; font-weight: 600 }
+.injury-detail-zone { font-size: 12px; color: var(--text2); font-weight: 600 }
+.injury-detail-dur { text-align: right; font-weight: 700; color: var(--red-dark); font-size: 12px }
+
+/* Assiduité catégorie */
+.att-cat-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px }
+.att-cat-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 140px;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+.att-cat-name { font-weight: 700; color: var(--text1) }
+.att-cat-bar-bg { height: 12px; border-radius: 6px; background: var(--bg2); overflow: hidden }
+.att-cat-bar-fill { height: 100%; border-radius: 6px; transition: width 0.3s }
+.att-cat-val { text-align: right; font-weight: 700 }
+.att-cat-meta { font-size: 11px; color: var(--text3); font-weight: 500 }
+
+/* Pépites */
+.pepites-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+.pepite-card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border1);
+  background: linear-gradient(135deg, #e6f1fb 0%, #fff 100%);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+}
+.pepite-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--blue);
+  box-shadow: 0 4px 12px rgba(24,95,165,0.12);
+}
+.pepite-score {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--blue);
+  font-family: 'DM Mono', monospace;
+}
+.pepite-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 }
+.pepite-info strong { font-size: 13px; color: var(--text1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.pepite-info small { font-size: 10px; color: var(--text3); text-transform: uppercase; font-weight: 600 }

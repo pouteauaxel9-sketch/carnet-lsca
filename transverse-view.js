@@ -196,6 +196,7 @@
 
           ${renderPillarAveragesCard(avgs, pillars)}
         </div>
+        ${window.ProfilingModule?.renderCategoryGrouping(cat) || ''}
       </section>`;
   }
 
@@ -297,7 +298,7 @@
           </div>`;
         }).join('')}
       </div>
-    </section>`;
+      </section>`;
   }
 
   /* ── Exports ──────────────────────────────────────────── */

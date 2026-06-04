@@ -881,12 +881,14 @@ async function refreshRemoteData() {
 }
 
 function renderPrimaryNav() {
+  const alertsCount = window.DirecteurModule?.countAlerts?.() || 0;
   const items = [
     { key:'dashboard',  label:'Accueil' },
     { key:'categories', label:'Catégories' },
     { key:'player',     label:'Joueurs' },
     { key:'team',       label:'Équipes' },
     { key:'analyses',   label:'Analyses' },
+    { key:'direction',  label:'Direction' + (alertsCount > 0 ? ` (${alertsCount})` : '') },
   ];
 
   // 'team' et 'player' restent actifs même quand on a navigué dans un détail
@@ -1807,6 +1809,7 @@ function evaluationBody(pid) {
       <div class="detail-card"><div class="card-kicker">Priorite</div><h3>Axe de travail</h3><div class="priority-box"><strong>${weakness ? h(weakness.label) : 'A definir'}</strong><p>${weakness ? `Pilier le plus bas a ${weakness.score}%.` : 'Aucun axe stable pour le moment.'}</p></div></div>
     </div>
     ${renderCategoryComparison(pid)}
+    ${window.ProfilingModule?.renderTags(pid) || ''}
     <div class="pillar-nav">${pillarTabs}</div>
     <div class="legend-bar">
       <div class="litem"><div class="ldot" style="background:#FAECE7;border:1px solid #D85A30"></div>1 Non acquis</div>
@@ -1971,6 +1974,9 @@ function renderMain() {
   }
   else if (state.view === 'analyses') {
     el.innerHTML = window.TransverseModule?.renderBody(state.cat) || '<p>Module analyses non chargé.</p>';
+  }
+  else if (state.view === 'direction') {
+    el.innerHTML = window.DirecteurModule?.renderBody() || '<p>Module direction non chargé.</p>';
   }
   else el.innerHTML = renderCategoryOverview();
 
@@ -2411,6 +2417,19 @@ document.addEventListener('click', event => {
     return;
   }
 
+  // Sélection joueur depuis le dashboard direction (change aussi de catégorie)
+  if (action === 'select-player-cat') {
+    const cat = target.dataset.cat;
+    const pid = target.dataset.player;
+    if (cat) state.cat = cat;
+    state.selPlayer = pid;
+    state.view = 'player';
+    state.selSection = 'profil';
+    state.selPillar = 0;
+    renderAll();
+    return;
+  }
+
   if (action === 'quick-score') {
     const cat  = target.dataset.cat || state.cat;
     const date = target.dataset.date || '';
@@ -2672,6 +2691,19 @@ document.addEventListener('click', e => {
   const menu = q('#more-menu');
   if (!menu || menu.hidden) return;
   if (!e.target.closest('#more-menu') && !e.target.closest('#more-actions-btn')) toggleMoreMenu(false);
+});
+
+q('#season-sel').addEventListener('change', event => {
+  state.season = event.target.value;
+  if (state.selPlayer) ensureData(state.cat, state.selPlayer, state.season);
+  renderAll();
+});
+
+q('#refresh-btn').addEventListener('click', () => { refreshRemoteData(); });
+
+q('#export-xlsx-btn')?.addEventListener('click', () => {
+  if (state.view === 'dashboard') window.ExcelExportModule?.exportAll?.(state.season);
+  else window.ExcelExportModule?.exportCategory?.(state.cat, state.season);
 });
 
 q('#search-clear').addEventListener('click', () => {
