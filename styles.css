@@ -4168,3 +4168,7 @@ body.live-training-active { overflow: hidden; }
 .plan-reco h3 { margin: 0 0 8px; font-size: 15px; }
 .plan-reco ul { margin: 0; padding-left: 20px; }
 .plan-reco li { margin: 4px 0; font-size: 13px; }
+
+/* Badge sync icon dans la nav */
+.educator-badge { display: inline-flex; align-items: center; gap: 6px; }
+.educator-sync-icon { font-size: 11px; opacity: 0.8; margin-left: 4px; }
