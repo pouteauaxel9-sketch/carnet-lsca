@@ -431,8 +431,6 @@
     </section>`;
   }
 
-  /* ── Exports ────────────────────────────────────────────── */
-
   window.DirecteurModule = {
     renderBody,
     countAlerts,

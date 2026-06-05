@@ -1906,6 +1906,7 @@ function renderPlayerView() {
             </div>
             <div class="hero-actions">
               <button class="btn" type="button" data-action="back-to-category">Retour catégorie</button>
+              <button class="btn" type="button" data-action="open-career" data-pid="${h(pid)}">📅 Carrière</button>
               <button class="btn" type="button" data-action="print-report">Bilan joueur</button>
             </div>
           </div>
@@ -2376,7 +2377,7 @@ window.appUtils = {
 
 // Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
 document.addEventListener('click', event => {
-  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action]');
+  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action]');
   if (!mt) return;
   // Les <select>, <input>, <textarea> gèrent leurs propres événements (change / input).
   // Sans ce skip, cliquer sur un select déclenche le handler avec value="" et ferme le menu.
@@ -2389,6 +2390,7 @@ document.addEventListener('click', event => {
   if (mt.dataset.feedsAction      && window.FeedsFormModule?.handleAction(mt))  return;
   if (mt.dataset.attendanceAction && window.AttendanceModule?.handleAction(mt)) return;
   if (mt.dataset.injuryAction     && window.InjuryModule?.handleAction(mt))     return;
+  if (mt.dataset.careerAction     && window.CareerModule?.handleAction(mt))     return;
   if (mt.dataset.obsDim)            window.ObsModule?.handleDimClick(mt);
 });
 
@@ -2414,6 +2416,11 @@ document.addEventListener('click', event => {
     state.view = 'team';
     state.selTeam = target.dataset.team || null;
     renderAll();
+    return;
+  }
+
+  if (action === 'open-career') {
+    window.CareerModule?.open?.(target.dataset.pid || state.selPlayer);
     return;
   }
 
@@ -2569,6 +2576,21 @@ document.addEventListener('click', event => {
   if (action === 'trigger-print') {
     toggleMoreMenu(false);
     window.print();
+    return;
+  }
+
+  if (action === 'export-ical') {
+    toggleMoreMenu(false);
+    // Sur la vue Équipe d'une équipe précise → seulement les matchs de cette équipe.
+    // Sur la vue Catégorie / Joueurs → seulement les matchs de la catégorie active.
+    // Ailleurs (Accueil, Direction) → tous les matchs du club.
+    if (state.view === 'team' && state.selTeam) {
+      window.CalendarExportModule?.exportTeam?.(state.cat, state.selTeam);
+    } else if (state.view === 'categories' || state.view === 'player' || state.view === 'team' || state.view === 'analyses') {
+      window.CalendarExportModule?.exportCategory?.(state.cat);
+    } else {
+      window.CalendarExportModule?.exportAll?.();
+    }
     return;
   }
 
