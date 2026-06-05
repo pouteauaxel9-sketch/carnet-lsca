@@ -45,6 +45,7 @@
     );
 
     const score   = _pScore(cat, pid, season);
+    // pid sera ajouté au retour pour les sections page 3
     const level   = _getLevel(score);
     const displayName = (prof.prenom && prof.nom)
       ? prof.prenom + ' ' + prof.nom : pid;
@@ -322,6 +323,181 @@
       </footer>`;
   }
 
+  function buildPage3Html(d) {
+    const { cat, season, pid } = d;
+    const today = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+
+    /* ── Disponibilité ── */
+    let injuryHtml = '';
+    const injMod = window.InjuryModule;
+    if (injMod) {
+      const cur = injMod.currentStatus?.(pid, cat);
+      const history = injMod.list?.(pid, cat) || [];
+      const past = history.filter(e => e !== cur);
+      if (cur) {
+        const days = injMod.daysOff?.(cur);
+        injuryHtml += `<div class="pdf-injury-current">
+          <strong>⚠ Indisponible actuellement</strong>
+          — ${h(cur.type || 'blessure')} (${h(cur.severity || 'modérée')})
+          ${days != null ? '· depuis ' + days + ' jour' + (days > 1 ? 's' : '') : ''}
+          ${cur.note ? '<div class="pdf-injury-note">' + h(cur.note) + '</div>' : ''}
+        </div>`;
+      } else {
+        injuryHtml += '<div class="pdf-injury-ok">✅ Disponible</div>';
+      }
+      if (past.length) {
+        injuryHtml += '<div class="pdf-injury-hist-title">Historique récent :</div>';
+        injuryHtml += '<ul class="pdf-injury-hist">' + past.slice(0, 6).map(e => {
+          const dur = injMod.daysOff?.(e);
+          return `<li><strong>${h(e.type || 'Indispo')}</strong> ${e.start ? '(' + h(e.start) + (e.end ? ' → ' + h(e.end) : '') + ')' : ''}${dur != null ? ' · ' + dur + ' j' : ''}${e.note ? ' — <em>' + h(e.note) + '</em>' : ''}</li>`;
+        }).join('') + '</ul>';
+      } else if (!cur) {
+        injuryHtml += '<div class="pdf-muted">Aucun épisode enregistré cette saison.</div>';
+      }
+    } else {
+      injuryHtml = '<div class="pdf-muted">Module indisponible.</div>';
+    }
+
+    /* ── Assiduité ── */
+    let attHtml = '';
+    const attMod = window.AttendanceModule;
+    if (attMod) {
+      const tr = attMod.rate?.(pid, { type: 'training' });
+      const mt = attMod.rate?.(pid, { type: 'match' });
+      const all = attMod.rate?.(pid);
+      const list = attMod.list?.(pid) || [];
+      attHtml = `
+        <div class="pdf-att-rates">
+          <div class="pdf-att-rate"><div class="pdf-att-rate-val">${all != null ? all + '%' : '—'}</div><div class="pdf-att-rate-lbl">Global</div></div>
+          <div class="pdf-att-rate"><div class="pdf-att-rate-val">${tr != null ? tr + '%' : '—'}</div><div class="pdf-att-rate-lbl">Entraînements</div></div>
+          <div class="pdf-att-rate"><div class="pdf-att-rate-val">${mt != null ? mt + '%' : '—'}</div><div class="pdf-att-rate-lbl">Matchs</div></div>
+          <div class="pdf-att-rate"><div class="pdf-att-rate-val">${list.length}</div><div class="pdf-att-rate-lbl">Pointages</div></div>
+        </div>`;
+    }
+
+    /* ── Profils détectés ── */
+    let profilesHtml = '';
+    const profMod = window.ProfilingModule;
+    if (profMod?.detect) {
+      const tags = profMod.detect(pid, cat, season) || [];
+      if (tags.length) {
+        profilesHtml = '<div class="pdf-profile-tags">' + tags.map(t => {
+          const profile = profMod.PROFILES?.[t.key] || profMod.PROFILES?.find?.(p => p.key === t.key);
+          const label = profile?.label || t.key;
+          const reason = t.reason || '';
+          return `<div class="pdf-profile-tag">
+            <strong>${h(label)}</strong>
+            ${reason ? '<span class="pdf-profile-reason">— ' + h(reason) + '</span>' : ''}
+          </div>`;
+        }).join('') + '</div>';
+      } else {
+        profilesHtml = '<div class="pdf-muted">Aucun profil distinctif détecté pour le moment.</div>';
+      }
+    }
+
+    /* ── Principes de jeu travaillés (issu de WeeklyFocusModule) ── */
+    let principlesHtml = '';
+    const wfMod = window.WeeklyFocusModule;
+    if (wfMod) {
+      // Aggréger les notes de toutes les semaines pour ce joueur
+      const store = JSON.parse(localStorage.getItem('cfb6_weekly_focus_v1') || '{}');
+      const weeks = store[cat] || {};
+      const isoKeys = Object.keys(weeks).sort();
+      const principleStats = {}; // { num: { label, values:[], priority, phase } }
+      isoKeys.forEach(iso => {
+        const w = weeks[iso];
+        (w.items || []).forEach(it => {
+          if (!it.principleNum) return;
+          const v = w.ratings?.[pid]?.[it.id];
+          if (v == null) return;
+          const key = it.principleNum;
+          if (!principleStats[key]) {
+            principleStats[key] = {
+              num: it.principleNum,
+              label: it.criterion,
+              values: [],
+              priority: it.priority,
+              phase: it.phase,
+              weeks: 0,
+            };
+          }
+          principleStats[key].values.push((v / (it.scale || 5)) * 100);
+          principleStats[key].weeks++;
+        });
+      });
+      const stats = Object.values(principleStats).sort((a, b) => a.num - b.num);
+      if (stats.length) {
+        principlesHtml = '<table class="pdf-principles-table"><thead><tr><th>#</th><th>Principe</th><th>Phase</th><th>Moyenne</th><th>Semaines</th></tr></thead><tbody>' +
+          stats.map(s => {
+            const avg = Math.round(s.values.reduce((a,b) => a+b, 0) / s.values.length);
+            const phaseLabel = s.phase === 'avec' ? '🔵 Avec' : s.phase === 'sans' ? '🔴 Sans' : '—';
+            const col = avg >= 70 ? '#166534' : avg >= 45 ? '#a16207' : '#991b1b';
+            return `<tr>
+              <td><strong>#${s.num}</strong></td>
+              <td>${h(s.label)}</td>
+              <td>${phaseLabel}</td>
+              <td style="color:${col};font-weight:600">${avg}%</td>
+              <td>${s.weeks}</td>
+            </tr>`;
+          }).join('') + '</tbody></table>';
+      } else {
+        principlesHtml = '<div class="pdf-muted">Aucun principe travaillé/noté pour ce joueur cette saison.</div>';
+      }
+
+      // Tendance récente par pilier
+      const boosts = wfMod.allPillarBoosts?.(pid, cat) || {};
+      const boostKeys = Object.keys(boosts);
+      if (boostKeys.length) {
+        principlesHtml += '<div class="pdf-boost-title">Tendance des 4 dernières semaines :</div>';
+        principlesHtml += '<div class="pdf-boost-row">' + boostKeys.map(k => {
+          const b = boosts[k];
+          const lbl = window.PILLARS?.[cat]?.find(p => p.key === k)?.label || k;
+          const col = b.avg >= 70 ? '#166534' : b.avg >= 45 ? '#a16207' : '#991b1b';
+          return `<div class="pdf-boost-chip">
+            <span>${h(lbl)}</span>
+            <strong style="color:${col}">${Math.round(b.avg)}%</strong>
+            <span class="pdf-boost-count">${b.count} note${b.count>1?'s':''}</span>
+          </div>`;
+        }).join('') + '</div>';
+      }
+    }
+
+    const educator = window.EducatorModule?.getEducatorName() || '';
+
+    return `
+      <div class="pdf-body pdf-page3-body">
+        <section class="pdf-section">
+          <h2>Disponibilité & santé</h2>
+          ${injuryHtml}
+        </section>
+
+        <section class="pdf-section">
+          <h2>Assiduité</h2>
+          ${attHtml || '<div class="pdf-muted">Module non chargé.</div>'}
+        </section>
+
+        <section class="pdf-section">
+          <h2>Profils détectés</h2>
+          ${profilesHtml || '<div class="pdf-muted">Aucun profil.</div>'}
+        </section>
+
+        <section class="pdf-section pdf-section-full">
+          <h2>Principes de jeu travaillés — Saison ${h(season)}</h2>
+          ${principlesHtml}
+        </section>
+      </div>
+
+      <footer class="pdf-footer">
+        <div class="pdf-footer-logo">
+          <div class="pdf-logo-placeholder">GJ LSCA<br>Louverné</div>
+        </div>
+        <div class="pdf-footer-meta">
+          <span>Éducateur : ${h(educator)}</span>
+          <span>Généré le ${today}</span>
+        </div>
+      </footer>`;
+  }
+
   /* ── SVG Radar léger ──────────────────────────────────── */
 
   function buildRadarSvg(PILLARS, pillarScores) {
@@ -382,6 +558,7 @@
     const css = buildCSS(d.accent);
     const page1 = buildPage1Html(d, coachComment);
     const page2 = buildPage2Html(d);
+    const page3 = buildPage3Html(d);
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -487,6 +664,40 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f0f0;color:#222;font-
   border:1px solid ${accent}44;padding:6px 12px;border-radius:6px;line-height:1.4
 }
 .pdf-footer-meta{display:flex;flex-direction:column;gap:3px;text-align:right;font-size:10px;color:#888}
+
+/* ─── Page 3 ─────────────────────────────────────────── */
+.pdf-page3-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:20px}
+.pdf-page3-body .pdf-section{background:#fafafa;border-radius:8px;padding:14px 16px;border:1px solid #ebe8e2}
+.pdf-page3-body .pdf-section-full{grid-column:1 / -1}
+.pdf-page3-body h2{font-size:13px;color:${accent};margin-bottom:8px;border-bottom:2px solid ${accent}33;padding-bottom:4px}
+
+.pdf-muted{color:#8a8780;font-style:italic;font-size:11px}
+.pdf-injury-current{background:#fef3c7;border-left:3px solid #d97706;padding:8px 10px;border-radius:4px;margin-bottom:8px;font-size:11px}
+.pdf-injury-ok{background:#dcfce7;border-left:3px solid #16a34a;padding:8px 10px;border-radius:4px;color:#166534;font-weight:600;font-size:11px}
+.pdf-injury-note{margin-top:4px;font-style:italic;font-weight:400}
+.pdf-injury-hist-title{font-weight:600;margin:8px 0 4px;font-size:11px}
+.pdf-injury-hist{list-style:none;padding-left:0}
+.pdf-injury-hist li{padding:3px 0;border-bottom:1px dashed #e5e2db;font-size:10px}
+
+.pdf-att-rates{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pdf-att-rate{text-align:center;background:#fff;border-radius:6px;padding:8px 4px;border:1px solid #ebe8e2}
+.pdf-att-rate-val{font-size:18px;font-weight:700;color:${accent}}
+.pdf-att-rate-lbl{font-size:9px;color:#6b6960;text-transform:uppercase;margin-top:2px}
+
+.pdf-profile-tags{display:flex;flex-direction:column;gap:5px}
+.pdf-profile-tag{background:#fff;border-left:3px solid ${accent};padding:5px 8px;border-radius:4px;font-size:11px}
+.pdf-profile-reason{color:#6b6960;font-style:italic;display:block;margin-top:2px;font-size:10px}
+
+.pdf-principles-table{width:100%;border-collapse:collapse;font-size:10px}
+.pdf-principles-table th{background:${accent}11;text-align:left;padding:5px 8px;border-bottom:1px solid ${accent}33;font-weight:700;color:${accent}}
+.pdf-principles-table td{padding:4px 8px;border-bottom:1px solid #f0ede5}
+.pdf-principles-table tr:last-child td{border-bottom:none}
+
+.pdf-boost-title{font-weight:600;margin:10px 0 6px;font-size:11px;color:#444}
+.pdf-boost-row{display:flex;flex-wrap:wrap;gap:6px}
+.pdf-boost-chip{background:#fff;border:1px solid #ebe8e2;border-radius:999px;padding:4px 10px;font-size:10px;display:inline-flex;align-items:center;gap:6px}
+.pdf-boost-count{color:#8a8780;font-size:9px}
+
 @media print{
   body{background:#fff}
   .pdf-page{box-shadow:none;margin:0}
