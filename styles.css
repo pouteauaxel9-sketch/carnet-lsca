@@ -4016,3 +4016,155 @@ body.live-training-active { overflow: hidden; }
   background: rgba(255,255,255,0.25);
   color: #fff;
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   Plan de saison — vue principes × semaines
+   ────────────────────────────────────────────────────────────────── */
+
+.plan-wrap { padding: 20px; max-width: 1300px; margin: 0 auto; }
+
+.plan-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.plan-title { margin: 0; font-size: 22px; }
+.plan-season {
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--text2, #6b7280);
+  margin-left: 8px;
+}
+.plan-subtitle { margin: 4px 0 0; color: var(--text2, #6b7280); font-size: 13px; }
+.plan-actions { display: flex; gap: 8px; }
+
+.plan-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.plan-stat {
+  background: var(--surface, #fff);
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #e2e6ee);
+  text-align: center;
+}
+.plan-stat-val { font-size: 28px; font-weight: 700; line-height: 1.1; }
+.plan-stat-lbl { font-size: 11px; color: var(--text2, #6b7280); text-transform: uppercase; margin-top: 4px; }
+.plan-stat-good .plan-stat-val { color: #16a34a; }
+.plan-stat-warn .plan-stat-val { color: #d97706; }
+.plan-stat-info .plan-stat-val { color: #185fa5; }
+
+.plan-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.plan-filter {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border, #d8dde7);
+  background: var(--surface, #fff);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+}
+.plan-filter.on {
+  background: #185fa5;
+  color: #fff;
+  border-color: #185fa5;
+}
+
+.plan-list { display: flex; flex-direction: column; gap: 10px; }
+
+.plan-row {
+  background: var(--surface, #fff);
+  border-radius: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border, #e2e6ee);
+}
+.plan-row-untouched { border-left: 4px solid #dc2626; }
+.plan-row-underworked { border-left: 4px solid #d97706; }
+.plan-row-ok { border-left: 4px solid #16a34a; }
+
+.plan-row-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.plan-row-num {
+  font-size: 22px;
+  font-weight: 700;
+  color: #185fa5;
+  min-width: 38px;
+}
+.plan-row-info { flex: 1; min-width: 0; }
+.plan-row-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+.plan-row-label { font-weight: 600; font-size: 15px; }
+.plan-row-phase { font-size: 11px; color: var(--text2, #6b7280); }
+.plan-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  align-items: center;
+}
+.plan-row-prio { font-weight: 500; }
+.plan-row-weeks { color: var(--text2, #6b7280); }
+.plan-row-avg {
+  font-weight: 700;
+  background: rgba(24, 95, 165, 0.08);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.plan-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.plan-status-untouched { background: #fee2e2; color: #991b1b; }
+.plan-status-warn { background: #fef3c7; color: #92400e; }
+.plan-status-ok { background: #dcfce7; color: #166534; }
+
+.plan-timeline {
+  display: flex;
+  gap: 2px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.plan-cell {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.plan-cell-empty { background: #f3f4f6; }
+.plan-cell-good { background: #16a34a; }
+.plan-cell-mid { background: #eab308; }
+.plan-cell-low { background: #dc2626; }
+
+.plan-empty { text-align: center; color: var(--text2, #6b7280); padding: 24px; font-style: italic; }
+
+.plan-reco {
+  margin-top: 20px;
+  background: linear-gradient(135deg, #eff6ff 0%, #fef3c7 100%);
+  border-radius: 12px;
+  padding: 14px 18px;
+  border: 1px solid #cbd5ff;
+}
+.plan-reco h3 { margin: 0 0 8px; font-size: 15px; }
+.plan-reco ul { margin: 0; padding-left: 20px; }
+.plan-reco li { margin: 4px 0; font-size: 13px; }

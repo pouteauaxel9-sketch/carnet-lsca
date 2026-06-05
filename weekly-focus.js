@@ -785,11 +785,14 @@ function pillarBoost(pid, cat, pillarKey, weeksBack) {
     return out;
   }
 
-  window.WeeklyFocusModule = {
+window.WeeklyFocusModule = {
     open: open, close: close, isOpen: isOpen, render: render, handleAction: handleAction,
     summaryFor: summaryFor, recentRatings: recentRatings, badge: badge, getCurrentWeek: getCurrentWeek,
     renderPlayerWidget: renderPlayerWidget,
     pillarBoost: pillarBoost, allPillarBoosts: allPillarBoosts,
     GAME_PRINCIPLES: GAME_PRINCIPLES,
+    PRIORITY_LABELS: PRIORITY_LABELS,
+    PHASE_LABELS: PHASE_LABELS,
+    SUBPHASE_LABELS: SUBPHASE_LABELS,
   };
 })();

@@ -889,6 +889,7 @@ function renderPrimaryNav() {
     { key:'player',     label:'Joueurs' },
     { key:'team',       label:'Équipes' },
     { key:'weekly',     label:'Semaine' + (weeklyCount > 0 ? ` (${weeklyCount})` : '') },
+    { key:'plan',       label:'Plan saison' },
     { key:'analyses',   label:'Analyses' },
     { key:'direction',  label:'Direction' + (alertsCount > 0 ? ` (${alertsCount})` : '') },
   ];
@@ -1989,6 +1990,9 @@ function renderMain() {
     if (window.WeeklyFocusModule?.render) window.WeeklyFocusModule.render(el);
     else el.innerHTML = '<p>Module Semaine non chargé.</p>';
   }
+  else if (state.view === 'plan') {
+    el.innerHTML = window.SeasonPlanModule?.renderBody(state.cat) || '<p>Module Plan saison non chargé.</p>';
+  }
   else el.innerHTML = renderCategoryOverview();
 
   if (state.view === 'player' && state.selPlayer) {
@@ -2387,7 +2391,7 @@ window.appUtils = {
 
 // Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
 document.addEventListener('click', event => {
-  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action]');
+  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action],[data-plan-action]');
   if (!mt) return;
   // Les <select>, <input>, <textarea> gèrent leurs propres événements (change / input).
   // Sans ce skip, cliquer sur un select déclenche le handler avec value="" et ferme le menu.
@@ -2403,6 +2407,7 @@ document.addEventListener('click', event => {
   if (mt.dataset.careerAction     && window.CareerModule?.handleAction(mt))     return;
   if (mt.dataset.weeklyAction     && window.WeeklyFocusModule?.handleAction(mt)) return;
   if (mt.dataset.liveAction       && window.LiveTrainingModule?.handleAction(mt)) return;
+  if (mt.dataset.planAction       && window.SeasonPlanModule?.handleAction(mt))  return;
   if (mt.dataset.obsDim)            window.ObsModule?.handleDimClick(mt);
 });
 
