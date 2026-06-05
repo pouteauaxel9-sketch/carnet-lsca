@@ -34,6 +34,70 @@
   function h(s) { return utils().h ? utils().h(s) : String(s ?? ''); }
   function toast(m) { utils().showToast?.(m); }
 
+
+  /* ── Principes de jeu FFF ─────────────────────────────
+   * Tableau des principes de jeu par catégorie (référentiel FFF).
+   * Priorité par cat : 'prioritaire' (vert), 'secondaire' (jaune),
+   * 'non-prioritaire' (orange), 'a-definir' (bleu).
+   */
+  const GAME_PRINCIPLES = [
+    // ── On a le ballon : Construire / Progresser ──
+    { num: 1, phase: 'avec', subPhase: 'construire',
+      label: 'Créer et utiliser des espaces',
+      priority: { u9: 'prioritaire', u11: 'prioritaire', u13: 'secondaire', u15: 'secondaire', u18: 'secondaire' } },
+    { num: 2, phase: 'avec', subPhase: 'construire',
+      label: 'Jouer dans les intervalles et entre les lignes',
+      priority: { u9: 'non-prioritaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
+    { num: 3, phase: 'avec', subPhase: 'construire',
+      label: 'Jouer à l\'opposé après avoir fixé collectivement',
+      priority: { u9: 'non-prioritaire', u11: 'non-prioritaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
+
+    // ── On a le ballon : Déséquilibrer / Finir ──
+    { num: 4, phase: 'avec', subPhase: 'desequilibrer',
+      label: 'Jouer combiné pour créer un surnombre',
+      priority: { u9: 'non-prioritaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
+    { num: 5, phase: 'avec', subPhase: 'desequilibrer',
+      label: 'Se démarquer pour fixer et éliminer, passer ou finir',
+      priority: { u9: 'secondaire', u11: 'prioritaire', u13: 'prioritaire', u15: 'prioritaire', u18: 'prioritaire' } },
+
+    // ── On n'a pas le ballon : S'opposer à la progression ──
+    { num: 6, phase: 'sans', subPhase: 'opposer',
+      label: 'Freiner la progression de l\'adversaire, organiser et réorganiser les alignements',
+      priority: { u9: 'prioritaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
+
+    // ── On n'a pas le ballon : S'organiser pour récupérer ──
+    { num: 7, phase: 'sans', subPhase: 'recuperer',
+      label: 'S\'organiser en déséquilibre',
+      priority: { u9: 'secondaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
+    { num: 8, phase: 'sans', subPhase: 'recuperer',
+      label: 'Densifier et être actif dans le CJD (axe ballon-but)',
+      priority: { u9: 'prioritaire', u11: 'prioritaire', u13: 'prioritaire', u15: 'secondaire', u18: 'secondaire' } },
+    { num: 9, phase: 'sans', subPhase: 'recuperer',
+      label: 'Défendre son but, récupérer ou dégager le ballon',
+      priority: { u9: 'secondaire', u11: 'prioritaire', u13: 'secondaire', u15: 'secondaire', u18: 'prioritaire' } },
+  ];
+
+  const PHASE_LABELS = {
+    avec: 'On a le ballon',
+    sans: 'On n\'a pas le ballon',
+  };
+  const SUBPHASE_LABELS = {
+    construire: 'Construire / Progresser',
+    desequilibrer: 'Déséquilibrer / Finir',
+    opposer: 'S\'opposer à la progression',
+    recuperer: 'S\'organiser pour récupérer',
+  };
+  const PRIORITY_LABELS = {
+    'prioritaire': { icon: '🟢', label: 'Prioritaire', color: '#16a34a' },
+    'secondaire': { icon: '🟡', label: 'Secondaire', color: '#eab308' },
+    'non-prioritaire': { icon: '🟠', label: 'Non-prioritaire', color: '#f97316' },
+    'a-definir': { icon: '🔵', label: 'À définir', color: '#1e40af' },
+  };
+
+  function principlePriority(p, cat) {
+    return p.priority?.[cat] || 'a-definir';
+  }
+
   /* ── helpers semaine ─────────────────────────────────── */
 
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -193,13 +257,20 @@
   }
 
   function renderItemsEditor(cat, week) {
-    const catalog = availableCriteria(cat);
-    const used = new Set(week.items.filter(it => !it.custom).map(it => it.pillar + '::' + it.criterion));
+    const used = new Set(week.items.filter(it => it.principleNum).map(it => 'p' + it.principleNum));
+
+    // Grouper les principes par phase / sous-phase
+    const groups = {};
+    GAME_PRINCIPLES.forEach(p => {
+      const k = p.phase + '|' + p.subPhase;
+      if (!groups[k]) groups[k] = { phase: p.phase, subPhase: p.subPhase, items: [] };
+      groups[k].items.push(p);
+    });
 
     return `
       <section class="weekly-items">
         <div class="weekly-items-head">
-          <h3>Critères évalués cette semaine</h3>
+          <h3>Principes de jeu travaillés cette semaine</h3>
           <div class="weekly-items-actions">
             <button class="btn btn-ghost" data-weekly-action="clone-prev"
                     title="Reprendre les critères de la semaine précédente">↺ Reprendre semaine -1</button>
@@ -208,38 +279,57 @@
 
         ${week.items.length === 0 ? '' : `
           <div class="weekly-items-list">
-            ${week.items.map((it, idx) => `
-              <div class="weekly-item-chip ${it.custom ? 'is-custom' : ''}">
-                <span class="weekly-item-pillar">${h(it.custom ? 'Perso' : (window.PILLARS?.[cat]?.find(p => p.key === it.pillar)?.label || it.pillar))}</span>
-                <span class="weekly-item-crit">${h(it.criterion)}</span>
-                <span class="weekly-item-scale">/ ${it.scale || 5}</span>
-                <button class="weekly-item-rm" type="button"
-                        data-weekly-action="remove-item" data-item-id="${h(it.id)}"
-                        aria-label="Retirer ${h(it.criterion)}">×</button>
-              </div>
-            `).join('')}
+            ${week.items.map((it, idx) => {
+              const isPrinciple = !!it.principleNum;
+              const phase = it.phase;
+              const prioKey = it.priority || (isPrinciple && GAME_PRINCIPLES.find(p => p.num === it.principleNum)?.priority?.[cat]) || 'a-definir';
+              const prio = PRIORITY_LABELS[prioKey] || PRIORITY_LABELS['a-definir'];
+              const cls = it.custom ? 'is-custom' : (phase === 'avec' ? 'is-avec' : phase === 'sans' ? 'is-sans' : '');
+              const tag = it.custom ? 'Perso'
+                        : isPrinciple ? ('#' + it.principleNum + ' ' + (phase === 'avec' ? 'Avec' : 'Sans'))
+                        : (window.PILLARS?.[cat]?.find(p => p.key === it.pillar)?.label || it.pillar);
+              return `
+                <div class="weekly-item-chip ${cls}" title="${h(prio.label)}">
+                  <span class="weekly-item-pillar">${h(tag)}</span>
+                  <span class="weekly-item-crit">${h(it.criterion)}</span>
+                  ${isPrinciple ? '<span class="weekly-item-prio" style="color:' + prio.color + '">' + prio.icon + '</span>' : ''}
+                  <span class="weekly-item-scale">/ ${it.scale || 5}</span>
+                  <button class="weekly-item-rm" type="button"
+                          data-weekly-action="remove-item" data-item-id="${h(it.id)}"
+                          aria-label="Retirer ${h(it.criterion)}">×</button>
+                </div>
+              `;
+            }).join('')}
           </div>
         `}
 
         ${week.items.length < 8 ? `
           <details class="weekly-add" ${week.items.length === 0 ? 'open' : ''}>
-            <summary>+ Ajouter un critère (${week.items.length}/8)</summary>
+            <summary>+ Ajouter un principe (${week.items.length}/8)</summary>
             <div class="weekly-add-body">
-              <div class="weekly-add-section">
-                <label class="weekly-add-label">Depuis les piliers</label>
-                <select class="weekly-add-select" data-weekly-action="add-from-catalog">
-                  <option value="">— Choisir un critère —</option>
-                  ${catalog.map(c => {
-                    const key = c.pillar + '::' + c.criterion;
-                    if (used.has(key)) return '';
-                    return `<option value="${h(key)}">${h(c.pillarLabel)} → ${h(c.criterion)}</option>`;
+              <div class="weekly-add-section weekly-add-section-full">
+                <label class="weekly-add-label">Principe de jeu FFF (par phase)</label>
+                <select class="weekly-add-select" data-weekly-action="add-principle">
+                  <option value="">— Choisir un principe de jeu —</option>
+                  ${Object.values(groups).map(g => {
+                    const phaseLbl = PHASE_LABELS[g.phase] || g.phase;
+                    const subLbl = SUBPHASE_LABELS[g.subPhase] || g.subPhase;
+                    return `
+                      <optgroup label="${h(phaseLbl)} → ${h(subLbl)}">
+                        ${g.items.map(p => {
+                          if (used.has('p' + p.num)) return '';
+                          const prio = PRIORITY_LABELS[principlePriority(p, cat)] || PRIORITY_LABELS['a-definir'];
+                          return `<option value="p${p.num}">${prio.icon} #${p.num} — ${h(p.label)} (${prio.label} ${cat.toUpperCase()})</option>`;
+                        }).join('')}
+                      </optgroup>
+                    `;
                   }).join('')}
                 </select>
               </div>
-              <div class="weekly-add-section">
-                <label class="weekly-add-label">Ou un critère perso</label>
+              <div class="weekly-add-section weekly-add-section-full">
+                <label class="weekly-add-label">+ Objectif supplémentaire (ce que vous travaillez en plus)</label>
                 <form class="weekly-add-custom" data-weekly-action="add-custom" onsubmit="return false;">
-                  <input type="text" name="custom-name" placeholder="Ex: jeu de tête défensif" maxlength="60">
+                  <input type="text" name="custom-name" placeholder="Ex: conduite côté faible, finition tête, transition rapide…" maxlength="80">
                   <button type="button" class="btn" data-weekly-action="add-custom-go">Ajouter</button>
                 </form>
               </div>
@@ -413,7 +503,35 @@
       return true;
     }
 
+    if (action === 'add-principle') {
+      const key = el.value;
+      if (!key) return true;
+      // key forme 'p3' → num=3
+      const num = parseInt(key.replace(/^p/, ''), 10);
+      const principle = GAME_PRINCIPLES.find(p => p.num === num);
+      if (!principle) return true;
+      setWeek(cat, iso, w => {
+        if (w.items.length >= 8) return;
+        // Pas de doublon
+        if (w.items.some(it => it.principleNum === num)) return;
+        w.items.push({
+          id: 'wf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          pillar: 'tactique',  // les principes sont des concepts tactiques
+          criterion: principle.label,
+          principleNum: num,
+          phase: principle.phase,
+          subPhase: principle.subPhase,
+          priority: principle.priority?.[cat] || 'a-definir',
+          scale: 5,
+        });
+      });
+      el.value = '';
+      utils().renderAll?.();
+      return true;
+    }
+
     if (action === 'add-from-catalog') {
+      // Compat : ancien dropdown pilier
       const key = el.value;
       if (!key) return true;
       const [pillar, criterion] = key.split('::');
@@ -637,7 +755,7 @@
    * hebdo des N dernieres semaines (rapportees en pourcentage), ainsi
    * que le nombre d'observations utilisees.
    */
-  function pillarBoost(pid, cat, pillarKey, weeksBack) {
+function pillarBoost(pid, cat, pillarKey, weeksBack) {
     weeksBack = weeksBack || 4;
     const store = loadStore();
     const weeks = store[cat] || {};
@@ -672,5 +790,6 @@
     summaryFor: summaryFor, recentRatings: recentRatings, badge: badge, getCurrentWeek: getCurrentWeek,
     renderPlayerWidget: renderPlayerWidget,
     pillarBoost: pillarBoost, allPillarBoosts: allPillarBoosts,
+    GAME_PRINCIPLES: GAME_PRINCIPLES,
   };
 })();
