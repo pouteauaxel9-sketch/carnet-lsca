@@ -882,11 +882,13 @@ async function refreshRemoteData() {
 
 function renderPrimaryNav() {
   const alertsCount = window.DirecteurModule?.countAlerts?.() || 0;
+  const weeklyCount = window.WeeklyFocusModule?.badge?.() || 0;
   const items = [
     { key:'dashboard',  label:'Accueil' },
     { key:'categories', label:'Catégories' },
     { key:'player',     label:'Joueurs' },
     { key:'team',       label:'Équipes' },
+    { key:'weekly',     label:'Semaine' + (weeklyCount > 0 ? ` (${weeklyCount})` : '') },
     { key:'analyses',   label:'Analyses' },
     { key:'direction',  label:'Direction' + (alertsCount > 0 ? ` (${alertsCount})` : '') },
   ];
@@ -1660,6 +1662,8 @@ function profileBody(pid) {
     ${renderMorphoHistory(prof)}
     ${window.InjuryModule?.renderWidget(pid) || ''}
     ${window.AttendanceModule?.renderWidget(pid) || ''}
+    ${window.WeeklyFocusModule?.renderPlayerWidget(pid, state.cat) || ''}
+    ${window.LiveTrainingModule?.renderPlayerWidget(pid, state.cat) || ''}
 
     <div class="form-section-title">Objectifs de saison</div>
     <div class="obj-list">${objRows}<button class="add-obj" type="button" data-action="add-obj">+ Ajouter un objectif</button></div>
@@ -1791,7 +1795,9 @@ function evaluationBody(pid) {
   const seasonData = state.data[state.cat][pid][state.season];
   const pillarTabs = pillars().map((item, index) => {
     const pct = getPillarPercent(state.cat, pid, item.key);
-    return `<button class="ptab ${state.selPillar === index ? 'on' : ''}" type="button" data-action="set-pillar" data-index="${index}" style="${state.selPillar === index ? 'background:' + PCOLS[item.key] : ''}">${h(item.label)}${pct > 0 ? ' - ' + pct + '%' : ''}</button>`;
+    const boost = window.WeeklyFocusModule?.pillarBoost?.(pid, state.cat, item.key);
+    const boostLbl = boost ? ` <span class="ptab-boost" title="${boost.count} note${boost.count>1?'s':''} hebdo récente${boost.count>1?'s':''}">📋${Math.round(boost.avg)}%</span>` : '';
+    return `<button class="ptab ${state.selPillar === index ? 'on' : ''}" type="button" data-action="set-pillar" data-index="${index}" style="${state.selPillar === index ? 'background:' + PCOLS[item.key] : ''}">${h(item.label)}${pct > 0 ? ' - ' + pct + '%' : ''}${boostLbl}</button>`;
   }).join('');
 
   const criteria = pillar.criteria.map((criterion, index) => {
@@ -1978,6 +1984,10 @@ function renderMain() {
   }
   else if (state.view === 'direction') {
     el.innerHTML = window.DirecteurModule?.renderBody() || '<p>Module direction non chargé.</p>';
+  }
+  else if (state.view === 'weekly') {
+    if (window.WeeklyFocusModule?.render) window.WeeklyFocusModule.render(el);
+    else el.innerHTML = '<p>Module Semaine non chargé.</p>';
   }
   else el.innerHTML = renderCategoryOverview();
 
@@ -2377,7 +2387,7 @@ window.appUtils = {
 
 // Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
 document.addEventListener('click', event => {
-  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action]');
+  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action]');
   if (!mt) return;
   // Les <select>, <input>, <textarea> gèrent leurs propres événements (change / input).
   // Sans ce skip, cliquer sur un select déclenche le handler avec value="" et ferme le menu.
@@ -2391,6 +2401,8 @@ document.addEventListener('click', event => {
   if (mt.dataset.attendanceAction && window.AttendanceModule?.handleAction(mt)) return;
   if (mt.dataset.injuryAction     && window.InjuryModule?.handleAction(mt))     return;
   if (mt.dataset.careerAction     && window.CareerModule?.handleAction(mt))     return;
+  if (mt.dataset.weeklyAction     && window.WeeklyFocusModule?.handleAction(mt)) return;
+  if (mt.dataset.liveAction       && window.LiveTrainingModule?.handleAction(mt)) return;
   if (mt.dataset.obsDim)            window.ObsModule?.handleDimClick(mt);
 });
 
@@ -2579,6 +2591,12 @@ document.addEventListener('click', event => {
     return;
   }
 
+  if (action === 'live-training') {
+    toggleMoreMenu(false);
+    window.LiveTrainingModule?.open?.();
+    return;
+  }
+
   if (action === 'export-ical') {
     toggleMoreMenu(false);
     // Sur la vue Équipe d'une équipe précise → seulement les matchs de cette équipe.
@@ -2747,6 +2765,17 @@ document.addEventListener('change', event => {
     state.filtPoste = target.value || '';
     renderSidebar();
     return;
+  }
+  if (target.dataset?.weeklyAction) {
+    window.WeeklyFocusModule?.handleAction(target);
+    return;
+  }
+});
+
+document.addEventListener('input', event => {
+  const target = event.target;
+  if (target.dataset?.weeklyAction === 'set-theme' || target.dataset?.weeklyAction === 'set-note') {
+    window.WeeklyFocusModule?.handleAction(target);
   }
 });
 
