@@ -1969,11 +1969,59 @@ function renderTeamListShell() {
     </section>`;
 }
 
+function renderPlayerEmptyState() {
+  const cat = state.cat;
+  const players = Object.keys(state.data?.[cat] || {});
+  const total = players.length;
+  // Top 3 derniers consultés (via ux state) ou alphabétique
+  let recent = [];
+  try {
+    const ux = JSON.parse(localStorage.getItem('cfb6_ux_state') || '{}');
+    if (ux.lastPlayer && state.data[cat]?.[ux.lastPlayer]) recent.push(ux.lastPlayer);
+  } catch {}
+  // Compléter avec 3 joueurs en alphabétique
+  players.sort().forEach(p => {
+    if (recent.length < 4 && !recent.includes(p)) recent.push(p);
+  });
+  const recentBtns = recent.slice(0, 4).map(pid => {
+    const prof = state.data[cat][pid]?.[state.season]?.profil || {};
+    const name = (prof.prenom && prof.nom) ? prof.prenom + ' ' + prof.nom : pid;
+    return `<button class="quick-player-btn" type="button" data-action="select-player" data-player="${h(pid)}">
+      <span class="quick-player-initials">${h(name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase())}</span>
+      <span>${h(name)}</span>
+    </button>`;
+  }).join('');
+
+  return `
+    <div class="empty-state empty-state-rich">
+      <div class="empty-icon">👤</div>
+      <h2 style="margin:8px 0 4px">Sélectionne un joueur</h2>
+      <p>Choisis un joueur dans la liste à gauche pour voir sa fiche, ses évaluations et générer son bilan PDF.</p>
+      ${recent.length ? `
+        <div class="empty-recent">
+          <div class="empty-recent-title">Accès rapide${recent.length > 1 ? 's' : ''} :</div>
+          <div class="quick-players">${recentBtns}</div>
+        </div>
+      ` : ''}
+      <div class="empty-shortcuts">
+        <div class="empty-shortcut-title">Raccourcis</div>
+        <div class="empty-shortcuts-list">
+          <button class="btn btn-ghost" type="button" data-action="set-view" data-view="weekly">📋 Vue Semaine</button>
+          <button class="btn btn-ghost" type="button" data-action="live-training">⚡ Mode Terrain</button>
+          <button class="btn btn-ghost" type="button" data-roster-action="open-create">+ Ajouter un joueur</button>
+        </div>
+        <div class="empty-tip">💡 Astuce : tape <kbd>/</kbd> ou <kbd>Ctrl+K</kbd> pour rechercher un joueur</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderMain() {
   const el = q('#main-content');
   if (state.view === 'dashboard') el.innerHTML = renderDashboard();
   else if (state.view === 'categories') el.innerHTML = renderCategoryOverview();
   else if (state.view === 'player' && state.selPlayer) el.innerHTML = renderPlayerView();
+  else if (state.view === 'player' && !state.selPlayer) el.innerHTML = renderPlayerEmptyState();
   else if (state.view === 'team') {
     const teamModule = window.TeamModule;
     if (!teamModule) el.innerHTML = '<p>Module équipes non chargé.</p>';
@@ -1981,7 +2029,9 @@ function renderMain() {
     else el.innerHTML = renderTeamListShell();
   }
   else if (state.view === 'analyses') {
-    el.innerHTML = window.TransverseModule?.renderBody(state.cat) || '<p>Module analyses non chargé.</p>';
+    const advHtml = window.AdvancedStatsModule?.renderBody(state.cat) || '';
+    const trvHtml = window.TransverseModule?.renderBody(state.cat) || '';
+    el.innerHTML = advHtml + trvHtml || '<p>Module analyses non chargé.</p>';
   }
   else if (state.view === 'direction') {
     el.innerHTML = window.DirecteurModule?.renderBody() || '<p>Module direction non chargé.</p>';
@@ -2391,7 +2441,7 @@ window.appUtils = {
 
 // Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
 document.addEventListener('click', event => {
-  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action],[data-plan-action]');
+  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action],[data-plan-action],[data-advstats-action]');
   if (!mt) return;
   // Les <select>, <input>, <textarea> gèrent leurs propres événements (change / input).
   // Sans ce skip, cliquer sur un select déclenche le handler avec value="" et ferme le menu.
@@ -2408,6 +2458,7 @@ document.addEventListener('click', event => {
   if (mt.dataset.weeklyAction     && window.WeeklyFocusModule?.handleAction(mt)) return;
   if (mt.dataset.liveAction       && window.LiveTrainingModule?.handleAction(mt)) return;
   if (mt.dataset.planAction       && window.SeasonPlanModule?.handleAction(mt))  return;
+  if (mt.dataset.advstatsAction   && window.AdvancedStatsModule?.handleAction(mt)) return;
   if (mt.dataset.obsDim)            window.ObsModule?.handleDimClick(mt);
 });
 
@@ -2708,34 +2759,6 @@ document.addEventListener('input', event => {
   if (target.dataset.action === 'set-crit-comment') { setCritComment(target.dataset.pillar, Number(target.dataset.index), target.value); return; }
   if (target.dataset.action === 'set-main-comment') { setMainComment(target.value); return; }
   if (target.dataset.action === 'set-self-comment') { setSelfComment(target.value); }
-});
-
-q('#season-sel').addEventListener('change', event => {
-  state.season = event.target.value;
-  if (state.selPlayer) ensureData(state.cat, state.selPlayer, state.season);
-  renderAll();
-});
-
-q('#refresh-btn').addEventListener('click', () => { refreshRemoteData(); });
-
-q('#export-xlsx-btn')?.addEventListener('click', () => {
-  if (state.view === 'dashboard') window.ExcelExportModule?.exportAll?.(state.season);
-  else window.ExcelExportModule?.exportCategory?.(state.cat, state.season);
-});
-
-function toggleMoreMenu(force) {
-  const btn = q('#more-actions-btn');
-  const menu = q('#more-menu');
-  if (!btn || !menu) return;
-  const next = force !== undefined ? force : menu.hidden;
-  if (next) { menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
-  else      { menu.hidden = true;  btn.setAttribute('aria-expanded', 'false'); }
-}
-q('#more-actions-btn')?.addEventListener('click', e => { e.stopPropagation(); toggleMoreMenu(); });
-document.addEventListener('click', e => {
-  const menu = q('#more-menu');
-  if (!menu || menu.hidden) return;
-  if (!e.target.closest('#more-menu') && !e.target.closest('#more-actions-btn')) toggleMoreMenu(false);
 });
 
 q('#season-sel').addEventListener('change', event => {
