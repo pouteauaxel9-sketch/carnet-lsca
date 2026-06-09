@@ -4804,3 +4804,66 @@ body.weekly-fullscreen .fab { display: none; }
   font-weight: 600;
   color: var(--blue-dark);
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   Menu "..." nettoyé : sous-menu Avancé + état "vide"
+   ────────────────────────────────────────────────────────────────── */
+
+/* Texte d'aide quand il n'y a rien d'autre que le sous-menu */
+.more-menu-empty {
+  padding: 12px 14px;
+  text-align: center;
+  border-bottom: 1px solid var(--border1);
+  margin: 4px 6px 8px;
+}
+.more-menu-empty span {
+  display: block;
+  font-size: 13px;
+  color: var(--text1);
+  font-weight: 500;
+}
+.more-menu-empty small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.4;
+}
+
+/* Si Installer est visible → cacher le message d'état "vide" */
+#install-pwa-item:not([hidden]) ~ #more-menu-empty { display: none; }
+
+/* Sous-menu Avancé replié par défaut */
+.more-menu-submenu {
+  margin: 4px 6px 6px;
+  border-top: 1px solid var(--border1);
+  padding-top: 4px;
+}
+.more-menu-submenu > summary {
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.more-menu-submenu > summary::-webkit-details-marker { display: none; }
+.more-menu-submenu > summary::after {
+  content: '▾';
+  margin-left: auto;
+  font-size: 10px;
+  transition: transform 0.18s;
+}
+.more-menu-submenu[open] > summary::after { transform: rotate(180deg); }
+.more-menu-submenu > summary:hover { background: rgba(0,0,0,0.04); }
+
+.more-menu-submenu .more-menu-item {
+  padding-left: 18px !important;
+  font-size: 12px !important;
+}

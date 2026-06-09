@@ -29,11 +29,17 @@
       <button class="btn btn-ghost" id="more-actions-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Plus d'actions">⋯</button>
       <div class="more-menu" id="more-menu" hidden role="menu">
         <button class="more-menu-item" type="button" data-action="install-pwa" role="menuitem" id="install-pwa-item" hidden>📱 Installer l'application</button>
-        <button class="more-menu-item" type="button" data-action="live-training" role="menuitem">⚡ Mode Terrain (entraînement)</button>
-        <button class="more-menu-item" type="button" data-action="export-ical" role="menuitem">📅 Exporter le calendrier (.ics)</button>
-        <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">Importer JSON</button>
-        <button class="more-menu-item" type="button" data-action="trigger-export-json" role="menuitem">Exporter JSON</button>
-        <button class="more-menu-item" type="button" data-action="trigger-print" role="menuitem">Imprimer la page</button>
+        <div class="more-menu-empty" id="more-menu-empty">
+          <span>Rien d'autre par ici 👌</span>
+          <small>Le Mode Terrain est dans le bouton ⚡ en bas à droite.</small>
+        </div>
+        <details class="more-menu-submenu">
+          <summary>⚙️ Avancé</summary>
+          <button class="more-menu-item" type="button" data-action="export-ical" role="menuitem">📅 Exporter le calendrier (.ics)</button>
+          <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">📂 Importer JSON</button>
+          <button class="more-menu-item" type="button" data-action="trigger-export-json" role="menuitem">💾 Exporter JSON</button>
+          <button class="more-menu-item" type="button" data-action="trigger-print" role="menuitem">🖨 Imprimer la page</button>
+        </details>
       </div>
       <input id="import-file" class="sr-only" type="file" accept="application/json">
     </div>
