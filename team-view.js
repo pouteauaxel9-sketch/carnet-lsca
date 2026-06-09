@@ -450,9 +450,13 @@
       </section>`;
   }
 
-  window.TeamModule = {
-    teamPlayers,
-    teamSummary,
-    renderListBody, renderTeamBody, renderCompareBlock,
+window.TeamModule = {
+    listTeams: listTeams,
+    teamPlayers: teamPlayers,
+    teamMatches: teamMatches,
+    teamSummary: teamSummary,
+    renderListBody: renderListBody,
+    renderTeamBody: renderTeamBody,
+    renderCompareBlock: renderCompareBlock,
   };
 })();
