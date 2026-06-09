@@ -114,8 +114,89 @@
 
   /* ── Synthèse ─────────────────────────────────────────── */
 
+  // Charge les résultats FFF scrapés pour une équipe (cat + label)
+  function fffMatchesForTeam(cat, teamLabel) {
+    if (!teamLabel) return [];
+    let feeds = {};
+    try { feeds = JSON.parse(localStorage.getItem('cfb6_feeds') || '{}') || {}; } catch {}
+    const f = feeds[cat];
+    if (!f?.past) return [];
+    return f.past.filter(m => {
+      if (!m) return false;
+      if (m.team && String(m.team) === teamLabel) return true;
+      const lbl = teamLabel.toLowerCase();
+      if (m.home && String(m.home).toLowerCase().includes(lbl)) return true;
+      if (m.away && String(m.away).toLowerCase().includes(lbl)) return true;
+      return false;
+    });
+  }
+
+  // Renvoie true si c'est notre club (LSCA / LOUVERNE) qui joue à domicile dans ce match
+  function isOurClubHome(m) {
+    const home = String(m.home || '').toUpperCase();
+    return home.includes('LSCA') || home.includes('LOUVERNE') || home.includes('LOUVERNÉ');
+  }
+
+  // Convertit un match FFF en stats { result, ourGoals, theirGoals }
+  function fffResultFor(m) {
+    if (!m?.score || m.score === '-') return null;
+    const mt = String(m.score).match(/(\d+)\s*[-–:]\s*(\d+)/);
+    if (!mt) return null;
+    const a = parseInt(mt[1], 10);
+    const b = parseInt(mt[2], 10);
+    if (isNaN(a) || isNaN(b)) return null;
+    const homeUs = isOurClubHome(m);
+    const ourGoals   = homeUs ? a : b;
+    const theirGoals = homeUs ? b : a;
+    let result;
+    if (ourGoals > theirGoals) result = 'W';
+    else if (ourGoals < theirGoals) result = 'L';
+    else result = 'D';
+    return {
+      key: 'fff|' + (m.date || '') + '|' + (m.team || ''),
+      date: m.date || '',
+      adversaire: homeUs ? (m.away || '?') : (m.home || '?'),
+      domicile: homeUs,
+      competition: m.competition || '',
+      score: m.score,
+      ourGoals, theirGoals, result,
+      source: 'fff',
+      obs: [],
+    };
+  }
+
   function teamSummary(cat, team, season) {
-    const matches = teamMatches(cat, team, season);
+    // Source 1 : observations match saisies (avec stats individuelles buteurs/passeurs)
+    const obsMatches = teamMatches(cat, team, season);
+    // Source 2 : résultats FFF scrapés
+    const fffMatchesRaw = fffMatchesForTeam(cat, team);
+    const fffMatches = fffMatchesRaw.map(fffResultFor).filter(Boolean);
+
+    // Fusion par clé date+adversaire pour éviter les doublons
+    const byKey = new Map();
+    obsMatches.forEach(m => {
+      const k = (m.date || '') + '|' + (m.adversaire || '').toLowerCase();
+      byKey.set(k, { ...m });
+    });
+    fffMatches.forEach(m => {
+      const k = (m.date || '') + '|' + (m.adversaire || '').toLowerCase();
+      if (byKey.has(k)) {
+        // Compléter l'observation existante avec le score FFF si manquant
+        const existing = byKey.get(k);
+        if (!existing.result && m.result) {
+          existing.result = m.result;
+          existing.ourGoals = m.ourGoals;
+          existing.theirGoals = m.theirGoals;
+          existing.score = m.score;
+          existing.source = 'merged';
+        }
+      } else {
+        byKey.set(k, m);
+      }
+    });
+
+    const matches = Array.from(byKey.values()).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
     let won = 0, draw = 0, lost = 0, gf = 0, ga = 0;
     matches.forEach(m => {
       if (m.result === 'W') won++;
@@ -391,40 +472,77 @@
     </section>`;
   }
 
-  function renderEffectifCard(players, cat) {
+function renderEffectifCard(players, cat) {
     if (!players.length) {
-      return `<section class="dashboard-card">
-        <div class="card-head"><div><div class="card-kicker">Effectif</div><h2>Joueurs de cette équipe</h2></div></div>
-        <div class="dash-empty"><div class="dash-empty-msg">Aucun joueur assigné</div>
-        <div class="dash-empty-hint">Renseigne « Équipe principale » dans le profil de chaque joueur concerné.</div></div>
+      return `<section class="dashboard-card team-card-section">
+        <div class="card-head"><div><div class="card-kicker">Effectif</div><h2>Joueurs de l'equipe</h2></div></div>
+        <div class="dash-empty"><div class="dash-empty-msg">Aucun joueur affecte a cette equipe.</div></div>
       </section>`;
     }
-    return `<section class="dashboard-card">
-      <div class="card-head"><div><div class="card-kicker">Effectif</div><h2>Joueurs (${players.length})</h2></div></div>
-      <div class="team-roster">
-        ${players.map(pid => {
-          const prof = state().data[cat][pid]?.profil || {};
-          return `<button class="team-roster-chip" type="button" data-action="select-player" data-player="${h(pid)}">
-            <strong>${h(pid)}</strong>
-            <span>${h(prof.poste1 || '—')}</span>
-          </button>`;
-        }).join('')}
-      </div>
-    </section>`;
+    return `
+      <section class="dashboard-card team-card-section">
+        <div class="card-head"><div><div class="card-kicker">Effectif</div><h2>${players.length} joueurs</h2></div></div>
+        <ul class="team-effectif-list">
+          ${players.map(pid => {
+            const prof = state()?.data?.[cat]?.[pid]?.profil || {};
+            const name = (prof.prenom && prof.nom) ? prof.prenom + ' ' + prof.nom : pid;
+            const poste = prof.poste1 || '';
+            return `<li>
+              <button class="player-link" type="button" data-action="select-player" data-player="${h(pid)}">${h(name)}</button>
+              ${poste ? `<span class="effectif-poste">${h(poste)}</span>` : ''}
+            </li>`;
+          }).join('')}
+        </ul>
+      </section>`;
   }
 
-  /* ── Comparaison équipes côte à côte ──────────────────── */
+  /* ── Section FFF (classement + matchs filtres equipe) ─── */
+
+  function renderFFFSection(cat, teamLabel) {
+    const u = utils();
+    if (!u?.buildDashboardFeeds) return '';
+    const feeds = u.buildDashboardFeeds(cat);
+    if (!feeds) return '';
+
+    const matchesTeam = (m) => {
+      if (!m) return false;
+      const lbl = (teamLabel || '').toLowerCase();
+      if (m.team && String(m.team).toLowerCase() === lbl) return true;
+      if (m.home && String(m.home).toLowerCase().includes(lbl)) return true;
+      if (m.away && String(m.away).toLowerCase().includes(lbl)) return true;
+      return false;
+    };
+
+    const upcoming = (feeds.upcoming || []).filter(matchesTeam);
+    const past = (feeds.past || []).filter(matchesTeam);
+    const standings = feeds.standings;
+
+    if (!upcoming.length && !past.length && (!standings || !standings.length)) return '';
+
+    return `
+      <div class="team-fff-section">
+        <h3 class="team-section-title">FFF Donnees</h3>
+        <div class="dashboard-main-grid">
+          ${standings?.length ? u.renderStandingsCard(standings) : ''}
+          ${upcoming.length ? u.renderMatchCard('Matchs a venir', teamLabel, upcoming.slice(0, 5), true) : ''}
+          ${past.length ? u.renderMatchCard('Resultats recents', teamLabel, past.slice(0, 8), false) : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  /* ── Comparaison ────────────────────────────────────── */
 
   function renderCompareBlock(cat) {
     const teams = listTeams(cat);
     if (teams.length < 2) return '';
 
     const summaries = teams.map(t => ({ team: t, ...teamSummary(cat, t, state().season) }));
-    const headers = ['Équipe', 'Effectif', 'Joués', 'V/N/D', 'BP–BC', 'Pts', '% V', 'Implic. totales'];
+    const headers = ['Equipe', 'Effectif', 'Joues', 'V/N/D', 'BP-BC', 'Pts', '% V', 'Implic. totales'];
     return `
       <section class="dashboard-card cat-table-card">
         <div class="card-head">
-          <div><div class="card-kicker">Comparaison</div><h2>Équipes de ${h(CAT_LABELS()[cat] || cat.toUpperCase())}</h2></div>
+          <div><div class="card-kicker">Comparaison</div><h2>Equipes de ${h(CAT_LABELS()[cat] || cat.toUpperCase())}</h2></div>
         </div>
         <div class="cat-table-wrap">
           <table class="cat-table compare-table">
@@ -432,16 +550,16 @@
             <tbody>
               ${summaries.map(s => {
                 const winPct = s.played ? Math.round((s.won / s.played) * 100) : 0;
-                const involvements = (s.gf || 0) + (s.topPasseurs || []).reduce((a, p) => a + (p.passes_d || 0), 0);
+                const implications = (s.gf || 0);
                 return `<tr>
                   <td><strong>${h(s.team)}</strong></td>
-                  <td>${(window.appState?.data?.[cat] && Object.values(window.appState.data[cat]).filter(p => p[window.appState.season]?.profil?.equipe === s.team).length) || '-'}</td>
+                  <td>${s.effectif || 0}</td>
                   <td>${s.played}</td>
                   <td>${s.won}/${s.draw}/${s.lost}</td>
-                  <td>${s.gf}–${s.ga}</td>
+                  <td>${s.gf}-${s.ga}</td>
                   <td><strong>${s.points || 0}</strong></td>
                   <td>${winPct}%</td>
-                  <td>${involvements}</td>
+                  <td>${implications}</td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -450,11 +568,12 @@
       </section>`;
   }
 
-window.TeamModule = {
+  window.TeamModule = {
     listTeams: listTeams,
     teamPlayers: teamPlayers,
     teamMatches: teamMatches,
     teamSummary: teamSummary,
+    fffMatchesForTeam: fffMatchesForTeam,
     renderListBody: renderListBody,
     renderTeamBody: renderTeamBody,
     renderCompareBlock: renderCompareBlock,
