@@ -544,7 +544,12 @@ function getCategorySummary(cat) {
   const count = JDATA[cat].players.length;
   const teams = CLUB_DATA.categories[cat]?.teams || [];
   const evaluated = JDATA[cat].players.filter(player => pScore(cat, player.name) > 0).length;
-  return { count, teamsCount:teams.length, evaluated };
+  // Score moyen de la catégorie (sur les évalués)
+  const scores = JDATA[cat].players.map(p => pScore(cat, p.name)).filter(s => s > 0);
+  const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  // Complétion (% de joueurs évalués)
+  const completion = count ? Math.round((evaluated / count) * 100) : 0;
+  return { count, teamsCount:teams.length, evaluated, avgScore, completion };
 }
 
 async function loadGithubFeeds(opts = {}) {
@@ -1314,6 +1319,8 @@ function renderCategoryOverview() {
   const teams = CLUB_DATA.categories[state.cat]?.teams || [];
   const identity = getClubIdentity(state.cat);
   const configuredTeams = getConfiguredTeamsForCategory(state.cat);
+  const feeds = buildDashboardFeeds(state.cat);
+  const avgCol = summary.avgScore == null ? '#9ca3af' : summary.avgScore >= 60 ? '#16a34a' : summary.avgScore >= 40 ? '#d97706' : '#dc2626';
   return `
     <section class="category-shell">
       <div class="category-toolbar">
@@ -1341,23 +1348,35 @@ function renderCategoryOverview() {
         <div>
           <div class="card-kicker">Catégorie</div>
           <h1>${h(CAT_LABELS[state.cat])}</h1>
-          <p>Vue d'ensemble de la catégorie, de ses équipes et accès direct aux fiches joueurs. Identité active : <strong>${h(identity)}</strong>.</p>
+          <p>Vue d'ensemble — effectif, scores, classements et matchs. Identité active : <strong>${h(identity)}</strong>.</p>
         </div>
         <div class="dashboard-stats">
           <div class="dash-stat"><span>Joueurs</span><strong>${summary.count}</strong></div>
           <div class="dash-stat"><span>Équipes</span><strong>${summary.teamsCount}</strong></div>
-          <div class="dash-stat"><span>Évalués</span><strong>${summary.evaluated}</strong></div>
-          <div class="dash-stat"><span>Saison</span><strong>${h(state.season)}</strong></div>
+          <div class="dash-stat dash-stat-accent" style="--accent:${avgCol}">
+            <span>Score moyen</span>
+            <strong>${summary.avgScore != null ? summary.avgScore + '%' : '—'}</strong>
+          </div>
+          <div class="dash-stat">
+            <span>Complétion</span>
+            <strong>${summary.completion}% <small style="font-weight:400;opacity:0.6">(${summary.evaluated}/${summary.count})</small></strong>
+          </div>
         </div>
       </div>
 
       ${renderCategoryPlayerTable()}
 
+      <div class="dashboard-main-grid">
+        ${renderStandingsCard(feeds.standings)}
+        ${renderMatchCard('Matchs à venir', 'Agenda ' + (CAT_LABELS[state.cat] || state.cat).toUpperCase(), feeds.upcoming, true)}
+        ${renderMatchCard('Résultats récents', 'Derniers matchs ' + (CAT_LABELS[state.cat] || state.cat).toUpperCase(), feeds.past, false)}
+      </div>
+
       <div class="dashboard-grid">
         <section class="dashboard-card">
           <div class="card-head"><div><div class="card-kicker">Équipes</div><h2>Organisation</h2></div></div>
           <div class="team-list">
-            ${teams.map(team => `<div class="team-item">${h(team)}</div>`).join('')}
+            ${teams.map(team => `<button class="team-item team-item-clickable" type="button" data-action="open-team" data-team="${h(team)}">${h(team)}</button>`).join('')}
           </div>
         </section>
 
@@ -1366,7 +1385,8 @@ function renderCategoryOverview() {
           <div class="info-list">
             ${configuredTeams.length ? configuredTeams.map(team => {
               const remote = state.remoteSources[team.key] || {};
-              return `<div class="info-item"><strong>${h(team.teamLabel)}</strong> — ${team.pending ? 'source à renseigner' : 'source configurée'}${remote.error ? ` — ${h(remote.error)}` : ''}</div>`;
+              const statusIcon = team.pending ? '⏳' : remote.error ? '⚠' : '✅';
+              return `<div class="info-item"><strong>${statusIcon} ${h(team.teamLabel)}</strong> — ${team.pending ? 'source à renseigner' : 'source configurée'}${remote.error ? ` — ${h(remote.error)}` : ''}</div>`;
             }).join('') : '<div class="info-item">Aucune source configurée pour cette catégorie.</div>'}
           </div>
         </section>

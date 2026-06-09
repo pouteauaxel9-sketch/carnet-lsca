@@ -4541,3 +4541,188 @@ body.weekly-fullscreen .fab { display: none; }
   font-size: 11px;
   color: #374151;
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   Polish global — Nav bar revisitée + cohérence couleurs
+   ────────────────────────────────────────────────────────────────── */
+
+/* Topnav modernisée : ombre douce, glassmorphism amélioré */
+.topnav {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom: 1px solid rgba(18, 20, 18, 0.06) !important;
+  box-shadow: 0 2px 12px rgba(26, 31, 36, 0.04), 0 1px 0 rgba(255, 255, 255, 0.5) inset !important;
+}
+
+/* Logo plus subtil */
+.nav-logo {
+  background: linear-gradient(135deg, #0c447c 0%, #185fa5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+
+/* Onglets nav-cat : meilleur état actif avec indicateur visuel */
+.nav-cat-tabs {
+  background: rgba(244, 239, 231, 0.6) !important;
+  border-color: rgba(18, 20, 18, 0.05) !important;
+}
+
+.nav-cat {
+  position: relative;
+  overflow: visible !important;
+  transition: all 0.18s ease !important;
+}
+
+.nav-cat:hover {
+  background: rgba(24, 95, 165, 0.08) !important;
+  color: #185fa5 !important;
+}
+
+.nav-cat.on {
+  background: linear-gradient(135deg, #185fa5 0%, #2d7dd2 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(24, 95, 165, 0.25), 0 1px 0 rgba(255,255,255,0.2) inset !important;
+}
+
+/* Couleurs métier : saisie = vert, analyses = violet, alerte = rouge */
+.nav-cat.on[data-view="weekly"],
+.nav-cat.on[data-view="plan"] {
+  background: linear-gradient(135deg, #ba7517 0%, #d4881e 100%) !important;
+  box-shadow: 0 2px 8px rgba(186, 117, 23, 0.25) !important;
+}
+
+.nav-cat.on[data-view="analyses"] {
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%) !important;
+  box-shadow: 0 2px 8px rgba(91, 33, 182, 0.25) !important;
+}
+
+.nav-cat.on[data-view="direction"] {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%) !important;
+  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25) !important;
+}
+
+/* Badge avec compteur (Direction (X)) plus lisible */
+.nav-cat.on::after { content: ''; }
+
+/* Boutons primary plus modernes */
+.btn-primary {
+  background: linear-gradient(135deg, #185fa5 0%, #2d7dd2 100%) !important;
+  box-shadow: 0 2px 6px rgba(24, 95, 165, 0.22), 0 1px 0 rgba(255,255,255,0.2) inset !important;
+}
+.btn-primary:hover {
+  box-shadow: 0 4px 10px rgba(24, 95, 165, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+/* Educator badge plus visible */
+.educator-badge {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border1);
+  border-radius: 999px;
+  padding: 6px 12px 6px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 12px;
+  font-weight: 500;
+}
+.educator-badge:hover {
+  background: #fff;
+  border-color: #185fa5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(24,95,165,0.12);
+}
+.educator-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* Dash stat avec accent custom (utilisé sur la vue Catégorie pour Score moyen) */
+.dash-stat-accent {
+  border: 1px solid var(--accent, #185fa5) !important;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent, #185fa5) 5%, transparent),
+    color-mix(in srgb, var(--accent, #185fa5) 12%, transparent)) !important;
+}
+.dash-stat-accent strong { color: var(--accent, #185fa5) !important; }
+
+/* Équipes cliquables sur vue Catégorie */
+.team-item-clickable {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  background: var(--bg2);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 500;
+  color: var(--text1);
+  transition: all 0.15s;
+}
+.team-item-clickable:hover {
+  background: var(--blue-light);
+  color: var(--blue);
+  transform: translateX(2px);
+}
+
+/* Info items dans vue Catégorie avec icône de statut */
+.info-list .info-item {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg2);
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.info-list .info-item strong { font-weight: 600; }
+
+/* Cartes dashboard plus modernes : ombre douce + hover lift */
+.dashboard-card {
+  transition: all 0.2s ease;
+}
+.dashboard-card:hover {
+  box-shadow: 0 4px 16px rgba(26, 31, 36, 0.08), 0 1px 0 rgba(255,255,255,0.5) inset;
+  transform: translateY(-1px);
+}
+
+/* Categories hero : touche subtile */
+.category-hero {
+  background: linear-gradient(135deg, rgba(24,95,165,0.04) 0%, rgba(45,125,210,0.06) 100%);
+  border: 1px solid rgba(24,95,165,0.1);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.category-hero h1 {
+  margin: 4px 0;
+  background: linear-gradient(135deg, #0c447c 0%, #185fa5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.category-hero p { color: var(--text2); margin: 4px 0 0; }
+
+/* Cohérence onglets internes (piliers, advstats, etc.) avec gradient actif */
+.ptab.on,
+.advstats-tab.on,
+.plan-filter.on {
+  background: linear-gradient(135deg, #185fa5 0%, #2d7dd2 100%) !important;
+  color: #fff !important;
+}
+
+/* Plus de spacing dans le main-content */
+.main-content { padding: 20px; }
+@media (max-width: 768px) { .main-content { padding: 12px; } }
+
+/* Scrollbar plus discrète et moderne */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 5px; border: 2px solid #fcfaf6; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+
+/* Boutons radio piliers (.dot) : code couleur plus net */
+.dot {
+  transition: all 0.15s;
+}
+.dot:hover { transform: scale(1.15); }
