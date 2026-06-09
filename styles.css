@@ -4895,3 +4895,125 @@ body.weekly-fullscreen .fab { display: none; }
 .wa-remove:hover { background: #fee2e2; }
 .wa-upload-btn { cursor: pointer; }
 .wa-hint { font-size: 11px; color: var(--text2); flex: 1; min-width: 180px; }
+
+/* ── Vue Semaine : séances multiples ── */
+.weekly-seances {
+  margin-top: 12px;
+  background: var(--surface-2, #f5f7fb);
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border, #e2e6ee);
+}
+.weekly-seances-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.weekly-seances-head h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.seances-count {
+  display: inline-block;
+  background: rgba(24, 95, 165, 0.12);
+  color: #185fa5;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+.seances-empty {
+  font-style: italic;
+  color: var(--text2, #6b7280);
+  font-size: 13px;
+  margin: 6px 0 0;
+}
+
+.seances-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.seance-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid var(--border, #e2e6ee);
+  flex-wrap: wrap;
+}
+.seance-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 200px;
+}
+.seance-icon { font-size: 24px; flex-shrink: 0; }
+.seance-info { flex: 1; min-width: 0; }
+.seance-title { font-weight: 600; font-size: 14px; }
+.seance-meta {
+  font-size: 11px;
+  color: var(--text2, #6b7280);
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.seance-date {
+  font-weight: 600;
+  color: var(--blue, #185fa5);
+  text-transform: capitalize;
+}
+.seance-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.seance-actions .btn { padding: 5px 10px; font-size: 12px; }
+.seance-actions label.btn { cursor: pointer; }
+.seance-rm { color: #b91c1c; }
+.seance-rm:hover { background: #fee2e2; }
+
+/* Formulaire ajout séance */
+.seance-form {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px dashed var(--blue, #185fa5);
+}
+.seance-form-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.seance-form-row label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 140px;
+}
+.seance-form-title { flex: 2; }
+.seance-form-row input {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #d8dde7);
+  font-size: 13px;
+}
+.seance-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
