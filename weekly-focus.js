@@ -130,7 +130,7 @@
                    placeholder="Thème de la semaine (ex: conduite + démarquage)"
                    value="${h(week.theme || '')}" data-weekly-action="set-theme">
           </div>
-          ${renderAttachment(week)}
+          ${renderSeances(week)}
         </header>
         ${renderItemsEditor(cat, week)}
         ${week.items.length === 0
@@ -157,79 +157,209 @@
     if (ext === 'ppt' || ext === 'pptx') return '📑';
     return '📎';
   }
-  function renderAttachment(week) {
-    const a = week.attachment;
-    if (a && a.data) {
-      return `
-        <div class="weekly-attachment weekly-attachment-set">
-          <span class="wa-icon">${iconForFile(a.type, a.name)}</span>
-          <div class="wa-info">
-            <div class="wa-name">${h(a.name)}</div>
-            <div class="wa-meta">${h(formatSize(a.size))}${a.uploadedBy ? ' · ' + h(a.uploadedBy) : ''}</div>
-          </div>
-          <div class="wa-actions">
-            <button class="btn btn-ghost" type="button" data-weekly-action="view-attachment">Voir</button>
-            <button class="btn btn-ghost" type="button" data-weekly-action="download-attachment" title="Télécharger">⬇</button>
-            <button class="btn btn-ghost wa-remove" type="button" data-weekly-action="remove-attachment" title="Retirer">×</button>
-          </div>
-        </div>`;
+  function renderSeances(week) {
+    // Migration auto: si attachment unique existe, le convertir en première séance
+    if (week.attachment && !week.seances) {
+      week.seances = [{
+        id: 'sn_legacy_' + Date.now(),
+        date: '',
+        title: '(séance migrée)',
+        attachment: week.attachment,
+        createdBy: week.attachment.uploadedBy || '',
+        createdAt: week.attachment.uploadedAt || new Date().toISOString(),
+      }];
+      delete week.attachment;
     }
+    const seances = week.seances || [];
+    const adding = week._addingSeance;
     return `
-      <div class="weekly-attachment">
-        <input type="file" id="weekly-attachment-input" class="sr-only"
-               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*"
-               data-weekly-action="upload-attachment">
-        <label for="weekly-attachment-input" class="btn btn-ghost wa-upload-btn">
-          📎 Joindre la séance (PDF, image, Word…)
-        </label>
-        <span class="wa-hint">Max 2 Mo. Partagé avec les autres éducateurs si la synchro est active.</span>
-      </div>`;
+      <section class="weekly-seances">
+        <div class="weekly-seances-head">
+          <h4>📚 Séances réalisées <span class="seances-count">${seances.length}</span></h4>
+          ${!adding ? '<button class="btn btn-ghost" type="button" data-weekly-action="open-add-seance">+ Ajouter une séance</button>' : ''}
+        </div>
+        ${seances.length === 0 && !adding ? '<p class="seances-empty">Aucune séance enregistrée pour cette semaine.</p>' : ''}
+        ${seances.length ? `
+          <div class="seances-list">
+            ${seances.map((s, i) => renderSeanceRow(s, i)).join('')}
+          </div>` : ''}
+        ${adding ? renderSeanceForm() : ''}
+      </section>`;
   }
 
-  function handleAttachmentUpload(input) {
-    const file = input.files && input.files[0];
-    if (!file) return;
-    if (file.size > MAX_ATTACHMENT_BYTES) { toast('Fichier trop volumineux (max 2 Mo)'); try { input.value = ''; } catch {} return; }
+  function renderSeanceRow(s, idx) {
+    const a = s.attachment;
+    const hasFile = !!(a && a.data);
+    const dateLbl = s.date ? new Date(s.date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' }) : '—';
+    return `
+      <article class="seance-row" data-seance-id="${h(s.id)}">
+        <div class="seance-main">
+          ${hasFile ? `<span class="seance-icon">${iconForFile(a.type, a.name)}</span>` : '<span class="seance-icon">📋</span>'}
+          <div class="seance-info">
+            <div class="seance-title">${h(s.title || 'Séance sans titre')}</div>
+            <div class="seance-meta">
+              <span class="seance-date">${h(dateLbl)}</span>
+              ${hasFile ? `<span>· ${h(a.name)}</span><span>· ${h(formatSize(a.size))}</span>` : ''}
+              ${s.createdBy ? `<span>· ${h(s.createdBy)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="seance-actions">
+          ${hasFile ? `
+            <button class="btn btn-ghost" type="button" data-weekly-action="view-seance" data-seance-id="${h(s.id)}">Voir</button>
+            <button class="btn btn-ghost" type="button" data-weekly-action="download-seance" data-seance-id="${h(s.id)}" title="Télécharger">⬇</button>
+          ` : `
+            <label class="btn btn-ghost" title="Joindre un fichier à cette séance">
+              📎 Fichier
+              <input type="file" class="sr-only"
+                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*"
+                     data-weekly-action="upload-seance-file" data-seance-id="${h(s.id)}">
+            </label>
+          `}
+          <button class="btn btn-ghost seance-rm" type="button" data-weekly-action="remove-seance" data-seance-id="${h(s.id)}" title="Supprimer">×</button>
+        </div>
+      </article>`;
+  }
+
+  function renderSeanceForm() {
+    const today = new Date().toISOString().slice(0, 10);
+    return `
+      <form class="seance-form" data-weekly-action="seance-form-noop" onsubmit="return false;">
+        <div class="seance-form-row">
+          <label>
+            <span>Date</span>
+            <input type="date" id="seance-form-date" value="${today}">
+          </label>
+          <label class="seance-form-title">
+            <span>Titre / thème</span>
+            <input type="text" id="seance-form-title" placeholder="Ex: conduite côté droit, jeu en bloc..." maxlength="80">
+          </label>
+        </div>
+        <div class="seance-form-row">
+          <label class="seance-form-file">
+            <span>Fichier (optionnel)</span>
+            <input type="file" id="seance-form-file"
+                   accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*">
+          </label>
+        </div>
+        <div class="seance-form-actions">
+          <button class="btn btn-ghost" type="button" data-weekly-action="cancel-add-seance">Annuler</button>
+          <button class="btn btn-primary" type="button" data-weekly-action="confirm-add-seance">Ajouter la séance</button>
+        </div>
+      </form>`;
+  }
+
+  function readFileAsDataUrl(file, cb) {
     const reader = new FileReader();
-    reader.onload = ev => {
-      const cat = state().cat, iso = currentWeekIso();
-      const coach = (window.EducatorModule && window.EducatorModule.getEducatorName) ? window.EducatorModule.getEducatorName() : '';
-      setWeek(cat, iso, w => {
-        w.attachment = {
-          name: file.name, type: file.type || '', size: file.size,
-          data: ev.target.result, uploadedBy: coach, uploadedAt: new Date().toISOString(),
-        };
-      });
-      toast('Séance jointe : ' + file.name);
-      if (utils().renderAll) utils().renderAll();
-    };
-    reader.onerror = () => toast('Erreur lecture fichier');
+    reader.onload = ev => cb(null, ev.target.result);
+    reader.onerror = () => cb(new Error('read'));
     reader.readAsDataURL(file);
   }
-  function viewAttachment() {
+
+  function getSeance(week, id) {
+    return (week.seances || []).find(s => s.id === id);
+  }
+
+  function openAddSeance() {
+    setWeek(state().cat, currentWeekIso(), w => { w._addingSeance = true; });
+    if (utils().renderAll) utils().renderAll();
+  }
+  function cancelAddSeance() {
+    setWeek(state().cat, currentWeekIso(), w => { delete w._addingSeance; });
+    if (utils().renderAll) utils().renderAll();
+  }
+  function confirmAddSeance() {
+    const date  = (document.getElementById('seance-form-date')  || {}).value || '';
+    const title = ((document.getElementById('seance-form-title') || {}).value || '').trim();
+    const fileInput = document.getElementById('seance-form-file');
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    if (!title && !date && !file) { toast('Renseigne au moins un titre, une date ou un fichier'); return; }
+    if (file && file.size > MAX_ATTACHMENT_BYTES) { toast('Fichier trop volumineux (max 2 Mo)'); return; }
+    const coach = (window.EducatorModule && window.EducatorModule.getEducatorName) ? window.EducatorModule.getEducatorName() : '';
+    const finalize = (attData) => {
+      setWeek(state().cat, currentWeekIso(), w => {
+        if (!w.seances) w.seances = [];
+        const s = {
+          id: 'sn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          date, title: title || '(sans titre)',
+          createdBy: coach, createdAt: new Date().toISOString(),
+        };
+        if (attData) {
+          s.attachment = { name: file.name, type: file.type || '', size: file.size, data: attData };
+        }
+        w.seances.push(s);
+        // Tri par date desc
+        w.seances.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        delete w._addingSeance;
+      });
+      toast('Séance ajoutée');
+      if (utils().renderAll) utils().renderAll();
+    };
+    if (file) {
+      readFileAsDataUrl(file, (err, data) => err ? toast('Erreur lecture') : finalize(data));
+    } else {
+      finalize(null);
+    }
+  }
+
+  function uploadSeanceFile(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const seanceId = input.dataset.seanceId;
+    if (file.size > MAX_ATTACHMENT_BYTES) { toast('Fichier trop volumineux (max 2 Mo)'); try { input.value = ''; } catch {} return; }
+    readFileAsDataUrl(file, (err, data) => {
+      if (err) { toast('Erreur lecture'); return; }
+      setWeek(state().cat, currentWeekIso(), w => {
+        const s = getSeance(w, seanceId);
+        if (s) s.attachment = { name: file.name, type: file.type || '', size: file.size, data };
+      });
+      toast('Fichier joint : ' + file.name);
+      if (utils().renderAll) utils().renderAll();
+    });
+  }
+
+  function viewSeance(seanceId) {
     const w = getWeek(state().cat, currentWeekIso());
-    if (!w || !w.attachment || !w.attachment.data) return;
-    const a = w.attachment;
+    const s = w && getSeance(w, seanceId);
+    if (!s || !s.attachment || !s.attachment.data) return;
+    const a = s.attachment;
     try {
       const nw = window.open();
       if (!nw) { toast('Pop-up bloquée'); return; }
       if (a.type === 'application/pdf' || a.type.indexOf('image/') === 0) {
         nw.document.write('<title>' + h(a.name) + '</title><iframe src="' + a.data + '" style="border:0;width:100%;height:100vh"></iframe>');
-      } else { nw.close(); downloadAttachment(); }
+      } else { nw.close(); downloadSeance(seanceId); }
     } catch (e) { console.warn(e); }
   }
-  function downloadAttachment() {
+
+  function downloadSeance(seanceId) {
     const w = getWeek(state().cat, currentWeekIso());
-    if (!w || !w.attachment || !w.attachment.data) return;
+    const s = w && getSeance(w, seanceId);
+    if (!s || !s.attachment || !s.attachment.data) return;
     const link = document.createElement('a');
-    link.href = w.attachment.data; link.download = w.attachment.name;
+    link.href = s.attachment.data; link.download = s.attachment.name;
     document.body.appendChild(link); link.click(); link.remove();
   }
-  function removeAttachment() {
-    if (!confirm('Retirer le fichier joint ?')) return;
-    setWeek(state().cat, currentWeekIso(), w => { delete w.attachment; });
-    toast('Fichier retiré');
+
+  function removeSeance(seanceId) {
+    if (!confirm('Supprimer cette séance ?')) return;
+    setWeek(state().cat, currentWeekIso(), w => {
+      if (w.seances) w.seances = w.seances.filter(s => s.id !== seanceId);
+    });
+    toast('Séance supprimée');
     if (utils().renderAll) utils().renderAll();
+  }
+
+  // API publique : toutes les séances d'une catégorie sur la saison (base de données)
+  function listAllSeances(cat) {
+    const store = loadStore();
+    const weeks = store[cat] || {};
+    const all = [];
+    Object.keys(weeks).forEach(iso => {
+      const w = weeks[iso];
+      (w.seances || []).forEach(s => all.push(Object.assign({}, s, { week: iso, weekLabel: w.label, theme: w.theme })));
+    });
+    return all.sort((a, b) => (b.date || b.week || '').localeCompare(a.date || a.week || ''));
   }
 
   /* Items editor */
@@ -416,10 +546,13 @@
     if (!action) return false;
     const cat = state().cat, iso = currentWeekIso();
 
-    if (action === 'upload-attachment')   { handleAttachmentUpload(el); return true; }
-    if (action === 'view-attachment')     { viewAttachment(); return true; }
-    if (action === 'download-attachment') { downloadAttachment(); return true; }
-    if (action === 'remove-attachment')   { removeAttachment(); return true; }
+    if (action === 'open-add-seance')     { openAddSeance(); return true; }
+    if (action === 'cancel-add-seance')   { cancelAddSeance(); return true; }
+    if (action === 'confirm-add-seance')  { confirmAddSeance(); return true; }
+    if (action === 'upload-seance-file')  { uploadSeanceFile(el); return true; }
+    if (action === 'view-seance')         { viewSeance(el.dataset.seanceId); return true; }
+    if (action === 'download-seance')     { downloadSeance(el.dataset.seanceId); return true; }
+    if (action === 'remove-seance')       { removeSeance(el.dataset.seanceId); return true; }
 
     if (action === 'prev-week')    { viewWeekIso = shiftWeek(iso, -1); if (utils().renderAll) utils().renderAll(); return true; }
     if (action === 'next-week')    { viewWeekIso = shiftWeek(iso,  1); if (utils().renderAll) utils().renderAll(); return true; }
@@ -640,7 +773,7 @@
   window.WeeklyFocusModule = {
     open, close, isOpen, render, handleAction,
     summaryFor, recentRatings, badge, getCurrentWeek,
-    renderPlayerWidget, pillarBoost, allPillarBoosts,
+    renderPlayerWidget, pillarBoost, allPillarBoosts, listAllSeances,
     GAME_PRINCIPLES, PRIORITY_LABELS, PHASE_LABELS, SUBPHASE_LABELS,
   };
 })();
