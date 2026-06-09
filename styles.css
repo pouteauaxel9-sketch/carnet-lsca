@@ -4867,3 +4867,31 @@ body.weekly-fullscreen .fab { display: none; }
   padding-left: 18px !important;
   font-size: 12px !important;
 }
+
+/* ── Vue Semaine : pièce jointe séance ── */
+.weekly-attachment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--surface-2, #f5f7fb);
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px dashed var(--border, #d8dde7);
+  margin-top: 12px;
+}
+.weekly-attachment-set {
+  border-style: solid;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+  border-color: #93c5fd;
+}
+.wa-icon { font-size: 28px; flex-shrink: 0; }
+.wa-info { flex: 1; min-width: 140px; }
+.wa-name { font-weight: 600; font-size: 14px; color: var(--text1); }
+.wa-meta { font-size: 11px; color: var(--text2); }
+.wa-actions { display: flex; gap: 4px; }
+.wa-actions .btn { padding: 6px 10px; font-size: 12px; }
+.wa-remove { color: #b91c1c; }
+.wa-remove:hover { background: #fee2e2; }
+.wa-upload-btn { cursor: pointer; }
+.wa-hint { font-size: 11px; color: var(--text2); flex: 1; min-width: 180px; }
