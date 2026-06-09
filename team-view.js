@@ -268,6 +268,8 @@
           </div>
         </div>
 
+        ${renderFFFSection(cat, team)}
+
         <div class="team-grid">
           ${renderLeadersCard('Top buteurs', s.topButeurs, 'buts')}
           ${renderLeadersCard('Top passeurs', s.topPasseurs, 'passes_d')}
@@ -277,6 +279,43 @@
           ${renderEffectifCard(players, cat)}
         </div>
       </section>`;
+  }
+
+  // Section FFF : classement + matchs à venir + résultats filtrés sur cette équipe
+  function renderFFFSection(cat, teamLabel) {
+    const utils = window.appUtils;
+    if (!utils?.buildDashboardFeeds) return '';
+    const feeds = utils.buildDashboardFeeds(cat);
+    if (!feeds) return '';
+
+    // Filtrer les matchs sur le label de l'équipe (présent dans m.team ou m.home/away)
+    const matchesTeam = (m) => {
+      if (!m) return false;
+      const lbl = (teamLabel || '').toLowerCase();
+      if (m.team && String(m.team).toLowerCase() === lbl) return true;
+      if (m.home && String(m.home).toLowerCase().includes(lbl)) return true;
+      if (m.away && String(m.away).toLowerCase().includes(lbl)) return true;
+      return false;
+    };
+
+    const upcoming = (feeds.upcoming || []).filter(matchesTeam);
+    const past = (feeds.past || []).filter(matchesTeam);
+    // Le classement est partagé par toutes les équipes de la catégorie — on garde tel quel
+    const standings = feeds.standings;
+
+    // Si rien de pertinent, on cache la section
+    if (!upcoming.length && !past.length && (!standings || !standings.length)) return '';
+
+    return `
+      <div class="team-fff-section">
+        <h3 class="team-section-title">📡 Données FFF</h3>
+        <div class="dashboard-main-grid">
+          ${standings?.length ? utils.renderStandingsCard(standings) : ''}
+          ${upcoming.length ? utils.renderMatchCard('Matchs à venir', `${teamLabel}`, upcoming.slice(0, 5), true) : ''}
+          ${past.length ? utils.renderMatchCard('Résultats récents', `${teamLabel}`, past.slice(0, 8), false) : ''}
+        </div>
+      </div>
+    `;
   }
 
   function renderLeadersCard(title, rows, key) {
@@ -393,16 +432,16 @@
             <tbody>
               ${summaries.map(s => {
                 const winPct = s.played ? Math.round((s.won / s.played) * 100) : 0;
-                const implicTotal = s.leaders.reduce((a, b) => a + b.implications, 0);
-                return `<tr class="cat-table-row" data-action="open-team" data-team="${h(s.team)}">
+                const involvements = (s.gf || 0) + (s.topPasseurs || []).reduce((a, p) => a + (p.passes_d || 0), 0);
+                return `<tr>
                   <td><strong>${h(s.team)}</strong></td>
-                  <td>${s.effectif}</td>
+                  <td>${(window.appState?.data?.[cat] && Object.values(window.appState.data[cat]).filter(p => p[window.appState.season]?.profil?.equipe === s.team).length) || '-'}</td>
                   <td>${s.played}</td>
                   <td>${s.won}/${s.draw}/${s.lost}</td>
-                  <td>${s.gf} – ${s.ga}</td>
-                  <td><strong>${s.points}</strong></td>
+                  <td>${s.gf}–${s.ga}</td>
+                  <td><strong>${s.points || 0}</strong></td>
                   <td>${winPct}%</td>
-                  <td>${implicTotal}</td>
+                  <td>${involvements}</td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -411,31 +450,9 @@
       </section>`;
   }
 
-  /* ── Actions ──────────────────────────────────────────── */
-
-  function handleAction(target) {
-    const a = target.dataset.action;
-    if (!a) return false;
-    if (a === 'open-team') {
-      state().view = 'team';
-      state().selTeam = target.dataset.team || '';
-      utils()?.renderAll();
-      return true;
-    }
-    if (a === 'back-teams') {
-      state().selTeam = null;
-      utils()?.renderAll();
-      return true;
-    }
-    return false;
-  }
-
-  /* ── Export ───────────────────────────────────────────── */
-
   window.TeamModule = {
-    listTeams, teamPlayers, unassignedPlayers,
-    teamMatches, teamSummary,
+    teamPlayers,
+    teamSummary,
     renderListBody, renderTeamBody, renderCompareBlock,
-    handleAction,
   };
 })();

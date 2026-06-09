@@ -890,7 +890,6 @@ function renderPrimaryNav() {
   const weeklyCount = window.WeeklyFocusModule?.badge?.() || 0;
   const items = [
     { key:'dashboard',  label:'Accueil' },
-    { key:'categories', label:'Catégories' },
     { key:'player',     label:'Joueurs' },
     { key:'team',       label:'Équipes' },
     { key:'weekly',     label:'Semaine' + (weeklyCount > 0 ? ` (${weeklyCount})` : '') },
@@ -1303,13 +1302,19 @@ function renderDashboard() {
         </div>
       </div>
 
-      <div class="dashboard-main-grid">
-        ${renderInfoCard(CLUB_DATA.infos)}
-        ${renderStandingsCard(feeds.standings)}
-        ${renderMatchCard('Matchs à venir', 'Agenda', feeds.upcoming, true)}
+      <div class="dashboard-main-grid dashboard-main-grid-compact">
         ${renderCategoryAccessCard(categories)}
-        ${renderMatchCard('Résultats', 'Derniers matchs', feeds.past, false)}
+        ${renderStandingsCard(feeds.standings)}
+        ${renderInfoCard(CLUB_DATA.infos)}
       </div>
+
+      <details class="dashboard-matches-toggle" open>
+        <summary>📅 Matchs & Résultats <span class="dashboard-matches-counter">${(feeds.upcoming || []).length} à venir · ${(feeds.past || []).length} récents</span></summary>
+        <div class="dashboard-main-grid dashboard-matches-grid">
+          ${renderMatchCard('Matchs à venir', 'Agenda', (feeds.upcoming || []).slice(0, 4), true)}
+          ${renderMatchCard('Résultats', 'Derniers matchs', (feeds.past || []).slice(0, 6), false)}
+        </div>
+      </details>
     </section>
   `;
 }
@@ -2227,7 +2232,10 @@ function renderModal() {
 }
 
 function renderAll() {
-  q('.main-layout').classList.toggle('dashboard-mode', state.view === 'dashboard');
+  const layout = q('.main-layout');
+  layout.classList.toggle('dashboard-mode', state.view === 'dashboard');
+  // La sidebar joueurs n'est utile que sur la vue Joueurs
+  layout.classList.toggle('no-sidebar', state.view !== 'player');
   renderPrimaryNav();
   renderSeasonOptions();
   renderSidebar();
@@ -2456,7 +2464,8 @@ function loadAll() {
 // Exposer les utilitaires pour les modules externes
 window.appUtils = {
   h, q, qq, showToast, schedulePersist,
-  renderMain, renderAll, saveAppState
+  renderMain, renderAll, saveAppState,
+  buildDashboardFeeds, renderStandingsCard, renderMatchCard,
 };
 
 // Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
@@ -2734,48 +2743,18 @@ document.addEventListener('click', event => {
     return;
   }
 
-  if (action === 'save-modal') {
-    const raw = q('#modal-input')?.value || '';
-    try {
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) throw new Error('not array');
-      const all = loadManualFeeds();
-      if (!all[activeModal.cat]) all[activeModal.cat] = {};
-      all[activeModal.cat][activeModal.type] = parsed;
-      saveManualFeeds(all);
-      activeModal = null;
-      renderAll();
-      showToast('Données enregistrées');
-    } catch {
-      showToast('Format JSON invalide — vérifie la syntaxe');
-    }
+  if (action === 'save-player') { savePlayerNow(); return; }
+  if (action === 'print-report') {
+    if (window.PDFModule) window.PDFModule.generate(state.selPlayer);
+    else generateReport();
+    return;
+  }
+  if (action === 'clear-player-photo') { clearPlayerPhoto(); return; }
+  if (action === 'snapshot-morpho') {
+    if (typeof snapshotMorphoNow === 'function') snapshotMorphoNow();
     return;
   }
 
-  if (action === 'clear-modal') {
-    const all = loadManualFeeds();
-    if (all[target.dataset.modalCat]) {
-      delete all[target.dataset.modalCat][target.dataset.modalType];
-      if (!Object.keys(all[target.dataset.modalCat]).length) delete all[target.dataset.modalCat];
-    }
-    saveManualFeeds(all);
-    activeModal = null;
-    renderAll();
-    showToast('Données effacées');
-    return;
-  }
-});
-
-document.addEventListener('input', event => {
-  const target = event.target;
-  if (target.id === 'sb-search') { state.search = target.value; renderList(); return; }
-  if (target.dataset.field) {
-    updateProfileField(target.dataset.field, target.value);
-    if (['poste1', 'poste2', 'prenom', 'nom', 'taille', 'poids'].includes(target.dataset.field)) renderMain();
-    renderList();
-    return;
-  }
-  if (target.dataset.action === 'update-obj') { updateObj(Number(target.dataset.index), target.value); return; }
   if (target.dataset.action === 'set-crit-comment') { setCritComment(target.dataset.pillar, Number(target.dataset.index), target.value); return; }
   if (target.dataset.action === 'set-main-comment') { setMainComment(target.value); return; }
   if (target.dataset.action === 'set-self-comment') { setSelfComment(target.value); }
