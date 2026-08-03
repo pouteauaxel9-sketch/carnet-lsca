@@ -31,14 +31,11 @@
       <select class="season-sel" id="season-sel" aria-label="Choix de la saison"></select>
       <button class="btn" id="refresh-btn" type="button">Actualiser</button>
       <button class="btn" id="export-xlsx-btn" type="button" title="Exporter en Excel">Excel</button>
+      <button class="btn install-chip" type="button" data-action="install-pwa" id="install-pwa-item" hidden title="Installer l'application sur ton téléphone / ordinateur">📱 Installer</button>
       <button class="btn btn-ghost" id="more-actions-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Plus d'actions">⋯</button>
       <div class="more-menu" id="more-menu" hidden role="menu">
-        <button class="more-menu-item" type="button" data-action="install-pwa" role="menuitem" id="install-pwa-item" hidden>📱 Installer l'application</button>
-        <details class="more-menu-submenu">
-          <summary>⚙️ Avancé</summary>
-          <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">📂 Importer JSON</button>
-          <button class="more-menu-item" type="button" data-action="trigger-export-json" role="menuitem">💾 Exporter JSON</button>
-        </details>
+        <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">📂 Importer JSON</button>
+        <button class="more-menu-item" type="button" data-action="trigger-export-json" role="menuitem">💾 Exporter JSON</button>
       </div>
       <input id="import-file" class="sr-only" type="file" accept="application/json">
     </div>
