@@ -6465,3 +6465,14 @@ select#compare-select {
   background: var(--rd-surface) !important;
   color: var(--rd-text) !important;
 }
+
+/* Menu ⋯ : positionnement à droite pour ne pas recouvrir les boutons hero */
+.nav-right { position: relative; }
+.more-menu {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  left: auto !important;
+  min-width: 220px;
+  z-index: 200 !important;
+}

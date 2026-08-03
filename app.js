@@ -2826,6 +2826,27 @@ q('#season-sel').addEventListener('change', event => {
   renderAll();
 });
 
+// Menu ⋯ : ouverture/fermeture + fermeture au clic hors du menu
+function toggleMoreMenu(force) {
+  const menu = q('#more-menu');
+  const btn = q('#more-actions-btn');
+  if (!menu || !btn) return;
+  const willOpen = force === undefined ? menu.hidden : !!force;
+  menu.hidden = !willOpen;
+  btn.setAttribute('aria-expanded', String(willOpen));
+}
+q('#more-actions-btn')?.addEventListener('click', e => {
+  e.stopPropagation();
+  toggleMoreMenu();
+});
+document.addEventListener('click', e => {
+  const menu = q('#more-menu');
+  if (!menu || menu.hidden) return;
+  if (!e.target.closest('#more-menu') && !e.target.closest('#more-actions-btn')) {
+    toggleMoreMenu(false);
+  }
+});
+
 q('#refresh-btn').addEventListener('click', () => { refreshRemoteData(); });
 
 q('#export-xlsx-btn')?.addEventListener('click', () => {
