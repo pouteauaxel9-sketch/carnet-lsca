@@ -6307,3 +6307,161 @@ select#compare-select {
   background: var(--lsp-green) !important;
   color: #fff !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   💚 Hero joueur + Hero équipe : suppression du bandeau bleu massif
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Fiche joueur — bandeau du haut (nom + photo) */
+.player-hero,
+.player-view .player-hero,
+.player-hero-wrapper {
+  background: var(--rd-surface) !important;
+  background-image: none !important;
+  color: var(--rd-text) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-lg) !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+  position: relative;
+  overflow: hidden;
+  padding: 24px 28px !important;
+}
+.player-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--lsp-green) 0%, var(--lsp-green-dark) 100%);
+}
+.player-hero *,
+.player-hero h1,
+.player-hero h2,
+.player-hero .player-name,
+.player-hero .player-title {
+  color: var(--rd-text) !important;
+}
+.player-hero .player-subtitle,
+.player-hero p {
+  color: var(--rd-text-muted) !important;
+}
+/* Chips dans le hero joueur */
+.player-hero .chip,
+.player-hero .badge,
+.player-hero .tag,
+.player-hero span.pill {
+  background: var(--rd-bg-soft) !important;
+  color: var(--rd-text-muted) !important;
+  border: 1px solid var(--rd-border) !important;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+/* Boutons hero-actions : outline vert */
+.player-hero .btn,
+.hero-actions .btn {
+  background: var(--rd-surface) !important;
+  color: var(--rd-text) !important;
+  border: 1px solid var(--rd-border-strong) !important;
+}
+.player-hero .btn:hover,
+.hero-actions .btn:hover {
+  background: var(--rd-accent-soft) !important;
+  border-color: var(--lsp-green) !important;
+  color: var(--lsp-green-dark) !important;
+}
+/* Photo joueur placeholder */
+.player-photo-placeholder,
+.photo-placeholder {
+  background: var(--rd-bg-soft) !important;
+  color: var(--rd-text-muted) !important;
+  border: 2px dashed rgba(0, 150, 64, 0.3) !important;
+}
+
+/* Vue Équipes — hero "X équipes" */
+.team-hero,
+.team-list-hero,
+.category-hero,
+.dashboard-shell > .dashboard-hero + .team-hero {
+  background: var(--rd-surface) !important;
+  background-image: none !important;
+  color: var(--rd-text) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-lg) !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+  position: relative;
+  overflow: hidden;
+  padding: 24px 28px !important;
+}
+.team-hero::before,
+.team-list-hero::before,
+.category-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--lsp-green) 0%, var(--lsp-green-dark) 100%);
+}
+.team-hero h1,
+.team-hero h2,
+.team-hero p,
+.category-hero h1,
+.category-hero h2,
+.category-hero p,
+.team-list-hero *,
+.team-hero * {
+  color: var(--rd-text) !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+.team-hero p,
+.category-hero p { color: var(--rd-text-muted) !important; }
+
+/* Card équipe individuelles (U13 A, U13 B, U12, etc.) — pastilles chiffres */
+.team-card .stat,
+.team-card [class*="stat"] {
+  background: var(--rd-bg-soft) !important;
+}
+
+/* Boutons pilule chips équipes en bas (U13 U11 U9) */
+.view-chip,
+.cat-chip {
+  border-radius: 999px !important;
+  padding: 6px 14px !important;
+  border: 1px solid var(--rd-border-strong) !important;
+  background: var(--rd-surface) !important;
+  color: var(--rd-text-muted) !important;
+  font-weight: 500 !important;
+}
+.view-chip.on,
+.cat-chip.on {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+  border-color: var(--lsp-green) !important;
+}
+
+/* Bouton Retour catégorie */
+.btn-back,
+[data-action="back-teams"],
+[data-action="back-team-list"] {
+  background: var(--rd-surface) !important;
+  color: var(--rd-text) !important;
+  border: 1px solid var(--rd-border-strong) !important;
+}
+.btn-back:hover,
+[data-action="back-teams"]:hover {
+  background: var(--rd-accent-soft) !important;
+  border-color: var(--lsp-green) !important;
+  color: var(--lsp-green-dark) !important;
+}
+
+/* Tous les containers qui ont un gradient bleu direct (fallback inline) */
+[style*="linear-gradient(135deg, #185fa5"],
+[style*="linear-gradient(135deg,#185fa5"],
+[style*="background: #185fa5"],
+[style*="background:#185fa5"],
+[style*="background-color:#185fa5"],
+[style*="background-color: #185fa5"] {
+  background: var(--rd-surface) !important;
+  color: var(--rd-text) !important;
+}
