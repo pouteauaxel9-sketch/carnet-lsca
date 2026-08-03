@@ -7,9 +7,13 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#fcfaf6",
-  "theme_color": "#185fa5",
-  "categories": ["sports", "education", "productivity"],
+  "background_color": "#fafaf7",
+  "theme_color": "#009640",
+  "categories": [
+    "sports",
+    "education",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "icons/icon-192.png",

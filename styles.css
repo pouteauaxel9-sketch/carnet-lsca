@@ -5829,3 +5829,153 @@ body {
   .dashboard-hero { padding: 20px !important; }
   .dashboard-hero h1 { font-size: 22px !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   🌿 IDENTITÉ LOUVERNÉ SPORTS — vert #009640 + noir + rouge
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Override de l'accent : vert Louverné officiel */
+  --rd-accent: #009640;
+  --rd-accent-hover: #007a34;
+  --rd-accent-soft: #e8f5ec;
+  --rd-accent-glow: rgba(0, 150, 64, 0.15);
+
+  /* Couleurs secondaires officielles */
+  --lsp-green: #009640;
+  --lsp-green-dark: #006e2f;
+  --lsp-red: #E30613;
+  --lsp-black: #0f0f0f;
+}
+
+/* Logo dans la nav */
+.nav-logo {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-decoration: none !important;
+  padding: 4px 8px;
+  border-radius: var(--rd-r-md) !important;
+  transition: background 0.15s !important;
+}
+.nav-logo:hover {
+  background: rgba(0, 150, 64, 0.06) !important;
+}
+.nav-logo-img {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+.nav-logo-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--rd-text);
+  line-height: 1;
+}
+
+@media (max-width: 768px) {
+  .nav-logo-text { display: none; }
+  .nav-logo-img { height: 30px; }
+}
+
+/* Hero accueil : bande verte discrète en haut + logo GJ LSCA en accent */
+.dashboard-hero {
+  position: relative;
+  overflow: hidden;
+  padding-top: 32px !important;
+}
+.dashboard-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--lsp-green) 0%, var(--lsp-green-dark) 100%);
+}
+.dashboard-hero .dash-identity-badge {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+  padding: 5px 12px !important;
+  font-weight: 700 !important;
+  border: none !important;
+}
+
+/* Bouton primary → vert Louverné */
+.btn-primary {
+  background: var(--lsp-green) !important;
+  border-color: var(--lsp-green) !important;
+}
+.btn-primary:hover {
+  background: var(--lsp-green-dark) !important;
+  box-shadow: 0 2px 8px rgba(0, 150, 64, 0.25) !important;
+}
+
+/* FAB Mode Terrain vert */
+.fab-live {
+  background: var(--lsp-green) !important;
+  box-shadow: 0 4px 16px rgba(0, 150, 64, 0.3) !important;
+}
+.fab-live:hover {
+  background: var(--lsp-green-dark) !important;
+  box-shadow: 0 6px 20px rgba(0, 150, 64, 0.4) !important;
+}
+
+/* Onglet actif nav → soulignement vert au lieu du fond blanc */
+.nav-cat.on {
+  color: var(--lsp-green) !important;
+  background: var(--rd-accent-soft) !important;
+  box-shadow: none !important;
+}
+
+/* Bilans subtabs en vert */
+.bilans-subtab.on {
+  color: var(--lsp-green) !important;
+  border-bottom-color: var(--lsp-green) !important;
+}
+
+/* Sync badge accent vert */
+.dash-identity-badge {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+/* Focus / bordures en vert */
+.sb-search:focus,
+.weekly-theme-input:focus,
+.field-input:focus {
+  border-color: var(--lsp-green) !important;
+  box-shadow: 0 0 0 3px rgba(0, 150, 64, 0.15) !important;
+}
+
+/* Player list sélection en vert */
+.player-list .pli.on {
+  background: rgba(0, 150, 64, 0.08) !important;
+  color: var(--lsp-green-dark) !important;
+  font-weight: 500 !important;
+}
+
+/* Onglets piliers actif en vert */
+.ptab.on {
+  background: var(--rd-surface) !important;
+  color: var(--lsp-green-dark) !important;
+  box-shadow: 0 1px 3px rgba(0, 150, 64, 0.15) !important;
+}
+
+/* Quick player buttons hover vert */
+.quick-player-btn:hover {
+  background: var(--rd-accent-soft) !important;
+  border-color: var(--lsp-green) !important;
+  color: var(--lsp-green-dark) !important;
+}
+.quick-player-initials {
+  background: var(--lsp-green) !important;
+}
+
+/* Chip avec ballon (principe FFF avec ballon) → touche verte pour cohérence */
+.weekly-item-chip.is-avec {
+  background: var(--rd-accent-soft) !important;
+  border-color: rgba(0, 150, 64, 0.2) !important;
+  color: var(--lsp-green-dark) !important;
+}

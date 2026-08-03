@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#185fa5">
+<meta name="theme-color" content="#009640">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Carnet LSCA">
 <title>Carnet Formation — GJ LSCA / Louverné</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -19,7 +21,10 @@
 <body>
 <div class="app-shell">
   <nav class="topnav" aria-label="Navigation principale">
-    <span class="nav-logo">Carnet Formation</span>
+    <a href="./" class="nav-logo" aria-label="Accueil Louverné Sports">
+      <img src="assets/logo-louverne-sports.png" alt="Louverné Sports" class="nav-logo-img">
+      <span class="nav-logo-text">Carnet Formation</span>
+    </a>
     <div class="nav-cat-tabs" id="nav-cat-tabs" role="tablist" aria-label="Categories"></div>
     <div class="nav-right">
       <label class="sr-only" for="season-sel">Choisir une saison</label>
