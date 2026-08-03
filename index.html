@@ -29,16 +29,10 @@
       <button class="btn btn-ghost" id="more-actions-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Plus d'actions">⋯</button>
       <div class="more-menu" id="more-menu" hidden role="menu">
         <button class="more-menu-item" type="button" data-action="install-pwa" role="menuitem" id="install-pwa-item" hidden>📱 Installer l'application</button>
-        <div class="more-menu-empty" id="more-menu-empty">
-          <span>Rien d'autre par ici 👌</span>
-          <small>Le Mode Terrain est dans le bouton ⚡ en bas à droite.</small>
-        </div>
         <details class="more-menu-submenu">
           <summary>⚙️ Avancé</summary>
-          <button class="more-menu-item" type="button" data-action="export-ical" role="menuitem">📅 Exporter le calendrier (.ics)</button>
           <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">📂 Importer JSON</button>
           <button class="more-menu-item" type="button" data-action="trigger-export-json" role="menuitem">💾 Exporter JSON</button>
-          <button class="more-menu-item" type="button" data-action="trigger-print" role="menuitem">🖨 Imprimer la page</button>
         </details>
       </div>
       <input id="import-file" class="sr-only" type="file" accept="application/json">
@@ -68,7 +62,7 @@
 
     <main class="main-content" id="main-content">
       <div class="empty-state">
-        <p>Selectionne un joueur dans la liste pour afficher son carnet, suivre sa progression et saisir ses observations de saison.</p>
+        <p>Selectionne un joueur dans la liste pour afficher son carnet.</p>
       </div>
     </main>
   </div>
@@ -76,9 +70,6 @@
 
 <div class="toast" id="toast" aria-live="polite"></div>
 
-<script src="supabase-config.js"></script>
-<script src="supabase-service.js"></script>
-<script src="sync.js"></script>
 <script src="app.js"></script>
 <script src="auth-local.js"></script>
 <script src="evaluation-seance.js"></script>
@@ -93,13 +84,11 @@
 <script src="injury.js"></script>
 <script src="profiling.js"></script>
 <script src="directeur-view.js"></script>
-<script src="calendar-export.js"></script>
 <script src="career.js"></script>
 <script src="weekly-focus.js"></script>
 <script src="season-plan.js"></script>
 <script src="advanced-stats.js"></script>
 <script src="ux-polish.js"></script>
-<script src="voice-input.js"></script>
 <script src="live-training.js"></script>
 <script src="pdf-report.js"></script>
 <script src="pwa.js"></script>

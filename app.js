@@ -7,7 +7,7 @@ const MANUAL_FEEDS_KEY = 'cfb6_feeds';
 // Laisser vide tant que le repo n'est pas créé.
 const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/pouteauaxel9-sketch/carnet-lsca/main/data/feeds.json';
 const CAT_LABELS = { u13: 'U13', u11: 'U11', u9: 'U9' };
-const SEASONS = ['2025-2026', '2024-2025', '2023-2024'];
+const SEASONS = ['2026-2027', '2025-2026', '2024-2025', '2023-2024'];
 const AC = [
   ['#E6F1FB','#0C447C'],
   ['#EAF3DE','#27500A'],
@@ -33,7 +33,7 @@ const POSTES = ['Gardien','Defenseur','Milieu central','Ailier gauche','Ailier d
 
 const CLUB_DATA = {
   name:'Louverne Sports - GJ LSCA',
-  season:'2025-2026',
+  season:'2026-2027',
   femalePlayers:0,
   categories:{
     u13:{ teams:['U13 A','U13 B','U13 C','U12'] },
@@ -181,7 +181,7 @@ window.POSTES     = POSTES;
 let state = {
   view:'dashboard',  // 'dashboard' | 'categories' | 'player' | 'team' | 'analyses'
   cat:'u13',
-  season:'2025-2026',
+  season:'2026-2027',
   selPlayer:null,
   selTeam:null,      // team courante (ex 'U13 A') quand view === 'team'
   selPillar:0,
@@ -891,11 +891,8 @@ function renderPrimaryNav() {
   const items = [
     { key:'dashboard',  label:'Accueil' },
     { key:'player',     label:'Joueurs' },
-    { key:'team',       label:'Équipes' },
     { key:'weekly',     label:'Semaine' + (weeklyCount > 0 ? ` (${weeklyCount})` : '') },
-    { key:'plan',       label:'Plan saison' },
-    { key:'analyses',   label:'Analyses' },
-    { key:'direction',  label:'Direction' + (alertsCount > 0 ? ` (${alertsCount})` : '') },
+    { key:'bilans',     label:'Bilans' + (alertsCount > 0 ? ` (${alertsCount})` : '') },
   ];
 
   // 'team' et 'player' restent actifs même quand on a navigué dans un détail
@@ -1686,13 +1683,18 @@ function profileBody(pid) {
       </div>
     </div>
     ${renderMorphoHistory(prof)}
-    ${window.InjuryModule?.renderWidget(pid) || ''}
-    ${window.AttendanceModule?.renderWidget(pid) || ''}
-    ${window.WeeklyFocusModule?.renderPlayerWidget(pid, state.cat) || ''}
-    ${window.LiveTrainingModule?.renderPlayerWidget(pid, state.cat) || ''}
 
     <div class="form-section-title">Objectifs de saison</div>
     <div class="obj-list">${objRows}<button class="add-obj" type="button" data-action="add-obj">+ Ajouter un objectif</button></div>
+
+    ${renderCollapsibleSection('📋 Cette semaine', 'weekly-widget',
+       window.WeeklyFocusModule?.renderPlayerWidget(pid, state.cat) || '<p class="collapsible-empty">Aucun critère défini cette semaine.</p>')}
+    ${renderCollapsibleSection('⚡ Notes terrain récentes', 'live-widget',
+       window.LiveTrainingModule?.renderPlayerWidget(pid, state.cat) || '<p class="collapsible-empty">Aucune note terrain récente.</p>')}
+    ${renderCollapsibleSection('🩹 Blessures & disponibilité', 'injury-widget',
+       window.InjuryModule?.renderWidget(pid) || '')}
+    ${renderCollapsibleSection('📅 Assiduité', 'attendance-widget',
+       window.AttendanceModule?.renderWidget(pid) || '')}
 
     <div class="form-footer"><span class="save-hint">Autosauvegarde active</span><button class="btn btn-primary" type="button" data-action="save-player">Sauvegarder maintenant</button></div>
   `;
@@ -2041,6 +2043,74 @@ function renderPlayerEmptyState() {
   `;
 }
 
+// Helper : section repliable pour la fiche joueur
+function renderCollapsibleSection(title, key, content) {
+  return `
+    <details class="player-collapsible" data-section="${h(key)}">
+      <summary class="player-collapsible-summary">
+        <span>${h(title)}</span>
+        <span class="player-collapsible-chevron">▾</span>
+      </summary>
+      <div class="player-collapsible-body">
+        ${content}
+      </div>
+    </details>
+  `;
+}
+
+function renderBilansMegaView() {
+  const alerts = window.DirecteurModule?.countAlerts?.() || 0;
+  const sub = state.bilansTab || 'equipes';
+  const cat = state.cat;
+  const catLabel = (CAT_LABELS[cat] || cat).toUpperCase();
+  const tabs = [
+    { key: 'equipes',   label: 'Équipes' },
+    { key: 'plan',      label: 'Plan saison' },
+    { key: 'analyses',  label: 'Analyses' },
+    { key: 'direction', label: 'Direction' + (alerts > 0 ? ` (${alerts})` : '') },
+  ];
+
+  let body = '';
+  if (sub === 'equipes') {
+    const teamModule = window.TeamModule;
+    if (!teamModule) body = '<p>Module équipes non chargé.</p>';
+    else if (state.selTeam) body = teamModule.renderTeamBody(cat, state.selTeam);
+    else body = renderTeamListShell();
+  } else if (sub === 'plan') {
+    body = window.SeasonPlanModule?.renderBody(cat) || '<p>Module Plan saison non chargé.</p>';
+  } else if (sub === 'analyses') {
+    const advHtml = window.AdvancedStatsModule?.renderBody(cat) || '';
+    const trvHtml = window.TransverseModule?.renderBody(cat) || '';
+    body = advHtml + trvHtml || '<p>Module analyses non chargé.</p>';
+  } else if (sub === 'direction') {
+    body = window.DirecteurModule?.renderBody() || '<p>Module direction non chargé.</p>';
+  }
+
+  return `
+    <div class="bilans-shell">
+      <header class="bilans-head">
+        <div>
+          <h1 class="bilans-title">Bilans <span class="bilans-cat">${h(catLabel)}</span></h1>
+          <p class="bilans-sub">Toutes les analyses et vues d'ensemble en un seul endroit.</p>
+        </div>
+      </header>
+      <nav class="bilans-subtabs" role="tablist" aria-label="Sous-onglets Bilans">
+        ${tabs.map(t => `
+          <button class="bilans-subtab ${sub === t.key ? 'on' : ''}"
+                  type="button"
+                  data-action="set-bilans-tab" data-tab="${t.key}"
+                  role="tab" aria-selected="${sub === t.key}">
+            ${h(t.label)}
+          </button>
+        `).join('')}
+      </nav>
+      <div class="bilans-body">
+        ${body}
+      </div>
+    </div>
+  `;
+}
+
 function renderMain() {
   const el = q('#main-content');
   if (state.view === 'dashboard') el.innerHTML = renderDashboard();
@@ -2053,22 +2123,14 @@ function renderMain() {
     else if (state.selTeam) el.innerHTML = teamModule.renderTeamBody(state.cat, state.selTeam);
     else el.innerHTML = renderTeamListShell();
   }
-  else if (state.view === 'analyses') {
-    const advHtml = window.AdvancedStatsModule?.renderBody(state.cat) || '';
-    const trvHtml = window.TransverseModule?.renderBody(state.cat) || '';
-    el.innerHTML = advHtml + trvHtml || '<p>Module analyses non chargé.</p>';
-  }
-  else if (state.view === 'direction') {
-    el.innerHTML = window.DirecteurModule?.renderBody() || '<p>Module direction non chargé.</p>';
-  }
   else if (state.view === 'weekly') {
     if (window.WeeklyFocusModule?.render) window.WeeklyFocusModule.render(el);
     else el.innerHTML = '<p>Module Semaine non chargé.</p>';
   }
-  else if (state.view === 'plan') {
-    el.innerHTML = window.SeasonPlanModule?.renderBody(state.cat) || '<p>Module Plan saison non chargé.</p>';
+  else if (state.view === 'bilans') {
+    el.innerHTML = renderBilansMegaView();
   }
-  else el.innerHTML = renderCategoryOverview();
+  else el.innerHTML = renderDashboard();
 
   if (state.view === 'player' && state.selPlayer) {
     const values = pillars().map(pillar => getPillarPercent(state.cat, state.selPlayer, pillar.key));
@@ -2500,17 +2562,29 @@ document.addEventListener('click', event => {
 
   if (action === 'set-view') {
     const next = target.dataset.view;
-    if (next === 'player')      state.view = state.selPlayer ? 'player' : 'categories';
-    else if (next === 'team')   { state.view = 'team'; state.selTeam = null; }
+    if (next === 'player')      state.view = state.selPlayer ? 'player' : 'player';
+    else if (next === 'team')   { state.view = 'bilans'; state.bilansTab = 'equipes'; state.selTeam = null; }
+    else if (next === 'plan')     { state.view = 'bilans'; state.bilansTab = 'plan'; }
+    else if (next === 'analyses') { state.view = 'bilans'; state.bilansTab = 'analyses'; }
+    else if (next === 'direction'){ state.view = 'bilans'; state.bilansTab = 'direction'; }
+    else if (next === 'categories') { state.view = 'player'; }
     else                         state.view = next;
     if (state.view !== 'player') state.selPlayer = null;
-    if (state.view !== 'team')   state.selTeam = null;
+    if (state.view !== 'bilans') state.selTeam = null;
+    renderAll();
+    return;
+  }
+
+  if (action === 'set-bilans-tab') {
+    state.bilansTab = target.dataset.tab || 'equipes';
+    state.selTeam = null;
     renderAll();
     return;
   }
 
   if (action === 'open-team') {
-    state.view = 'team';
+    state.view = 'bilans';
+    state.bilansTab = 'equipes';
     state.selTeam = target.dataset.team || null;
     renderAll();
     return;

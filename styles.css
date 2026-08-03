@@ -5017,3 +5017,139 @@ body.weekly-fullscreen .fab { display: none; }
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   Méga-vue Bilans (regroupe Équipes + Plan saison + Analyses + Direction)
+   ────────────────────────────────────────────────────────────────── */
+
+.bilans-shell {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.bilans-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.bilans-title {
+  margin: 0;
+  font-size: 26px;
+  background: linear-gradient(135deg, #0c447c 0%, #185fa5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.bilans-cat {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text2, #6b7280);
+  margin-left: 6px;
+  -webkit-text-fill-color: initial;
+}
+.bilans-sub {
+  margin: 4px 0 0;
+  color: var(--text2, #6b7280);
+  font-size: 13px;
+}
+
+.bilans-subtabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border, #e5e7eb);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.bilans-subtab {
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text2, #6b7280);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.bilans-subtab:hover {
+  color: #185fa5;
+  background: rgba(24, 95, 165, 0.05);
+}
+.bilans-subtab.on {
+  color: #185fa5;
+  border-bottom-color: #185fa5;
+  font-weight: 600;
+}
+
+.bilans-body {
+  min-height: 400px;
+}
+/* Retirer le padding interne des sous-modules qui font déjà leur propre padding */
+.bilans-body .plan-wrap,
+.bilans-body .advstats-wrap {
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  .bilans-shell { padding: 12px; }
+  .bilans-title { font-size: 22px; }
+  .bilans-subtab { padding: 8px 14px; font-size: 13px; }
+}
+
+/* ── Fiche joueur : sections repliables ── */
+.player-collapsible {
+  background: var(--panel, #fff);
+  border-radius: 12px;
+  border: 1px solid var(--border, #e5e7eb);
+  margin: 10px 0;
+  overflow: hidden;
+  transition: all 0.15s;
+}
+.player-collapsible[open] {
+  box-shadow: 0 2px 8px rgba(24, 95, 165, 0.06);
+}
+.player-collapsible-summary {
+  cursor: pointer;
+  padding: 14px 18px;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text1, #181814);
+  transition: background 0.15s;
+}
+.player-collapsible-summary::-webkit-details-marker { display: none; }
+.player-collapsible-summary:hover {
+  background: rgba(24, 95, 165, 0.03);
+}
+.player-collapsible-chevron {
+  font-size: 12px;
+  color: var(--text2, #6b7280);
+  transition: transform 0.2s;
+}
+.player-collapsible[open] .player-collapsible-chevron {
+  transform: rotate(180deg);
+}
+.player-collapsible-body {
+  padding: 4px 18px 16px;
+  border-top: 1px solid var(--border, #f3f4f6);
+}
+.collapsible-empty {
+  color: var(--text2, #6b7280);
+  font-style: italic;
+  font-size: 13px;
+  margin: 8px 0;
+  padding: 12px;
+  background: var(--bg2, #f9fafb);
+  border-radius: 8px;
+  text-align: center;
+}
