@@ -15,7 +15,7 @@
  *   }
  *
  * Le mode terrain expose un overlay activable depuis le menu "…" ou
- * directement via VoiceInputModule + WeeklyFocusModule.
+ * directement via WeeklyFocusModule.
  *
  * Expose : window.LiveTrainingModule.{ open, close, isOpen, handleAction,
  *          summaryFor }
@@ -245,7 +245,7 @@
         </header>
 
         <div class="live-note-form">
-          <label class="live-note-label" for="live-note-input">Note rapide ${window.VoiceInputModule?.isSupported() ? '(ou dicte 🎤)' : ''}</label>
+          <label class="live-note-label" for="live-note-input">Note rapide</label>
           <textarea id="live-note-input" class="live-note-input"
                     placeholder="Ex: belle conduite côté droit, frappe trop molle"
                     rows="4" data-voice></textarea>
@@ -339,8 +339,6 @@
       activePid = el.dataset.pid;
       activeMode = 'note';
       renderOverlay();
-      // attacher voice à la nouvelle textarea
-      setTimeout(() => window.VoiceInputModule?.attachAll(), 0);
       // focus textarea
       setTimeout(() => document.getElementById('live-note-input')?.focus(), 50);
       return true;

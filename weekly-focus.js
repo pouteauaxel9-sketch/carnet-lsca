@@ -75,7 +75,6 @@
   function loadStore() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; } catch { return {}; } }
   function saveStore(store) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); } catch (e) { console.warn(e); }
-    try { if (window.SupabaseService && window.SupabaseService.upsertSetting) window.SupabaseService.upsertSetting('weekly_focus', store); } catch {}
   }
   function getWeek(cat, iso) { const s = loadStore(); return (s[cat] && s[cat][iso]) || null; }
   function ensureWeek(cat, iso) {

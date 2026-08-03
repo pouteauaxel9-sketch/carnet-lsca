@@ -2756,20 +2756,6 @@ document.addEventListener('click', event => {
     return;
   }
 
-  if (action === 'export-ical') {
-    toggleMoreMenu(false);
-    // Sur la vue Équipe d'une équipe précise → seulement les matchs de cette équipe.
-    // Sur la vue Catégorie / Joueurs → seulement les matchs de la catégorie active.
-    // Ailleurs (Accueil, Direction) → tous les matchs du club.
-    if (state.view === 'team' && state.selTeam) {
-      window.CalendarExportModule?.exportTeam?.(state.cat, state.selTeam);
-    } else if (state.view === 'categories' || state.view === 'player' || state.view === 'team' || state.view === 'analyses') {
-      window.CalendarExportModule?.exportCategory?.(state.cat);
-    } else {
-      window.CalendarExportModule?.exportAll?.();
-    }
-    return;
-  }
 
   // Effectif
   if (action === 'open-roster-create') {
