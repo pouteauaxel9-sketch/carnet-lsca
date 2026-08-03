@@ -2,17 +2,18 @@
  * sw.js — Service Worker du Carnet Formation
  *
  * Stratégie de cache :
- * - Précache : tous les assets statiques (HTML/CSS/JS) à l'installation
- * - Runtime :
- *     - assets statiques  → cache-first (offline-first)
- *     - feeds.json GitHub → network-first avec fallback cache (frais si dispo, sinon dernière copie)
- *     - chrome-extension://, data:, etc. → bypass
+ *  - HTML / CSS / JS : STALE-WHILE-REVALIDATE
+ *      → l'app démarre vite (cache) MAIS on fetch en parallèle
+ *      → la prochaine visite verra la version fraîche
+ *      → plus jamais de "j'ai push mais je vois l'ancienne version"
+ *  - feeds.json GitHub : network-first
+ *  - APIs externes : network-only
  *
- * Versioning : à chaque déploiement, bump CACHE_VERSION pour invalider le cache.
+ * Versioning : bump CACHE_VERSION à chaque changement du SW lui-même.
  */
 
-const CACHE_VERSION = 'v2.0.0';
-const STATIC_CACHE  = 'cfb-static-' + CACHE_VERSION;
+const CACHE_VERSION = 'v3.1.0-2026-08';
+const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
 const STATIC_ASSETS = [
@@ -30,9 +31,18 @@ const STATIC_ASSETS = [
   './team-view.js',
   './transverse-view.js',
   './attendance.js',
+  './injury.js',
+  './profiling.js',
+  './directeur-view.js',
+  './career.js',
+  './weekly-focus.js',
+  './season-plan.js',
+  './advanced-stats.js',
+  './ux-polish.js',
+  './live-training.js',
   './pdf-report.js',
-  './supabase-config.js',
-  './supabase-service.js',
+  './pdf-logos.js',
+  './pwa.js',
   './manifest.json',
   // CDN
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js',
@@ -43,14 +53,15 @@ const STATIC_ASSETS = [
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then(cache => {
-      // addAll ignore les requêtes opaques en erreur. On les fait une par une pour tolérer un asset manquant.
-      return Promise.all(
+    caches.open(STATIC_CACHE).then(cache =>
+      Promise.all(
         STATIC_ASSETS.map(url =>
-          cache.add(url).catch(err => console.warn('SW: skip ' + url + ' (' + err.message + ')'))
+          cache.add(url).catch(err =>
+            console.warn('SW: skip ' + url + ' (' + err.message + ')')
+          )
         )
-      );
-    }).then(() => self.skipWaiting())
+      )
+    ).then(() => self.skipWaiting())
   );
 });
 
@@ -74,42 +85,49 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // bypass des schémas non-http
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
-  // bypass chrome-extension, devtools etc.
   if (url.hostname === 'localhost' && url.port && url.port !== '8000' && url.port !== '8080') return;
 
-  // feeds GitHub : network-first (on veut toujours essayer du frais)
+  // feeds.json GitHub : network-first
   if (url.hostname === 'raw.githubusercontent.com') {
     event.respondWith(networkFirst(req));
     return;
   }
 
-  // API Supabase ou dofa : network-only (pas de cache, données dynamiques)
+  // APIs externes : network-only
   if (url.hostname.endsWith('.supabase.co') || url.hostname.endsWith('fff.fr')) {
     event.respondWith(fetch(req).catch(() => new Response('Offline', { status: 503 })));
     return;
   }
 
-  // Assets statiques : cache-first
-  event.respondWith(cacheFirst(req));
+  // Tout le reste (HTML / CSS / JS / images) : stale-while-revalidate
+  event.respondWith(staleWhileRevalidate(req));
 });
 
 /* ── stratégies ──────────────────────────────────────────── */
 
-async function cacheFirst(req) {
-  const cached = await caches.match(req);
-  if (cached) return cached;
-  try {
-    const fresh = await fetch(req);
-    if (fresh.ok && fresh.type !== 'opaque') {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(req, fresh.clone());
+// STALE-WHILE-REVALIDATE : renvoie le cache immédiatement,
+// et met à jour le cache en tâche de fond pour la prochaine fois.
+async function staleWhileRevalidate(req) {
+  const cache = await caches.open(RUNTIME_CACHE);
+  const cached = await cache.match(req);
+
+  const networkPromise = fetch(req).then(res => {
+    if (res.ok && res.type !== 'opaque') {
+      cache.put(req, res.clone()).catch(() => {});
     }
-    return fresh;
-  } catch {
-    return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+    return res;
+  }).catch(() => null);
+
+  // Si on a du cache : servir tout de suite, revalider en parallèle
+  if (cached) {
+    networkPromise.then(() => {});
+    return cached;
   }
+  // Pas de cache : attendre le réseau
+  const fresh = await networkPromise;
+  if (fresh) return fresh;
+  return new Response('Offline', { status: 503 });
 }
 
 async function networkFirst(req) {
@@ -129,7 +147,7 @@ async function networkFirst(req) {
   }
 }
 
-/* ── messages (pour skip-waiting depuis l'app) ───────────── */
+/* ── messages ────────────────────────────────────────────── */
 
 self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting();
