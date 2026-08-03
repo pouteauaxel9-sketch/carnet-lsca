@@ -6122,3 +6122,188 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--lsp-green) !important;
   box-shadow: 0 0 0 3px rgba(0, 150, 64, 0.15) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   💚 SWAP CIBLÉ VUE JOUEUR + CARTES + BILAN
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Fiche joueur — hero et actions */
+.player-hero,
+.player-view .hero-actions,
+.player-view .btn,
+.hero-actions .btn {
+  border-color: var(--lsp-green) !important;
+}
+.player-hero .btn-primary,
+.hero-actions .btn-primary,
+.player-view .btn-primary {
+  background: var(--lsp-green) !important;
+  border-color: var(--lsp-green) !important;
+  color: #fff !important;
+}
+.player-hero .btn:not(.btn-primary):not(.btn-ghost),
+.hero-actions .btn:not(.btn-primary):not(.btn-ghost) {
+  background: var(--rd-surface) !important;
+  color: var(--lsp-green-dark) !important;
+  border: 1px solid rgba(0, 150, 64, 0.3) !important;
+}
+.player-hero .btn:not(.btn-primary):not(.btn-ghost):hover,
+.hero-actions .btn:not(.btn-primary):not(.btn-ghost):hover {
+  background: var(--rd-accent-soft) !important;
+  border-color: var(--lsp-green) !important;
+}
+
+/* Onglets piliers — priorité absolue, même sur inline style */
+.pillar-nav .ptab.on,
+.player-view .ptab.on {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+  border-color: var(--lsp-green) !important;
+  box-shadow: 0 2px 6px rgba(0, 150, 64, 0.25) !important;
+}
+.pillar-nav .ptab,
+.player-view .ptab {
+  border: 1px solid transparent !important;
+  transition: all 0.15s !important;
+}
+
+/* Sidebar : cartes joueurs (.pli) */
+.player-list .pli,
+.player-list .player-row {
+  border: 1px solid transparent !important;
+  transition: all 0.12s !important;
+}
+.player-list .pli:hover,
+.player-list .player-row:hover {
+  background: var(--rd-accent-soft) !important;
+  border-color: rgba(0, 150, 64, 0.15) !important;
+}
+.player-list .pli.on,
+.player-list .player-row.on {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+  border-color: var(--lsp-green) !important;
+  font-weight: 500 !important;
+}
+.player-list .pli.on *,
+.player-list .player-row.on * {
+  color: #fff !important;
+}
+
+/* Score badges dans les cartes joueur */
+.pli-score,
+.pli-badge,
+.player-score-badge {
+  background: var(--rd-accent-soft) !important;
+  color: var(--lsp-green-dark) !important;
+  border-color: transparent !important;
+}
+.player-list .pli.on .pli-score,
+.player-list .pli.on .pli-badge {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+/* Radar & progression : filaire vert */
+.progress-bar-fill,
+.pillar-bar-fill,
+.progress-fill,
+.bar-fill {
+  background: var(--lsp-green) !important;
+}
+
+/* Dots des évaluations (1-4) */
+.dot.on-1 { background: #fee2e2 !important; color: #7f1d1d !important; }
+.dot.on-2 { background: #fed7aa !important; color: #7c2d12 !important; }
+.dot.on-3 { background: #d9f99d !important; color: #365314 !important; }
+.dot.on-4 { background: var(--lsp-green) !important; color: #fff !important; }
+
+/* Bouton "+ Ajouter objectif" */
+.add-obj {
+  background: var(--rd-surface) !important;
+  border: 1px dashed rgba(0, 150, 64, 0.4) !important;
+  color: var(--lsp-green-dark) !important;
+}
+.add-obj:hover {
+  background: var(--rd-accent-soft) !important;
+  border-style: solid !important;
+}
+
+/* Champs texte comments joueur */
+.crit-comment,
+.main-comment,
+.self-comment {
+  border: 1px solid var(--rd-border-strong) !important;
+}
+.crit-comment:focus,
+.main-comment:focus,
+.self-comment:focus {
+  border-color: var(--lsp-green) !important;
+  box-shadow: 0 0 0 3px rgba(0, 150, 64, 0.12) !important;
+}
+
+/* Compare select dropdown */
+#compare-select,
+select#compare-select {
+  border: 1px solid var(--rd-border-strong) !important;
+}
+#compare-select:focus {
+  border-color: var(--lsp-green) !important;
+}
+
+/* Bilan PDF — tout ce qui est action bilan */
+[data-action="print-report"],
+.btn-print-report,
+.bilan-action {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+  border-color: var(--lsp-green) !important;
+}
+[data-action="print-report"]:hover,
+.btn-print-report:hover {
+  background: var(--lsp-green-dark) !important;
+}
+
+/* Section Objectifs + Photos — headers */
+.form-section-title {
+  color: var(--rd-text) !important;
+  border-bottom: 2px solid rgba(0, 150, 64, 0.15) !important;
+}
+
+/* Filtres sidebar (chips "Tous / Évalués / Non évalués") */
+.sb-filters .chip.on,
+.sb-filters .filter-chip.on,
+.sb-filters button.on {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+  border-color: var(--lsp-green) !important;
+}
+
+/* Card kickers */
+.card-kicker { color: var(--rd-text-light) !important; }
+
+/* Bandeau infos scrape */
+.dash-hero-main .dash-identity-badge,
+.dash-identity-badge {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+/* Actions cards blessures / assiduité (widgets) */
+.att-card .btn-primary,
+.injury-card .btn-primary,
+.detail-card .btn-primary {
+  background: var(--lsp-green) !important;
+  border-color: var(--lsp-green) !important;
+}
+
+/* Player weekly card (widget "Cette semaine" repliable) */
+.player-weekly-card {
+  background: linear-gradient(135deg, #f0f9f2 0%, #ffffff 100%) !important;
+  border: 1px solid rgba(0, 150, 64, 0.15) !important;
+}
+.player-weekly-avg {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+}
