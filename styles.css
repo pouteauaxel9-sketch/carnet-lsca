@@ -5153,3 +5153,679 @@ body.weekly-fullscreen .fab { display: none; }
   border-radius: 8px;
   text-align: center;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ✨ REDESIGN 2026 — nouvelle identité visuelle
+   Charte : neutre chaud + accent bleu profond, cartes très aérées,
+   ombres minimales, typo Outfit avec vraie hiérarchie.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Palette neutre chaude */
+  --rd-bg: #f9f8f4;
+  --rd-bg-soft: #f3f1ea;
+  --rd-surface: #ffffff;
+  --rd-surface-hover: #faf9f5;
+
+  /* Bordures ultra-discrètes */
+  --rd-border: rgba(15, 23, 42, 0.06);
+  --rd-border-strong: rgba(15, 23, 42, 0.12);
+
+  /* Texte */
+  --rd-text: #0f172a;
+  --rd-text-muted: #64748b;
+  --rd-text-light: #94a3b8;
+
+  /* Accent principal — bleu profond, moins criard */
+  --rd-accent: #1e40af;
+  --rd-accent-hover: #1e3a8a;
+  --rd-accent-soft: #eff6ff;
+  --rd-accent-glow: rgba(30, 64, 175, 0.10);
+
+  /* Sémantique */
+  --rd-success: #059669;
+  --rd-success-soft: #ecfdf5;
+  --rd-warning: #d97706;
+  --rd-warning-soft: #fef3c7;
+  --rd-danger: #dc2626;
+  --rd-danger-soft: #fef2f2;
+
+  /* Radius cohérents */
+  --rd-r-sm: 8px;
+  --rd-r-md: 12px;
+  --rd-r-lg: 16px;
+  --rd-r-xl: 24px;
+
+  /* Ombres subtiles */
+  --rd-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --rd-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --rd-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --rd-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.05);
+}
+
+/* Base body */
+body {
+  background: var(--rd-bg) !important;
+  color: var(--rd-text) !important;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-feature-settings: 'ss01', 'cv01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Nav bar allégée */
+.topnav {
+  background: rgba(249, 248, 244, 0.85) !important;
+  border-bottom: 1px solid var(--rd-border) !important;
+  box-shadow: none !important;
+  padding: 12px 24px !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+}
+.nav-logo {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--rd-text) !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+/* Onglets nav plus élégants */
+.nav-cat-tabs {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  gap: 2px !important;
+}
+.nav-cat {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 8px 16px !important;
+  border-radius: var(--rd-r-md) !important;
+  color: var(--rd-text-muted) !important;
+  transition: all 0.15s ease !important;
+  border: none !important;
+  background: transparent !important;
+}
+.nav-cat:hover {
+  color: var(--rd-text) !important;
+  background: rgba(15, 23, 42, 0.04) !important;
+}
+.nav-cat.on {
+  color: var(--rd-text) !important;
+  background: var(--rd-surface) !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+  font-weight: 600 !important;
+}
+
+/* Boutons uniformisés */
+.btn, .season-sel {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 8px 14px !important;
+  border-radius: var(--rd-r-md) !important;
+  border: 1px solid var(--rd-border-strong) !important;
+  background: var(--rd-surface) !important;
+  color: var(--rd-text) !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer;
+}
+.btn:hover {
+  background: var(--rd-surface-hover) !important;
+  border-color: var(--rd-border-strong) !important;
+  transform: none !important;
+}
+.btn-primary {
+  background: var(--rd-accent) !important;
+  border-color: var(--rd-accent) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+.btn-primary:hover {
+  background: var(--rd-accent-hover) !important;
+  transform: none !important;
+  box-shadow: 0 2px 8px var(--rd-accent-glow) !important;
+}
+.btn-ghost {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--rd-text-muted) !important;
+}
+.btn-ghost:hover {
+  background: rgba(15, 23, 42, 0.04) !important;
+  color: var(--rd-text) !important;
+}
+
+/* Sidebar plus douce */
+.sidebar {
+  background: rgba(249, 248, 244, 0.6) !important;
+  border-right: 1px solid var(--rd-border) !important;
+}
+.sb-head {
+  padding: 16px !important;
+  border-bottom: 1px solid var(--rd-border) !important;
+}
+.sb-search {
+  background: var(--rd-surface) !important;
+  border: 1px solid var(--rd-border-strong) !important;
+  border-radius: var(--rd-r-md) !important;
+  padding: 9px 14px !important;
+  font-size: 14px !important;
+  font-family: 'Outfit', sans-serif !important;
+}
+.sb-search:focus {
+  outline: none !important;
+  border-color: var(--rd-accent) !important;
+  box-shadow: 0 0 0 3px var(--rd-accent-glow) !important;
+}
+
+/* Cards : ombre douce, plus d'espace, moins de bordure */
+.dashboard-card,
+.dashboard-section,
+.detail-card {
+  background: var(--rd-surface) !important;
+  border-radius: var(--rd-r-lg) !important;
+  border: 1px solid var(--rd-border) !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+  padding: 20px !important;
+  transition: box-shadow 0.15s ease !important;
+}
+.dashboard-card:hover,
+.dashboard-section:hover {
+  box-shadow: var(--rd-shadow) !important;
+  transform: none !important;
+}
+.card-head {
+  margin-bottom: 12px !important;
+}
+.card-kicker {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: var(--rd-text-light) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  margin-bottom: 4px !important;
+}
+.dashboard-card h2, .dashboard-section h2 {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--rd-text) !important;
+  margin: 0 !important;
+}
+
+/* Hero d'accueil : plus léger, moins massif */
+.dashboard-hero {
+  background: var(--rd-surface) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-lg) !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+  padding: 28px 32px !important;
+  margin-bottom: 20px !important;
+  color: var(--rd-text) !important;
+}
+.dashboard-hero h1 {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--rd-text) !important;
+  margin: 8px 0 4px !important;
+}
+.dashboard-hero p {
+  color: var(--rd-text-muted) !important;
+  font-size: 14px !important;
+  margin: 4px 0 12px !important;
+}
+.dash-identity-badge {
+  display: inline-block;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  background: var(--rd-accent-soft) !important;
+  color: var(--rd-accent) !important;
+  border: none !important;
+  letter-spacing: 0.02em;
+}
+
+/* Stats cards */
+.dashboard-stats {
+  gap: 12px !important;
+}
+.dash-stat {
+  background: var(--rd-bg-soft) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-md) !important;
+  padding: 14px 16px !important;
+}
+.dash-stat span {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: var(--rd-text-light) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+}
+.dash-stat strong {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: var(--rd-text) !important;
+  letter-spacing: -0.02em !important;
+  display: block;
+  margin-top: 4px;
+}
+
+/* Sync badges */
+.sync-badge {
+  font-size: 10px !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  background: var(--rd-bg-soft) !important;
+  color: var(--rd-text-muted) !important;
+  border: 1px solid var(--rd-border) !important;
+  font-weight: 500 !important;
+}
+
+/* Educator badge */
+.educator-badge {
+  background: var(--rd-surface) !important;
+  border: 1px solid var(--rd-border-strong) !important;
+  padding: 6px 12px 6px 10px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--rd-text) !important;
+}
+.educator-badge:hover {
+  background: var(--rd-surface-hover) !important;
+  border-color: var(--rd-accent) !important;
+  transform: none !important;
+  box-shadow: 0 2px 8px var(--rd-accent-glow) !important;
+}
+
+/* Bilans mega-view : sous-onglets style pilule */
+.bilans-shell { padding: 24px 28px !important; }
+.bilans-title {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+  color: var(--rd-text) !important;
+}
+.bilans-cat {
+  color: var(--rd-text-muted) !important;
+  font-weight: 500 !important;
+}
+.bilans-subtabs {
+  border-bottom: 1px solid var(--rd-border) !important;
+  gap: 4px !important;
+}
+.bilans-subtab {
+  font-family: 'Outfit', sans-serif !important;
+  padding: 12px 18px !important;
+  border-bottom: 2px solid transparent !important;
+  color: var(--rd-text-muted) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+.bilans-subtab:hover {
+  color: var(--rd-text) !important;
+  background: transparent !important;
+}
+.bilans-subtab.on {
+  color: var(--rd-accent) !important;
+  border-bottom-color: var(--rd-accent) !important;
+  background: none !important;
+  font-weight: 600 !important;
+}
+
+/* Onglets piliers sur la fiche joueur */
+.pillar-nav {
+  gap: 4px !important;
+  padding: 4px !important;
+  background: var(--rd-bg-soft) !important;
+  border-radius: var(--rd-r-md) !important;
+  border: 1px solid var(--rd-border) !important;
+}
+.ptab {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  color: var(--rd-text-muted) !important;
+  background: transparent !important;
+}
+.ptab:hover {
+  color: var(--rd-text) !important;
+  background: rgba(15, 23, 42, 0.04) !important;
+}
+.ptab.on {
+  background: var(--rd-surface) !important;
+  color: var(--rd-text) !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+  font-weight: 600 !important;
+}
+
+/* Sections repliables fiche joueur : plus douces */
+.player-collapsible {
+  background: var(--rd-surface) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-md) !important;
+  box-shadow: none !important;
+  margin: 8px 0 !important;
+}
+.player-collapsible[open] {
+  box-shadow: var(--rd-shadow-sm) !important;
+}
+.player-collapsible-summary {
+  padding: 14px 18px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: var(--rd-text) !important;
+}
+.player-collapsible-summary:hover {
+  background: var(--rd-surface-hover) !important;
+}
+.player-collapsible-chevron { color: var(--rd-text-light) !important; }
+
+/* Section principes de jeu vue Semaine */
+.weekly-wrap { padding: 24px 28px !important; }
+.weekly-head {
+  background: var(--rd-surface) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-lg) !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+  padding: 20px !important;
+}
+.weekly-label {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: var(--rd-text) !important;
+  letter-spacing: -0.01em !important;
+}
+.weekly-sub {
+  font-size: 11px !important;
+  color: var(--rd-text-light) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 600 !important;
+}
+.weekly-theme-input {
+  background: var(--rd-bg-soft) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-md) !important;
+  padding: 10px 14px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 14px !important;
+}
+.weekly-theme-input:focus {
+  outline: none !important;
+  background: var(--rd-surface) !important;
+  border-color: var(--rd-accent) !important;
+  box-shadow: 0 0 0 3px var(--rd-accent-glow) !important;
+}
+
+/* Séances (upload de fichier) */
+.weekly-seances {
+  background: var(--rd-surface) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-lg) !important;
+  padding: 20px !important;
+  margin-top: 16px !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+}
+.seance-row {
+  background: var(--rd-bg) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-md) !important;
+}
+
+/* Weekly items */
+.weekly-items {
+  background: var(--rd-surface) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-lg) !important;
+  padding: 20px !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+  margin-top: 16px !important;
+}
+.weekly-item-chip {
+  background: var(--rd-bg-soft) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+}
+.weekly-item-chip.is-avec {
+  background: var(--rd-accent-soft) !important;
+  border-color: rgba(30, 64, 175, 0.15) !important;
+  color: var(--rd-accent) !important;
+}
+.weekly-item-chip.is-sans {
+  background: var(--rd-danger-soft) !important;
+  border-color: rgba(220, 38, 38, 0.15) !important;
+  color: var(--rd-danger) !important;
+}
+.weekly-item-chip.is-custom {
+  background: var(--rd-warning-soft) !important;
+  border-color: rgba(217, 119, 6, 0.15) !important;
+  color: var(--rd-warning) !important;
+}
+.weekly-add-select {
+  background: var(--rd-bg-soft) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-md) !important;
+  padding: 10px 14px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 13px !important;
+}
+
+/* Ratings buttons (grille semaine) */
+.weekly-rate {
+  border-radius: 50% !important;
+  border: 1px solid var(--rd-border-strong) !important;
+  background: var(--rd-surface) !important;
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  transition: all 0.15s !important;
+}
+.weekly-rate:hover {
+  border-color: var(--rd-accent) !important;
+  transform: scale(1.08) !important;
+}
+.weekly-rate.rate-excellent { background: #dcfce7 !important; color: #14532d !important; border-color: transparent !important; }
+.weekly-rate.rate-good      { background: #d9f99d !important; color: #365314 !important; border-color: transparent !important; }
+.weekly-rate.rate-mid       { background: #fef3c7 !important; color: #78350f !important; border-color: transparent !important; }
+.weekly-rate.rate-low       { background: #fed7aa !important; color: #7c2d12 !important; border-color: transparent !important; }
+.weekly-rate.rate-poor      { background: #fecaca !important; color: #7f1d1d !important; border-color: transparent !important; }
+
+/* FAB Mode Terrain plus discret */
+.fab-live {
+  background: var(--rd-accent) !important;
+  box-shadow: 0 4px 16px rgba(30, 64, 175, 0.25) !important;
+}
+.fab-live:hover {
+  background: var(--rd-accent-hover) !important;
+  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.35) !important;
+}
+
+/* Empty state amélioré */
+.empty-state {
+  color: var(--rd-text-muted) !important;
+  padding: 60px 20px !important;
+}
+.empty-state p {
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+}
+
+/* Toast plus doux */
+.toast {
+  background: var(--rd-text) !important;
+  color: var(--rd-bg) !important;
+  border-radius: var(--rd-r-md) !important;
+  padding: 12px 20px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  box-shadow: var(--rd-shadow-lg) !important;
+  border: none !important;
+}
+
+/* Menu ⋯ */
+.more-menu {
+  background: var(--rd-surface) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-md) !important;
+  box-shadow: var(--rd-shadow-lg) !important;
+  padding: 6px !important;
+}
+.more-menu-item {
+  border-radius: var(--rd-r-sm) !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 13px !important;
+  color: var(--rd-text) !important;
+  padding: 8px 12px !important;
+}
+.more-menu-item:hover {
+  background: var(--rd-surface-hover) !important;
+}
+.more-menu-submenu > summary {
+  border-radius: var(--rd-r-sm) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: var(--rd-text-muted) !important;
+  padding: 8px 12px !important;
+}
+
+/* Grid principal du dashboard : plus d'espace */
+.dashboard-main-grid { gap: 16px !important; }
+
+/* Empty state fiche joueur (empty-state-rich) */
+.empty-state-rich {
+  background: var(--rd-surface) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-lg) !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+  padding: 48px 32px !important;
+}
+.empty-icon {
+  font-size: 40px !important;
+  margin-bottom: 12px !important;
+  opacity: 0.6;
+}
+.empty-state-rich h2 {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  color: var(--rd-text) !important;
+  letter-spacing: -0.01em !important;
+}
+.quick-player-btn {
+  border-radius: 999px !important;
+  border: 1px solid var(--rd-border-strong) !important;
+  background: var(--rd-surface) !important;
+  font-family: 'Outfit', sans-serif !important;
+  padding: 8px 14px !important;
+  transition: all 0.15s !important;
+}
+.quick-player-btn:hover {
+  background: var(--rd-accent-soft) !important;
+  border-color: var(--rd-accent) !important;
+  color: var(--rd-accent) !important;
+  transform: none !important;
+}
+.quick-player-initials {
+  background: var(--rd-accent) !important;
+}
+
+/* Sidebar : lignes joueurs plus élégantes */
+.player-list .pli,
+.player-list .player-row {
+  padding: 12px 16px !important;
+  border-radius: var(--rd-r-md) !important;
+  margin: 2px 8px !important;
+  transition: background 0.12s !important;
+}
+.player-list .pli:hover,
+.player-list .player-row:hover {
+  background: var(--rd-surface) !important;
+}
+.player-list .pli.on {
+  background: var(--rd-accent-soft) !important;
+  color: var(--rd-accent) !important;
+  font-weight: 500 !important;
+}
+
+/* Scrollbars extra fines */
+::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.15) !important;
+  border-radius: 4px !important;
+  border: none !important;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.3) !important;
+}
+
+/* Formulaires généraux */
+.field-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: var(--rd-text-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  margin-bottom: 4px !important;
+}
+.field-input {
+  background: var(--rd-bg-soft) !important;
+  border: 1px solid var(--rd-border-strong) !important;
+  border-radius: var(--rd-r-md) !important;
+  padding: 10px 14px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 14px !important;
+}
+.field-input:focus {
+  outline: none !important;
+  background: var(--rd-surface) !important;
+  border-color: var(--rd-accent) !important;
+  box-shadow: 0 0 0 3px var(--rd-accent-glow) !important;
+}
+
+/* Team cards */
+.team-card {
+  background: var(--rd-surface) !important;
+  border: 1px solid var(--rd-border) !important;
+  border-radius: var(--rd-r-lg) !important;
+  box-shadow: var(--rd-shadow-sm) !important;
+  padding: 20px !important;
+  transition: all 0.15s !important;
+}
+.team-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--rd-shadow-md) !important;
+  border-color: var(--rd-border-strong) !important;
+}
+
+/* Player emptyState personnalisation */
+.player-collapsible-body { padding: 8px 20px 18px !important; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .topnav { padding: 10px 14px !important; }
+  .bilans-shell { padding: 14px !important; }
+  .weekly-wrap { padding: 14px !important; }
+  .dashboard-hero { padding: 20px !important; }
+  .dashboard-hero h1 { font-size: 22px !important; }
+}
