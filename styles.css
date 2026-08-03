@@ -5979,3 +5979,146 @@ body {
   border-color: rgba(0, 150, 64, 0.2) !important;
   color: var(--lsp-green-dark) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   💚 SWAP TOUS LES BLEUS RÉSIDUELS → VERT LOUVERNÉ
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Réassigner les tokens legacy pour que TOUT hérite du vert */
+  --blue: #009640 !important;
+  --blue-dark: #006e2f !important;
+  --blue-light: #e8f5ec !important;
+}
+
+/* Tout gradient bleu → gradient vert */
+[style*="linear-gradient(135deg, #185fa5"],
+[style*="linear-gradient(135deg,#185fa5"] {
+  background: linear-gradient(135deg, #009640 0%, #007a34 100%) !important;
+}
+
+/* Overrides ciblés par sélecteur — tous les fonds/borders/couleurs bleus */
+.btn-primary,
+.sync-badge.sync-refreshing,
+.plan-filter.on,
+.advstats-tab.on,
+.ptab.on,
+.nav-cat.on {
+  background: var(--lsp-green) !important;
+  border-color: var(--lsp-green) !important;
+  color: #fff !important;
+}
+.nav-cat.on { background: rgba(0, 150, 64, 0.10) !important; color: var(--lsp-green-dark) !important; }
+.ptab.on { background: var(--rd-surface) !important; color: var(--lsp-green-dark) !important; }
+.plan-filter.on, .advstats-tab.on { color: var(--lsp-green) !important; background: rgba(0, 150, 64, 0.08) !important; border-color: transparent !important; }
+
+/* Textes en bleu → vert */
+.card-kicker,
+.dash-hero-main h1,
+.category-hero h1,
+.plan-title,
+.bilans-title,
+.weekly-label {
+  color: var(--rd-text) !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+/* Bordures bleues actives */
+.pillar-nav .on,
+.player-collapsible[open] .player-collapsible-summary {
+  border-color: var(--lsp-green) !important;
+}
+
+/* Sync badge scrape ok */
+.sync-badge {
+  background: var(--rd-accent-soft) !important;
+  color: var(--lsp-green-dark) !important;
+  border-color: rgba(0, 150, 64, 0.2) !important;
+}
+
+/* Boutons d'action sidebar */
+.sb-action-btn {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+  border-color: var(--lsp-green) !important;
+}
+.sb-action-btn:hover { background: var(--lsp-green-dark) !important; }
+.sb-action-btn--ghost {
+  background: transparent !important;
+  color: var(--lsp-green-dark) !important;
+  border-color: rgba(0, 150, 64, 0.3) !important;
+}
+.sb-action-btn--ghost:hover { background: var(--rd-accent-soft) !important; }
+
+/* Chips filtres sidebar */
+.chip.on, .filter-chip.on, .view-chip.on {
+  background: var(--lsp-green) !important;
+  color: #fff !important;
+  border-color: var(--lsp-green) !important;
+}
+
+/* Bouton "+" et actions rouges qui restaient bleus */
+.btn.btn-primary, button.btn-primary, .btn-primary {
+  background: var(--lsp-green) !important;
+  border-color: var(--lsp-green) !important;
+  color: #fff !important;
+}
+
+/* Éléments de progression bleus (barres, ronds, badges) */
+.progress-bar-fill,
+.pillar-bar,
+.dot.on-4 {
+  background: var(--lsp-green) !important;
+}
+
+/* Standings card équipe LSCA highlight */
+.standings-table tr.our-team {
+  background: rgba(0, 150, 64, 0.08) !important;
+}
+.standings-table tr.our-team td {
+  color: var(--lsp-green-dark) !important;
+  font-weight: 600 !important;
+}
+
+/* Cellules chart nombres bleus */
+.stat-value.blue,
+[style*="color:#185fa5"],
+[style*="color: #185fa5"] {
+  color: var(--lsp-green-dark) !important;
+}
+
+/* Hero d'accueil : le fond était encore bleu ? Sécurité */
+.dashboard-shell > .dashboard-hero,
+.dashboard-hero {
+  background: var(--rd-surface) !important;
+  color: var(--rd-text) !important;
+}
+.dashboard-hero h1 {
+  color: var(--rd-text) !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+.dashboard-hero p { color: var(--rd-text-muted) !important; }
+
+/* Onglet actif nav-cat : cas spécial pour certains data-view qui avaient des surcharges */
+.nav-cat.on,
+.nav-cat.on[data-view="weekly"],
+.nav-cat.on[data-view="plan"],
+.nav-cat.on[data-view="bilans"],
+.nav-cat.on[data-view="analyses"],
+.nav-cat.on[data-view="direction"] {
+  background: var(--rd-accent-soft) !important;
+  color: var(--lsp-green-dark) !important;
+  box-shadow: none !important;
+}
+
+/* Focus rings partout en vert */
+*:focus-visible {
+  outline-color: var(--lsp-green) !important;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: var(--lsp-green) !important;
+  box-shadow: 0 0 0 3px rgba(0, 150, 64, 0.15) !important;
+}
