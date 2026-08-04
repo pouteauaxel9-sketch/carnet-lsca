@@ -1861,7 +1861,7 @@ function evaluationBody(pid) {
       <div class="detail-card"><div class="card-kicker">Priorite</div><h3>Axe de travail</h3><div class="priority-box"><strong>${weakness ? h(weakness.label) : 'A definir'}</strong><p>${weakness ? `Pilier le plus bas a ${weakness.score}%.` : 'Aucun axe stable pour le moment.'}</p></div></div>
     </div>
     ${renderCategoryComparison(pid)}
-    ${window.ProfilingModule?.renderTags(pid) || ''}
+    ${window.ProfilingModule?.renderTags?.(pid) || ''}
     <div class="pillar-nav">${pillarTabs}</div>
     <div class="legend-bar">
       <div class="litem"><div class="ldot" style="background:#FAECE7;border:1px solid #D85A30"></div>1 Non acquis</div>
@@ -1932,8 +1932,8 @@ function renderPlayerView() {
   // Corps selon la section (jonglerie supprimée — onglet fusionné dans séances)
   let body = '';
   if (state.selSection === 'profil') body = profileBody(pid);
-  else if (state.selSection === 'seance') body = window.SeanceModule?.renderBody(pid) ?? '<p>Module séances non chargé.</p>';
-  else if (state.selSection === 'observation') body = window.ObsModule?.renderBody(pid) ?? '<p>Module observations non chargé.</p>';
+  else if (state.selSection === 'seance') body = window.SeanceModule?.renderBody?.(pid) ?? '<p>Module séances non chargé.</p>';
+  else if (state.selSection === 'observation') body = window.ObsModule?.renderBody?.(pid) ?? '<p>Module observations non chargé.</p>';
   else body = evaluationBody(pid);
 
   return `
@@ -2133,7 +2133,18 @@ function renderMain() {
   const el = q('#main-content');
   if (state.view === 'dashboard') el.innerHTML = renderDashboard();
   else if (state.view === 'categories') el.innerHTML = renderCategoryOverview();
-  else if (state.view === 'player' && state.selPlayer) el.innerHTML = renderPlayerView();
+  else if (state.view === 'player' && state.selPlayer) {
+    try {
+      el.innerHTML = renderPlayerView();
+    } catch (err) {
+      console.error('[Fiche joueur] erreur de rendu:', err);
+      el.innerHTML = `<div class="empty-state">
+        <h2 style="color:#dc2626">⚠ Erreur d'affichage de la fiche</h2>
+        <p>${h(err.message || String(err))}</p>
+        <p style="font-size:12px;color:#64748b">Ouvre la console (F12) pour voir la stack complète, puis envoie-moi une capture.</p>
+      </div>`;
+    }
+  }
   else if (state.view === 'player' && !state.selPlayer) el.innerHTML = renderPlayerEmptyState();
   else if (state.view === 'team') {
     const teamModule = window.TeamModule;
@@ -2157,15 +2168,15 @@ function renderMain() {
     if (hasRadar) drawRadar(state.selPlayer, values, compareValues);
     drawHistoryChart(state.selPlayer);
     // Modules afterRender (graphes séances / observations)
-    if (state.selSection !== 'seance') window.SeanceModule?.destroyCharts();
-    if (state.selSection !== 'observation') window.ObsModule?.destroyCharts();
-    window.SeanceModule?.afterRender(state.selPlayer);
-    window.ObsModule?.afterRender(state.selPlayer);
+    if (state.selSection !== 'seance') window.SeanceModule?.destroyCharts?.();
+    if (state.selSection !== 'observation') window.ObsModule?.destroyCharts?.();
+    window.SeanceModule?.afterRender?.(state.selPlayer);
+    window.ObsModule?.afterRender?.(state.selPlayer);
   } else {
     if (rchart) { rchart.destroy(); rchart = null; }
     if (historyChart) { historyChart.destroy(); historyChart = null; }
-    window.SeanceModule?.destroyCharts();
-    window.ObsModule?.destroyCharts();
+    window.SeanceModule?.destroyCharts?.();
+    window.ObsModule?.destroyCharts?.();
   }
 }
 
