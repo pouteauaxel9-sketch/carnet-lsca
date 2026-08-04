@@ -17,6 +17,33 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="styles.css">
+<script>
+/* One-shot cleanup — purge l'ancien service worker + caches périmés.
+   S'exécute une seule fois par navigateur, marqué par localStorage. */
+(function() {
+  var KEY = 'cfb_sw_reset_v3_1_0';
+  if (localStorage.getItem(KEY) === 'done') return;
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      var hadOldSW = regs.length > 0;
+      Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
+        var cachesPromise = ('caches' in window)
+          ? caches.keys().then(function(keys) { return Promise.all(keys.map(function(k) { return caches.delete(k); })); })
+          : Promise.resolve();
+        cachesPromise.then(function() {
+          localStorage.setItem(KEY, 'done');
+          if (hadOldSW) {
+            console.log('[Carnet] Ancien service worker purgé — reload en cours');
+            location.reload();
+          }
+        });
+      });
+    }).catch(function(err) { console.warn('[Carnet] SW cleanup failed', err); });
+  } else {
+    localStorage.setItem(KEY, 'done');
+  }
+})();
+</script>
 </head>
 <body>
 <div class="app-shell">
