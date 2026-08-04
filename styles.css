@@ -6832,3 +6832,30 @@ body.season-transition-active { overflow: hidden; }
     top: 260px;
   }
 }
+
+/* Retirer l'index alphabétique (trop chargé) */
+.sb-alpha-index { display: none !important; }
+
+/* Compacter la sidebar : retirer l'espace blanc en haut */
+.main-layout .sidebar {
+  padding-top: 0 !important;
+  padding-right: 0 !important;
+}
+.sidebar .sb-head {
+  padding-top: 12px !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 0 !important;
+}
+.sidebar .sb-search-wrap {
+  margin-bottom: 6px !important;
+}
+.sidebar .sb-meta {
+  margin-bottom: 6px !important;
+  font-size: 12px !important;
+}
+.sidebar .sb-filters {
+  padding: 6px 12px !important;
+}
+.sidebar .player-list {
+  padding-top: 4px !important;
+}

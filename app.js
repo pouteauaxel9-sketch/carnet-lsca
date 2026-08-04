@@ -1046,7 +1046,6 @@ function renderList() {
   const list = filteredPlayers();
   const summary = getCategorySummary(state.cat);
   q('#sb-count').textContent = CAT_LABELS[state.cat] + ' - ' + list.length + ' / ' + summary.count + ' joueurs';
-  renderAlphaIndex(list);
 
   q('#player-list').innerHTML = list.map(player => {
     const pid = player.name;
