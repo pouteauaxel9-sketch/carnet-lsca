@@ -1022,10 +1022,43 @@ function renderSidebar() {
   search.value = state.search;
 }
 
+function renderAlphaIndex(list) {
+  let el = document.getElementById('sb-alpha-index');
+  if (!el) {
+    const sidebar = document.querySelector('.sidebar');
+    if (!sidebar) return;
+    el = document.createElement('div');
+    el.id = 'sb-alpha-index';
+    el.className = 'sb-alpha-index';
+    sidebar.appendChild(el);
+  }
+  // Lettres présentes dans la liste
+  const present = new Set(list.map(p => (p.name.charAt(0) || '?').toUpperCase()));
+  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  el.innerHTML = alpha.map(l => {
+    const on = present.has(l);
+    return `<button class="alpha-btn ${on ? 'on' : 'off'}" type="button"
+              data-action="scroll-to-alpha" data-alpha="${l}"
+              ${on ? '' : 'disabled aria-disabled="true"'}>${l}</button>`;
+  }).join('');
+}
+
+function scrollToAlpha(letter) {
+  const list = document.getElementById('player-list');
+  if (!list) return;
+  const target = list.querySelector('[data-alpha="' + letter + '"]');
+  if (target) {
+    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    target.classList.add('pli-flash');
+    setTimeout(() => target.classList.remove('pli-flash'), 900);
+  }
+}
+
 function renderList() {
   const list = filteredPlayers();
   const summary = getCategorySummary(state.cat);
   q('#sb-count').textContent = CAT_LABELS[state.cat] + ' - ' + list.length + ' / ' + summary.count + ' joueurs';
+  renderAlphaIndex(list);
 
   q('#player-list').innerHTML = list.map(player => {
     const pid = player.name;
@@ -1039,7 +1072,7 @@ function renderList() {
         : 'Aucune saisie';
 
     return `
-      <button class="pli ${state.selPlayer === pid && state.view === 'player' ? 'on' : ''}" type="button" data-action="select-player" data-player="${h(pid)}">
+      <button class="pli ${state.selPlayer === pid && state.view === 'player' ? 'on' : ''}" type="button" data-action="select-player" data-player="${h(pid)}" data-alpha="${h((pid.charAt(0) || '?').toUpperCase())}">
         <div class="pli-av" style="background:${col[0]};color:${col[1]}">
           ${prof?.photo ? `<img src="${prof.photo}" alt="${h(pid)}">` : `<span>${h(ini(pid))}</span>`}
         </div>
@@ -2778,6 +2811,11 @@ document.addEventListener('click', event => {
   // Effectif
   if (action === 'open-season-transition') {
     window.SeasonTransitionModule?.open?.();
+    return;
+  }
+
+  if (action === 'scroll-to-alpha') {
+    scrollToAlpha(target.dataset.alpha);
     return;
   }
 

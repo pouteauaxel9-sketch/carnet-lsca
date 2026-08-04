@@ -6712,3 +6712,123 @@ body.season-transition-active { overflow: hidden; }
   .stx-row-actions { flex-wrap: wrap; }
   .stx-btn { flex: 1; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Sidebar sticky + scroll interne + index alphabétique
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Sidebar : hauteur = viewport moins topnav, scroll interne */
+.main-layout .sidebar {
+  position: sticky !important;
+  top: 60px !important; /* hauteur topnav */
+  height: calc(100vh - 60px) !important;
+  align-self: start;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding-right: 24px !important; /* place pour l'index alpha */
+  position: relative !important;
+}
+
+/* Sticky header dans la sidebar (search + count + actions) */
+.sidebar .sb-head {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 5;
+  background: var(--rd-bg, #f9f8f4) !important;
+  border-bottom: 1px solid var(--rd-border, rgba(15,23,42,0.06)) !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 4px !important;
+  flex-shrink: 0;
+}
+
+/* Filtres aussi sticky, juste sous le head */
+.sidebar .sb-filters {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 4;
+  background: var(--rd-bg, #f9f8f4);
+  padding: 8px 12px !important;
+  border-bottom: 1px solid var(--rd-border, rgba(15,23,42,0.06));
+  flex-shrink: 0;
+}
+
+/* Liste joueurs : prend le reste, scroll indépendant */
+.sidebar .player-list {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 4px 4px 40px !important;
+  scroll-behavior: smooth;
+  min-height: 0;
+}
+
+/* Boutons d'action sidebar : plus compact + wrap responsive */
+.sb-actions {
+  display: flex !important;
+  gap: 4px !important;
+  flex-wrap: wrap !important;
+  margin-top: 8px;
+}
+.sb-action-btn {
+  flex: 1 1 auto !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+/* Flash au scroll-to-alpha */
+.pli-flash {
+  animation: pli-flash-anim 0.9s ease-out;
+}
+@keyframes pli-flash-anim {
+  0%   { background: rgba(0, 150, 64, 0.35) !important; }
+  100% { background: transparent; }
+}
+
+/* ── Index alphabétique à droite de la sidebar ── */
+.sb-alpha-index {
+  position: absolute !important;
+  top: 220px; /* sous le header + filtres */
+  right: 4px;
+  bottom: 20px;
+  width: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  z-index: 3;
+  pointer-events: auto;
+}
+.alpha-btn {
+  border: none;
+  background: transparent;
+  color: var(--rd-text-muted, #64748b);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+  line-height: 1.1;
+  transition: color 0.1s;
+  font-family: 'Outfit', sans-serif;
+}
+.alpha-btn.on { color: #009640; }
+.alpha-btn.off { color: rgba(100, 116, 139, 0.3); cursor: not-allowed; }
+.alpha-btn:hover:not(:disabled) {
+  color: #006e2f;
+  transform: scale(1.4);
+}
+
+/* Sur mobile / vue non-Joueur, on cache l'index (pas de sidebar visible) */
+.main-layout.no-sidebar .sb-alpha-index { display: none; }
+@media (max-width: 768px) {
+  .sb-alpha-index { display: none; }
+  .main-layout .sidebar { padding-right: 0 !important; }
+}
+
+/* Ajuster l'offset top du index alpha selon la présence de filtres */
+@media (min-width: 769px) {
+  .sb-alpha-index {
+    top: 260px;
+  }
+}
