@@ -1,216 +1,337 @@
 /**
- * live-training.js — Mode Terrain (saisie pendant l'entraînement)
+ * live-training.js — Mode Terrain V2
  *
- * Vue plein écran mobile-first conçue pour le bord du terrain :
- *   - tuiles joueurs (grandes, taps faciles)
- *   - tap rapide = note positive / négative / observation
- *   - dictée vocale intégrée
- *   - tout est stocké dans la semaine en cours (via WeeklyFocusModule)
+ * 2 onglets utiles :
+ *  - ⚽ Jonglerie : saisie touches pied fort/faible par joueur présent,
+ *                  historique et trend automatique.
+ *  - 🎯 Objectifs séance : les principes de la Semaine en cours,
+ *                          avec compteurs Réussite / Tentative / Acquis.
  *
- * Données : section 'flash' de la semaine
- *   week.flash = {
- *     [pid]: [
- *       { id, ts, kind: 'plus' | 'minus' | 'note', text?: string }
- *     ]
+ * Barre "Présents" en haut : sélection des joueurs vraiment là ce jour.
+ * Filtre tous les onglets. Sauvegardé par séance (date).
+ *
+ * Store localStorage : cfb6_live_sessions_v1
+ *   {
+ *     [cat]: {
+ *       [YYYY-MM-DD]: {
+ *         startedAt, endedAt,
+ *         presentPids: [pid, ...],
+ *         objectives: [
+ *           { id, source, label, principleNum?, reussites, tentatives, acquis, notes }
+ *         ]
+ *       }
+ *     }
  *   }
- *
- * Le mode terrain expose un overlay activable depuis le menu "…" ou
- * directement via WeeklyFocusModule.
- *
- * Expose : window.LiveTrainingModule.{ open, close, isOpen, handleAction,
- *          summaryFor }
  */
 (function () {
   'use strict';
 
-  const STORAGE_KEY = 'cfb6_weekly_focus_v1'; // partagé avec weekly-focus
+  const SESSIONS_KEY = 'cfb6_live_sessions_v1';
 
   function state() { return window.appState || {}; }
   function utils() { return window.appUtils || {}; }
-  function h(s) { return utils().h ? utils().h(s) : String(s ?? ''); }
-  function toast(m) { utils().showToast?.(m); }
+  function h(s) { return utils().h ? utils().h(s) : String(s == null ? '' : s); }
+  function toast(m) { utils().showToast && utils().showToast(m); }
+  function haptic() { try { if (navigator.vibrate) navigator.vibrate(10); } catch {} }
 
+  /* ── UI state ────────────────────────────────────────── */
   let visible = false;
-  let activePid = null;
-  let activeMode = 'grid';  // 'grid' | 'note'
-  let activeTab = 'notes';  // 'notes' | 'juggle' | 'session'
+  let activeTab = 'juggle';   // 'juggle' | 'objectifs'
+  let presentPickerOpen = false;
   let searchQuery = '';
   let sunMode = false;
-  let sessionStartAt = null;
-  let undoStack = [];
-  const UNDO_MAX = 20;
 
-  function haptic() {
-    try { if (navigator.vibrate) navigator.vibrate(10); } catch {}
-  }
+  /* ── Helpers ─────────────────────────────────────────── */
 
-  /* ── helpers semaine ──────────────────────────────── */
-
-  function pad(n) { return String(n).padStart(2, '0'); }
-  function fmtIso(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-  function thisMondayIso() {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    const day = d.getDay();
-    const diff = (day === 0 ? -6 : 1 - day);
-    d.setDate(d.getDate() + diff);
-    return fmtIso(d);
-  }
-
-  function loadStore() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; }
-    catch { return {}; }
-  }
-  function saveStore(s) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
-    catch (e) { console.warn(e); }
-  }
-  function ensureWeek(cat, iso) {
-    const store = loadStore();
-    if (!store[cat]) store[cat] = {};
-    if (!store[cat][iso]) {
-      store[cat][iso] = {
-        label: weekLabel(iso), theme: '',
-        items: [], ratings: {}, notes: {}, flash: {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      saveStore(store);
-    } else if (!store[cat][iso].flash) {
-      store[cat][iso].flash = {};
-    }
-    return store[cat][iso];
-  }
-  function setWeek(cat, iso, mutator) {
-    const store = loadStore();
-    if (!store[cat]) store[cat] = {};
-    if (!store[cat][iso]) store[cat][iso] = ensureWeek(cat, iso);
-    const w = store[cat][iso];
-    if (!w.flash) w.flash = {};
-    mutator(w);
-    w.updatedAt = new Date().toISOString();
-    saveStore(store);
-    return w;
-  }
-  function weekLabel(iso) {
-    const m = new Date(iso + 'T00:00:00');
-    const s = new Date(m); s.setDate(m.getDate() + 6);
-    const fmt = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
-    return `Semaine du ${fmt(m)} au ${fmt(s)}`;
-  }
-
-  /* ── joueurs ──────────────────────────────────────── */
+  function todayIso() { return new Date().toISOString().slice(0, 10); }
 
   function playerLabel(pid) {
     const cat = state().cat;
     const season = state().season;
-    const prof = state().data?.[cat]?.[pid]?.[season]?.profil;
+    const prof = state().data?.[cat]?.[pid]?.[season]?.profil
+              || state().data?.[cat]?.[pid]?.profil;
     if (prof?.prenom && prof?.nom) return prof.prenom + ' ' + prof.nom;
     if (prof?.prenom) return prof.prenom;
     return pid;
   }
-  function playerShortLabel(pid) {
-    const cat = state().cat;
-    const season = state().season;
-    const prof = state().data?.[cat]?.[pid]?.[season]?.profil;
-    if (prof?.prenom) return prof.prenom;
-    return pid.split(' ')[0] || pid;
-  }
+
   function playerTeam(pid) {
     const cat = state().cat;
     const season = state().season;
-    const prof = state().data?.[cat]?.[pid]?.[season]?.profil;
-    return prof?.equipe || '';
+    const prof = state().data?.[cat]?.[pid]?.[season]?.profil
+              || state().data?.[cat]?.[pid]?.profil;
+    return prof?.team || '';
   }
+
   function sortedPlayers(cat) {
     const obj = state().data?.[cat] || {};
-    return Object.keys(obj).sort((a, b) =>
+    return Object.keys(obj).filter(pid => {
+      const prof = obj[pid].profil;
+      return !prof?.left; // exclure ceux marqués "partis"
+    }).sort((a, b) =>
       playerLabel(a).localeCompare(playerLabel(b), 'fr', { sensitivity: 'base' }));
   }
 
-  /* ── UI ────────────────────────────────────────────── */
+  /* ── Store séance du jour ────────────────────────────── */
+
+  function loadSessions() {
+    try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '{}') || {}; }
+    catch { return {}; }
+  }
+  function saveSessions(store) {
+    try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(store)); }
+    catch (e) { console.warn(e); }
+  }
+  function todaySession() {
+    const cat = state().cat;
+    const store = loadSessions();
+    return (store[cat] && store[cat][todayIso()]) || null;
+  }
+  function ensureSession() {
+    const cat = state().cat;
+    const iso = todayIso();
+    const store = loadSessions();
+    if (!store[cat]) store[cat] = {};
+    if (!store[cat][iso]) {
+      store[cat][iso] = {
+        startedAt: new Date().toISOString(),
+        endedAt: null,
+        presentPids: [],
+        objectives: [],
+      };
+      saveSessions(store);
+    }
+    return store[cat][iso];
+  }
+  function setSession(mutator) {
+    const cat = state().cat;
+    const iso = todayIso();
+    const store = loadSessions();
+    if (!store[cat]) store[cat] = {};
+    if (!store[cat][iso]) store[cat][iso] = ensureSession();
+    mutator(store[cat][iso]);
+    saveSessions(store);
+    return store[cat][iso];
+  }
+
+  function presentPids() {
+    const s = todaySession();
+    return s?.presentPids || [];
+  }
+  function isPresent(pid) {
+    return presentPids().includes(pid);
+  }
+  function togglePresent(pid) {
+    setSession(s => {
+      const idx = s.presentPids.indexOf(pid);
+      if (idx === -1) s.presentPids.push(pid);
+      else s.presentPids.splice(idx, 1);
+    });
+  }
+  function setAllPresent(all) {
+    setSession(s => {
+      s.presentPids = all ? sortedPlayers(state().cat) : [];
+    });
+  }
+
+  /* ── Objectifs séance (sync avec principes Semaine) ── */
+
+  function currentWeekPrinciples() {
+    const wf = window.WeeklyFocusModule;
+    if (!wf?.getCurrentWeek) return [];
+    const w = wf.getCurrentWeek(state().cat);
+    if (!w) return [];
+    return (w.items || []).map(it => ({
+      key: 'p' + (it.principleNum || 'c' + it.id),
+      label: it.criterion,
+      principleNum: it.principleNum,
+      custom: it.custom,
+    }));
+  }
+
+  function ensureObjectivesFromWeek() {
+    // Idempotent : synchronise les objectifs avec les principes de la Semaine,
+    // sans écraser les compteurs existants.
+    const principles = currentWeekPrinciples();
+    setSession(s => {
+      const existing = new Map(s.objectives.map(o => [o.key, o]));
+      // Ajout des principes manquants
+      principles.forEach(p => {
+        if (!existing.has(p.key)) {
+          s.objectives.push({
+            id: 'obj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            key: p.key,
+            source: p.custom ? 'custom' : 'principle',
+            label: p.label,
+            principleNum: p.principleNum,
+            reussites: 0,
+            tentatives: 0,
+            acquis: false,
+            notes: '',
+          });
+        }
+      });
+    });
+  }
+
+  function bumpObjective(key, field) {
+    setSession(s => {
+      const o = s.objectives.find(x => x.key === key);
+      if (!o) return;
+      o[field] = (o[field] || 0) + 1;
+    });
+    haptic();
+  }
+  function decObjective(key, field) {
+    setSession(s => {
+      const o = s.objectives.find(x => x.key === key);
+      if (!o) return;
+      o[field] = Math.max(0, (o[field] || 0) - 1);
+    });
+  }
+  function toggleAcquis(key) {
+    setSession(s => {
+      const o = s.objectives.find(x => x.key === key);
+      if (!o) return;
+      o.acquis = !o.acquis;
+    });
+    haptic();
+  }
+  function setObjectiveNote(key, val) {
+    setSession(s => {
+      const o = s.objectives.find(x => x.key === key);
+      if (o) o.notes = val;
+    });
+  }
+  function removeObjective(key) {
+    setSession(s => {
+      s.objectives = s.objectives.filter(o => o.key !== key);
+    });
+  }
+  function addCustomObjective(label) {
+    label = (label || '').trim();
+    if (!label) return;
+    setSession(s => {
+      s.objectives.push({
+        id: 'obj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        key: 'c_' + Date.now(),
+        source: 'custom',
+        label,
+        reussites: 0,
+        tentatives: 0,
+        acquis: false,
+        notes: '',
+      });
+    });
+  }
+
+  /* ── Jonglerie (juggleLog par joueur) ────────────────── */
+
+  function loadJuggleLog(pid) {
+    const cat = state().cat;
+    const raw = state().data?.[cat]?.[pid]?.juggleLog;
+    return Array.isArray(raw) ? raw : [];
+  }
+
+  function saveJuggle(pid, foot, val) {
+    const cat = state().cat;
+    if (!state().data[cat][pid]) state().data[cat][pid] = { profil: {} };
+    if (!state().data[cat][pid].juggleLog) state().data[cat][pid].juggleLog = [];
+    const log = state().data[cat][pid].juggleLog;
+    const today = todayIso();
+    let entry = log.find(e => e.date === today);
+    if (!entry) {
+      entry = { date: today, ts: new Date().toISOString(), fort: null, faible: null };
+      log.push(entry);
+    }
+    if (foot === 'fort') entry.fort = val;
+    if (foot === 'faible') entry.faible = val;
+    entry.ts = new Date().toISOString();
+    utils().schedulePersist && utils().schedulePersist();
+  }
+
+  /* ── Open / Close ────────────────────────────────────── */
 
   function open() {
     visible = true;
-    activePid = null;
-    activeMode = 'grid';
+    activeTab = 'juggle';
     searchQuery = '';
-    undoStack = [];
-    sessionStartAt = new Date();
-    ensureWeek(state().cat, thisMondayIso());
+    ensureSession();
+    ensureObjectivesFromWeek();
     renderOverlay();
     document.body.classList.add('live-training-active');
   }
 
   function close() {
+    // Finaliser la séance : marquer endedAt
+    setSession(s => { s.endedAt = new Date().toISOString(); });
+    const s = todaySession();
+    if (s) {
+      const p = s.presentPids.length;
+      const objDone = s.objectives.filter(o => o.acquis).length;
+      const objTotal = s.objectives.length;
+      if (p > 0 || objTotal > 0) {
+        toast(`Séance : ${p} présent${p > 1 ? 's' : ''} · ${objDone}/${objTotal} objectif${objTotal > 1 ? 's' : ''} acquis`);
+      }
+    }
     visible = false;
-    activePid = null;
+    presentPickerOpen = false;
     document.body.classList.remove('live-training-active');
     const el = document.getElementById('live-training-overlay');
     if (el) el.remove();
-    // Résumé de session
-    if (sessionStartAt) {
-      const dur = Math.round((Date.now() - sessionStartAt.getTime()) / 60000);
-      const totals = countFlashesSession();
-      if (totals.total > 0) {
-        toast('Séance ' + dur + ' min · ' + totals.plus + '👍 · ' + totals.minus + '👎 · ' + totals.note + '📝');
-      }
-    }
-    sessionStartAt = null;
     utils().renderAll?.();
   }
 
-  function countFlashesSession() {
-    const cat = state().cat;
-    const iso = thisMondayIso();
-    const w = getWeek(cat, iso);
-    if (!w || !w.flash) return { plus: 0, minus: 0, note: 0, total: 0 };
-    const startMs = sessionStartAt ? sessionStartAt.getTime() : 0;
-    let p = 0, m = 0, n = 0;
-    Object.values(w.flash).forEach(arr => {
-      arr.forEach(f => {
-        if (f.ts && new Date(f.ts).getTime() >= startMs) {
-          if (f.kind === 'plus') p++;
-          else if (f.kind === 'minus') m++;
-          else if (f.kind === 'note') n++;
-        }
-      });
-    });
-    return { plus: p, minus: m, note: n, total: p + m + n };
-  }
-
   function isOpen() { return visible; }
+
+  /* ── Render ──────────────────────────────────────────── */
 
   function renderOverlay() {
     let el = document.getElementById('live-training-overlay');
     if (!el) {
       el = document.createElement('div');
       el.id = 'live-training-overlay';
-      el.className = 'live-overlay';
       document.body.appendChild(el);
     }
     el.className = 'live-overlay' + (sunMode ? ' live-overlay-sun' : '');
-    // Vue Note d'un joueur en priorité (overlay dans overlay)
-    if (activeMode === 'note' && activePid) {
-      el.innerHTML = renderNoteView();
-      return;
-    }
-    // Sinon rend selon l'onglet actif
-    if (activeTab === 'juggle') {
-      el.innerHTML = renderJuggleView();
-    } else if (activeTab === 'session') {
-      el.innerHTML = renderSessionView();
-    } else {
-      el.innerHTML = renderGridView();
-    }
+    let body;
+    if (activeTab === 'objectifs') body = renderObjectifsView();
+    else body = renderJuggleView();
+    el.innerHTML = body + (presentPickerOpen ? renderPresentPicker() : '');
   }
 
-  /* ── Barre d'onglets commune aux 3 vues ─────────────── */
+  function renderHeader(subtitle) {
+    const cat = state().cat;
+    const nbPresents = presentPids().length;
+    const nbTotal = sortedPlayers(cat).length;
+    const teamFilter = state().selTeam || '';
+    return `
+      <header class="live-head">
+        <button class="live-close" type="button" data-live-action="close" aria-label="Fermer">×</button>
+        <div class="live-title">
+          <div class="live-cat">Mode Terrain — ${h((window.CAT_LABELS?.[cat] || cat).toUpperCase())}</div>
+          <div class="live-week">${h(subtitle || todayIsoLabel())}</div>
+        </div>
+        <div class="live-head-actions">
+          <button class="live-presents-btn ${nbPresents > 0 ? 'has-selection' : ''}" type="button"
+                  data-live-action="open-presents"
+                  title="Sélectionner les joueurs présents">
+            👥 ${nbPresents}/${nbTotal}
+          </button>
+          <button class="live-icon-btn ${sunMode ? 'on' : ''}" type="button"
+                  data-live-action="toggle-sun" title="Mode plein soleil">☀</button>
+        </div>
+      </header>`;
+  }
+
+  function todayIsoLabel() {
+    return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
+  }
+
   function renderTabs() {
     const tabs = [
-      { key: 'notes',   label: '🎯 Notes flash' },
-      { key: 'juggle',  label: '⚽ Jonglerie' },
-      { key: 'session', label: '💭 Ressenti séance' },
+      { key: 'juggle',    label: '⚽ Jonglerie' },
+      { key: 'objectifs', label: '🎯 Objectifs séance' },
     ];
     return `
       <nav class="live-tabs" role="tablist">
@@ -219,79 +340,38 @@
                   data-live-action="set-tab" data-tab="${t.key}"
                   role="tab" aria-selected="${activeTab === t.key}">
             ${h(t.label)}
-          </button>
-        `).join('')}
+          </button>`).join('')}
       </nav>`;
   }
 
-  /* ── Vue Jonglerie ──────────────────────────────────── */
-
-  function loadJuggleLog(pid) {
-    const cat = state().cat;
-    const raw = state().data?.[cat]?.[pid]?.juggleLog;
-    return Array.isArray(raw) ? raw : [];
-  }
-
-  function saveJuggle(pid, fort, faible) {
-    const cat = state().cat;
-    if (!state().data[cat][pid]) state().data[cat][pid] = { profil: {} };
-    if (!state().data[cat][pid].juggleLog) state().data[cat][pid].juggleLog = [];
-    const today = new Date().toISOString().slice(0, 10);
-    const log = state().data[cat][pid].juggleLog;
-    // Si déjà une entrée aujourd'hui, on update ; sinon on push
-    const existing = log.find(e => e.date === today);
-    if (existing) {
-      if (fort != null) existing.fort = fort;
-      if (faible != null) existing.faible = faible;
-      existing.ts = new Date().toISOString();
-    } else {
-      log.push({
-        date: today,
-        ts: new Date().toISOString(),
-        fort: fort != null ? fort : null,
-        faible: faible != null ? faible : null,
-      });
-    }
-    utils().schedulePersist && utils().schedulePersist();
-  }
+  /* ── Vue Jonglerie ── */
 
   function renderJuggleView() {
     const cat = state().cat;
-    const players = sortedPlayers(cat);
-    const teamFilter = state().selTeam || '';
-    let visibleP = teamFilter ? players.filter(p => playerTeam(p) === teamFilter) : players;
+    const pres = presentPids();
+    let visibleP;
+    if (pres.length > 0) {
+      visibleP = sortedPlayers(cat).filter(p => pres.includes(p));
+    } else {
+      visibleP = sortedPlayers(cat);
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       visibleP = visibleP.filter(pid => playerLabel(pid).toLowerCase().includes(q));
     }
-    const today = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' });
 
     return `
       <div class="live-shell">
-        <header class="live-head">
-          <button class="live-close" type="button" data-live-action="close" aria-label="Fermer">×</button>
-          <div class="live-title">
-            <div class="live-cat">Mode Terrain — ${h((window.CAT_LABELS?.[cat] || cat).toUpperCase())}</div>
-            <div class="live-week">Jonglerie · ${h(today)}</div>
-          </div>
-          <div class="live-head-actions">
-            <button class="live-icon-btn ${sunMode ? 'on' : ''}" type="button"
-                    data-live-action="toggle-sun" title="Mode plein soleil">☀</button>
-            <button class="live-team-filter" type="button" data-live-action="cycle-team">${teamFilter || 'Toutes'}</button>
-          </div>
-        </header>
-
+        ${renderHeader('Jonglerie · ' + todayIsoLabel())}
         ${renderTabs()}
-
         <div class="live-toolbar">
           <input type="search" class="live-search" placeholder="🔍 Rechercher un joueur…"
                  value="${h(searchQuery)}" data-live-action="search" autocomplete="off">
-          <span class="live-juggle-legend">Saisie du jour · les mesures précédentes s'affichent en gris</span>
+          <span class="live-juggle-legend">${pres.length > 0 ? 'Seulement les présents (' + visibleP.length + ')' : 'Aucun présent sélectionné — clique 👥 en haut'}</span>
         </div>
-
         <div class="live-juggle-list">
           ${visibleP.length === 0
-            ? '<p class="live-empty">Aucun joueur trouvé.</p>'
+            ? '<p class="live-empty">Sélectionne les joueurs présents (bouton 👥 en haut).</p>'
             : visibleP.map(pid => renderJuggleRow(pid)).join('')}
         </div>
       </div>`;
@@ -299,18 +379,14 @@
 
   function renderJuggleRow(pid) {
     const log = loadJuggleLog(pid);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayIso();
     const todayEntry = log.find(e => e.date === today) || {};
-    const last = log.filter(e => e.date !== today).sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
-
-    const trendFort = last && todayEntry.fort != null && last.fort != null
-      ? todayEntry.fort - last.fort : null;
-    const trendFaible = last && todayEntry.faible != null && last.faible != null
-      ? todayEntry.faible - last.faible : null;
-
-    const trendClass = (t) => t == null ? '' : t > 0 ? 'trend-up' : t < 0 ? 'trend-down' : 'trend-flat';
-    const trendIcon = (t) => t == null ? '' : t > 0 ? '↑' : t < 0 ? '↓' : '=';
-
+    const last = log.filter(e => e.date !== today)
+                    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+    const trendFort = last && todayEntry.fort != null && last.fort != null ? todayEntry.fort - last.fort : null;
+    const trendFaible = last && todayEntry.faible != null && last.faible != null ? todayEntry.faible - last.faible : null;
+    const trendCls = t => t == null ? '' : t > 0 ? 'trend-up' : t < 0 ? 'trend-down' : 'trend-flat';
+    const trendIco = t => t == null ? '' : t > 0 ? '↑' : t < 0 ? '↓' : '=';
     return `
       <article class="live-juggle-row" data-pid="${h(pid)}">
         <div class="live-juggle-name">${h(playerLabel(pid))}</div>
@@ -322,7 +398,7 @@
                    value="${todayEntry.fort != null ? todayEntry.fort : ''}"
                    placeholder="${last?.fort != null ? last.fort : '—'}"
                    data-live-action="save-juggle" data-pid="${h(pid)}" data-foot="fort">
-            ${trendFort != null ? `<span class="live-juggle-trend ${trendClass(trendFort)}">${trendIcon(trendFort)}${Math.abs(trendFort)}</span>` : ''}
+            ${trendFort != null ? `<span class="live-juggle-trend ${trendCls(trendFort)}">${trendIco(trendFort)}${Math.abs(trendFort)}</span>` : ''}
           </label>
           <label class="live-juggle-input-wrap">
             <span class="live-juggle-lbl">Pied faible</span>
@@ -331,401 +407,241 @@
                    value="${todayEntry.faible != null ? todayEntry.faible : ''}"
                    placeholder="${last?.faible != null ? last.faible : '—'}"
                    data-live-action="save-juggle" data-pid="${h(pid)}" data-foot="faible">
-            ${trendFaible != null ? `<span class="live-juggle-trend ${trendClass(trendFaible)}">${trendIcon(trendFaible)}${Math.abs(trendFaible)}</span>` : ''}
+            ${trendFaible != null ? `<span class="live-juggle-trend ${trendCls(trendFaible)}">${trendIco(trendFaible)}${Math.abs(trendFaible)}</span>` : ''}
           </label>
         </div>
         ${last ? `<div class="live-juggle-last">Dernière (${h(last.date)}) : ${last.fort ?? '—'} / ${last.faible ?? '—'}</div>` : '<div class="live-juggle-last">Première mesure</div>'}
       </article>`;
   }
 
-  /* ── Vue Ressenti séance (placeholder) ──────────────── */
+  /* ── Vue Objectifs séance ── */
 
-  function renderSessionView() {
-    const cat = state().cat;
+  function renderObjectifsView() {
+    ensureObjectivesFromWeek();
+    const s = todaySession();
+    const objectives = s?.objectives || [];
+    const pres = presentPids().length;
+
+    // Résumé
+    const totalReussites = objectives.reduce((sum, o) => sum + (o.reussites || 0), 0);
+    const totalTentatives = objectives.reduce((sum, o) => sum + (o.tentatives || 0), 0);
+    const ratio = totalTentatives > 0 ? Math.round((totalReussites / totalTentatives) * 100) : null;
+    const acquis = objectives.filter(o => o.acquis).length;
+
     return `
       <div class="live-shell">
-        <header class="live-head">
-          <button class="live-close" type="button" data-live-action="close" aria-label="Fermer">×</button>
-          <div class="live-title">
-            <div class="live-cat">Mode Terrain — ${h((window.CAT_LABELS?.[cat] || cat).toUpperCase())}</div>
-            <div class="live-week">Ressenti séance</div>
-          </div>
-        </header>
-
+        ${renderHeader('Objectifs · ' + todayIsoLabel())}
         ${renderTabs()}
+        <div class="live-obj-summary">
+          <div class="live-obj-stat"><strong>${pres}</strong><span>Présents</span></div>
+          <div class="live-obj-stat"><strong>${acquis}/${objectives.length}</strong><span>Acquis</span></div>
+          <div class="live-obj-stat"><strong>${totalReussites}/${totalTentatives}</strong><span>Réussite</span></div>
+          <div class="live-obj-stat"><strong>${ratio != null ? ratio + '%' : '—'}</strong><span>Ratio</span></div>
+        </div>
 
-        <div class="live-placeholder">
-          <div class="live-placeholder-icon">💭</div>
-          <h3>Page créée — à construire</h3>
-          <p>Ici viendra le carnet de séance :</p>
-          <ul>
-            <li>Ressenti coach (texte libre + tags rapides)</li>
-            <li>Réussite des principes travaillés (slider %)</li>
-            <li>Score global de séance</li>
-            <li>Points à retenir pour la prochaine</li>
-          </ul>
-          <p class="live-placeholder-hint">On y revient dès que tu es prêt — dis-moi juste quand.</p>
+        ${objectives.length === 0 ? `
+          <div class="live-empty" style="padding: 40px 20px">
+            <p>Aucun objectif défini pour cette séance.</p>
+            <p style="font-size:12px;color:#94a3b8;margin-top:8px">
+              Va dans la vue <strong>Semaine</strong> ajouter des principes de jeu — ils apparaîtront ici automatiquement.
+            </p>
+          </div>
+        ` : `<div class="live-obj-list">${objectives.map(renderObjectiveCard).join('')}</div>`}
+
+        <form class="live-obj-add" onsubmit="return false;">
+          <input type="text" placeholder="+ Ajouter un objectif custom (ex: coup-franc direct)"
+                 maxlength="80" id="live-obj-new-input">
+          <button class="btn btn-primary" type="button" data-live-action="add-custom-obj">Ajouter</button>
+        </form>
+      </div>`;
+  }
+
+  function renderObjectiveCard(o) {
+    const ratio = o.tentatives > 0 ? Math.round((o.reussites / o.tentatives) * 100) : null;
+    const badge = o.principleNum ? `<span class="live-obj-num">#${o.principleNum}</span>` : '';
+    const custom = o.source === 'custom' ? '<span class="live-obj-tag">perso</span>' : '';
+    const ratioCol = ratio == null ? '#94a3b8' : ratio >= 75 ? '#16a34a' : ratio >= 50 ? '#d97706' : '#dc2626';
+    return `
+      <article class="live-obj-card ${o.acquis ? 'is-acquis' : ''}" data-key="${h(o.key)}">
+        <div class="live-obj-head">
+          <div class="live-obj-title">
+            ${badge}${custom}
+            <span>${h(o.label)}</span>
+          </div>
+          <button class="live-obj-rm" type="button" data-live-action="remove-obj" data-key="${h(o.key)}"
+                  title="Retirer">×</button>
+        </div>
+        <div class="live-obj-counters">
+          <div class="live-obj-counter">
+            <div class="live-obj-counter-val">${o.reussites || 0}</div>
+            <div class="live-obj-counter-lbl">Réussies</div>
+            <div class="live-obj-counter-btns">
+              <button class="live-obj-btn dec" type="button" data-live-action="dec-obj" data-key="${h(o.key)}" data-field="reussites">−</button>
+              <button class="live-obj-btn inc reussite" type="button" data-live-action="inc-obj" data-key="${h(o.key)}" data-field="reussites">+ Réussite</button>
+            </div>
+          </div>
+          <div class="live-obj-counter">
+            <div class="live-obj-counter-val">${o.tentatives || 0}</div>
+            <div class="live-obj-counter-lbl">Tentatives</div>
+            <div class="live-obj-counter-btns">
+              <button class="live-obj-btn dec" type="button" data-live-action="dec-obj" data-key="${h(o.key)}" data-field="tentatives">−</button>
+              <button class="live-obj-btn inc tentative" type="button" data-live-action="inc-obj" data-key="${h(o.key)}" data-field="tentatives">+ Tentative</button>
+            </div>
+          </div>
+          <div class="live-obj-ratio" style="color:${ratioCol}">
+            <div class="live-obj-ratio-val">${ratio != null ? ratio + '%' : '—'}</div>
+            <div class="live-obj-ratio-lbl">Ratio</div>
+          </div>
+        </div>
+        <div class="live-obj-actions">
+          <label class="live-obj-acquis-toggle">
+            <input type="checkbox" ${o.acquis ? 'checked' : ''}
+                   data-live-action="toggle-acquis" data-key="${h(o.key)}">
+            <span>✓ Objectif acquis</span>
+          </label>
+          <input type="text" class="live-obj-note" placeholder="Note rapide (facultatif)…"
+                 value="${h(o.notes || '')}"
+                 data-live-action="obj-note" data-key="${h(o.key)}">
+        </div>
+      </article>`;
+  }
+
+  /* ── Modal Présents ── */
+
+  function renderPresentPicker() {
+    const cat = state().cat;
+    const players = sortedPlayers(cat);
+    const pres = presentPids();
+    return `
+      <div class="live-present-picker" data-live-action="close-presents-backdrop">
+        <div class="live-present-box" onclick="event.stopPropagation()">
+          <header class="live-present-head">
+            <h3>👥 Présents ce soir</h3>
+            <button class="live-close" type="button" data-live-action="close-presents">×</button>
+          </header>
+          <div class="live-present-bulk">
+            <span>${pres.length}/${players.length} sélectionnés</span>
+            <button class="btn btn-ghost" type="button" data-live-action="select-all-presents">Tout cocher</button>
+            <button class="btn btn-ghost" type="button" data-live-action="select-none-presents">Tout décocher</button>
+          </div>
+          <div class="live-present-list">
+            ${players.map(pid => {
+              const on = pres.includes(pid);
+              return `
+                <label class="live-present-row ${on ? 'on' : ''}">
+                  <input type="checkbox" ${on ? 'checked' : ''}
+                         data-live-action="toggle-present" data-pid="${h(pid)}">
+                  <span>${h(playerLabel(pid))}</span>
+                </label>`;
+            }).join('')}
+          </div>
+          <footer class="live-present-foot">
+            <button class="btn btn-primary" type="button" data-live-action="close-presents">Valider</button>
+          </footer>
         </div>
       </div>`;
   }
 
-  function renderGridView() {
-    const cat = state().cat;
-    const iso = thisMondayIso();
-    const week = ensureWeek(cat, iso);
-    const players = sortedPlayers(cat);
-    const teamFilter = state().selTeam || '';
-
-    let visible = teamFilter
-      ? players.filter(p => playerTeam(p) === teamFilter)
-      : players;
-
-    // Filtre recherche
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      visible = visible.filter(pid => playerLabel(pid).toLowerCase().includes(q));
-    }
-
-    const canUndo = undoStack.length > 0;
-
-    return `
-      <div class="live-shell">
-        <header class="live-head">
-          <button class="live-close" type="button" data-live-action="close" aria-label="Fermer">×</button>
-          <div class="live-title">
-            <div class="live-cat">Mode Terrain — ${h((window.CAT_LABELS?.[cat] || cat).toUpperCase())}</div>
-            <div class="live-week">${h(week.label)}${week.theme ? ' · ' + h(week.theme) : ''}</div>
-          </div>
-          <div class="live-head-actions">
-            <button class="live-icon-btn ${canUndo ? '' : 'is-disabled'}" type="button"
-                    data-live-action="undo" ${canUndo ? '' : 'disabled'}
-                    title="Annuler la dernière action">↶</button>
-            <button class="live-icon-btn ${sunMode ? 'on' : ''}" type="button"
-                    data-live-action="toggle-sun"
-                    title="Mode plein soleil (haut contraste)">☀</button>
-            <button class="live-team-filter" type="button" data-live-action="cycle-team"
-                    title="Filtrer par équipe">
-              ${teamFilter || 'Toutes'}
-            </button>
-          </div>
-        </header>
-
-        ${renderTabs()}
-
-        <div class="live-toolbar">
-          <input type="search" class="live-search" placeholder="🔍 Rechercher un joueur…"
-                 value="${h(searchQuery)}" data-live-action="search"
-                 autocomplete="off">
-          <div class="live-legend">
-            <span class="live-leg live-leg-plus">👍 Bon</span>
-            <span class="live-leg live-leg-minus">👎 À travailler</span>
-            <span class="live-leg live-leg-note">📝 Note</span>
-          </div>
-        </div>
-
-        <div class="live-grid">
-          ${visible.length === 0
-            ? '<p class="live-empty">Aucun joueur trouvé.</p>'
-            : visible.map(pid => renderPlayerTile(pid, week)).join('')}
-        </div>
-
-        ${renderSummaryBar(week, visible)}
-      </div>
-    `;
-  }
-
-  function renderPlayerTile(pid, week) {
-    const flash = (week.flash?.[pid]) || [];
-    const plus = flash.filter(f => f.kind === 'plus').length;
-    const minus = flash.filter(f => f.kind === 'minus').length;
-    const notes = flash.filter(f => f.kind === 'note').length;
-    const last = flash[flash.length - 1];
-    return `
-      <article class="live-tile" data-pid="${h(pid)}">
-        <header class="live-tile-head">
-          <span class="live-tile-name">${h(playerShortLabel(pid))}</span>
-          ${last ? `<span class="live-tile-last" title="Dernière action">${last.kind === 'plus' ? '👍' : last.kind === 'minus' ? '👎' : '📝'}</span>` : ''}
-        </header>
-        <div class="live-tile-stats">
-          ${plus > 0 ? `<span class="live-stat live-stat-plus">+${plus}</span>` : ''}
-          ${minus > 0 ? `<span class="live-stat live-stat-minus">−${minus}</span>` : ''}
-          ${notes > 0 ? `<span class="live-stat live-stat-note">${notes}📝</span>` : ''}
-          ${(plus + minus + notes) === 0 ? '<span class="live-stat-empty">·</span>' : ''}
-        </div>
-        <div class="live-tile-actions">
-          <button class="live-btn live-btn-plus" type="button"
-                  data-live-action="add-plus" data-pid="${h(pid)}"
-                  aria-label="Bon point pour ${h(playerLabel(pid))}">👍</button>
-          <button class="live-btn live-btn-minus" type="button"
-                  data-live-action="add-minus" data-pid="${h(pid)}"
-                  aria-label="À travailler pour ${h(playerLabel(pid))}">👎</button>
-          <button class="live-btn live-btn-note" type="button"
-                  data-live-action="open-note" data-pid="${h(pid)}"
-                  aria-label="Ajouter une note pour ${h(playerLabel(pid))}">📝</button>
-        </div>
-      </article>
-    `;
-  }
-
-  function renderNoteView() {
-    const cat = state().cat;
-    const iso = thisMondayIso();
-    const week = ensureWeek(cat, iso);
-    const flash = (week.flash?.[activePid]) || [];
-
-    return `
-      <div class="live-shell live-note-shell">
-        <header class="live-head">
-          <button class="live-close" type="button" data-live-action="back-grid" aria-label="Retour">←</button>
-          <div class="live-title">
-            <div class="live-cat">${h(playerLabel(activePid))}</div>
-            <div class="live-week">${h(week.label)}</div>
-          </div>
-        </header>
-
-        <div class="live-note-form">
-          <label class="live-note-label" for="live-note-input">Note rapide</label>
-          <textarea id="live-note-input" class="live-note-input"
-                    placeholder="Ex: belle conduite côté droit, frappe trop molle"
-                    rows="4" data-voice></textarea>
-          <div class="live-note-actions">
-            <button class="btn btn-ghost" type="button" data-live-action="back-grid">Annuler</button>
-            <button class="btn btn-primary" type="button" data-live-action="save-note" data-pid="${h(activePid)}">Enregistrer</button>
-          </div>
-        </div>
-
-        ${flash.length === 0 ? '' : `
-          <section class="live-history">
-            <h4>Historique de la semaine (${flash.length})</h4>
-            <ul class="live-history-list">
-              ${flash.slice().reverse().map(f => `
-                <li class="live-history-item live-h-${f.kind}">
-                  <span class="live-h-icon">${f.kind === 'plus' ? '👍' : f.kind === 'minus' ? '👎' : '📝'}</span>
-                  <span class="live-h-time">${formatTime(f.ts)}</span>
-                  ${f.text ? `<span class="live-h-text">${h(f.text)}</span>` : ''}
-                  <button class="live-h-rm" type="button" data-live-action="remove-flash"
-                          data-pid="${h(activePid)}" data-flash-id="${h(f.id)}" aria-label="Supprimer">×</button>
-                </li>
-              `).join('')}
-            </ul>
-          </section>
-        `}
-      </div>
-    `;
-  }
-
-  function renderSummaryBar(week, players) {
-    const flash = week.flash || {};
-    const totals = players.reduce((acc, pid) => {
-      (flash[pid] || []).forEach(f => { acc[f.kind] = (acc[f.kind] || 0) + 1; });
-      return acc;
-    }, { plus: 0, minus: 0, note: 0 });
-    return `
-      <footer class="live-summary">
-        <span class="live-sum live-sum-plus">👍 ${totals.plus}</span>
-        <span class="live-sum live-sum-minus">👎 ${totals.minus}</span>
-        <span class="live-sum live-sum-note">📝 ${totals.note}</span>
-        <span class="live-sum-spacer"></span>
-        <button class="btn btn-ghost" type="button" data-live-action="close">Terminer la séance</button>
-      </footer>
-    `;
-  }
-
-  function formatTime(iso) {
-    try {
-      const d = new Date(iso);
-      return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    } catch { return ''; }
-  }
-
-  /* ── actions ────────────────────────────────────────── */
-
-  function pushFlash(pid, kind, text) {
-    const cat = state().cat;
-    const iso = thisMondayIso();
-    const id = 'fl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-    setWeek(cat, iso, w => {
-      if (!w.flash) w.flash = {};
-      if (!w.flash[pid]) w.flash[pid] = [];
-      w.flash[pid].push({
-        id,
-        ts: new Date().toISOString(),
-        kind,
-        text: text || undefined,
-      });
-    });
-    // Push to undo stack
-    undoStack.push({ pid, flashId: id });
-    if (undoStack.length > UNDO_MAX) undoStack.shift();
-    haptic();
-  }
-
-  function undoLast() {
-    const last = undoStack.pop();
-    if (!last) { toast('Rien à annuler'); return; }
-    const cat = state().cat;
-    const iso = thisMondayIso();
-    setWeek(cat, iso, w => {
-      if (w.flash?.[last.pid]) {
-        w.flash[last.pid] = w.flash[last.pid].filter(f => f.id !== last.flashId);
-      }
-    });
-    toast('Annulé');
-    renderOverlay();
-  }
+  /* ── Actions ─────────────────────────────────────────── */
 
   function handleAction(el) {
     const action = el.dataset.liveAction;
     if (!action) return false;
 
     if (action === 'close') { close(); return true; }
-    if (action === 'back-grid') { activeMode = 'grid'; activePid = null; renderOverlay(); return true; }
-
-    if (action === 'add-plus') {
-      pushFlash(el.dataset.pid, 'plus');
-      renderOverlay();
-      flashFeedback(el);
-      return true;
-    }
-    if (action === 'add-minus') {
-      pushFlash(el.dataset.pid, 'minus');
-      renderOverlay();
-      flashFeedback(el);
-      return true;
-    }
-    if (action === 'open-note') {
-      activePid = el.dataset.pid;
-      activeMode = 'note';
-      renderOverlay();
-      // focus textarea
-      setTimeout(() => document.getElementById('live-note-input')?.focus(), 50);
-      return true;
-    }
-    if (action === 'save-note') {
-      const ta = document.getElementById('live-note-input');
-      const text = (ta?.value || '').trim();
-      if (!text) { toast('Note vide'); return true; }
-      pushFlash(el.dataset.pid, 'note', text);
-      toast('Note enregistrée');
-      activeMode = 'grid';
-      activePid = null;
-      renderOverlay();
-      return true;
-    }
-    if (action === 'remove-flash') {
-      const pid = el.dataset.pid;
-      const id = el.dataset.flashId;
-      const cat = state().cat;
-      const iso = thisMondayIso();
-      setWeek(cat, iso, w => {
-        if (w.flash?.[pid]) w.flash[pid] = w.flash[pid].filter(f => f.id !== id);
-      });
-      renderOverlay();
-      return true;
-    }
-    if (action === 'cycle-team') {
-      const cat = state().cat;
-      const teams = (window.CLUB_DATA?.categories?.[cat]?.teams || []).map(t => t.label);
-      const cur = state().selTeam || '';
-      const idx = teams.indexOf(cur);
-      const next = idx === -1 ? teams[0] : teams[idx + 1];
-      state().selTeam = next || null;
-      renderOverlay();
-      return true;
-    }
+    if (action === 'toggle-sun') { sunMode = !sunMode; renderOverlay(); return true; }
     if (action === 'set-tab') {
-      activeTab = el.dataset.tab || 'notes';
-      renderOverlay();
-      return true;
-    }
-    if (action === 'save-juggle') {
-      const pid = el.dataset.pid;
-      const foot = el.dataset.foot; // 'fort' | 'faible'
-      const val = el.value.trim() === '' ? null : Math.max(0, Math.min(500, parseInt(el.value, 10) || 0));
-      if (foot === 'fort') saveJuggle(pid, val, undefined);
-      else if (foot === 'faible') saveJuggle(pid, undefined, val);
-      return true;
-    }
-    if (action === 'undo') { undoLast(); return true; }
-    if (action === 'toggle-sun') {
-      sunMode = !sunMode;
+      activeTab = el.dataset.tab || 'juggle';
       renderOverlay();
       return true;
     }
     if (action === 'search') {
       searchQuery = el.value || '';
-      // Ré-rendre uniquement la grille sans perdre le focus de l'input
-      const grid = document.querySelector('.live-grid');
-      if (grid) {
+      const list = document.querySelector('.live-juggle-list');
+      if (list) {
         const cat = state().cat;
-        const week = ensureWeek(cat, thisMondayIso());
-        const teamFilter = state().selTeam || '';
-        const players = sortedPlayers(cat);
-        let visibleP = teamFilter ? players.filter(p => playerTeam(p) === teamFilter) : players;
+        const pres = presentPids();
+        let vp = pres.length > 0 ? sortedPlayers(cat).filter(p => pres.includes(p)) : sortedPlayers(cat);
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
-          visibleP = visibleP.filter(pid => playerLabel(pid).toLowerCase().includes(q));
+          vp = vp.filter(pid => playerLabel(pid).toLowerCase().includes(q));
         }
-        grid.innerHTML = visibleP.length === 0
+        list.innerHTML = vp.length === 0
           ? '<p class="live-empty">Aucun joueur trouvé.</p>'
-          : visibleP.map(pid => renderPlayerTile(pid, week)).join('');
+          : vp.map(pid => renderJuggleRow(pid)).join('');
       }
       return true;
     }
+    if (action === 'save-juggle') {
+      const pid = el.dataset.pid;
+      const foot = el.dataset.foot;
+      const val = el.value.trim() === '' ? null : Math.max(0, Math.min(500, parseInt(el.value, 10) || 0));
+      saveJuggle(pid, foot, val);
+      return true;
+    }
+
+    // Présents
+    if (action === 'open-presents')  { presentPickerOpen = true; renderOverlay(); return true; }
+    if (action === 'close-presents') { presentPickerOpen = false; renderOverlay(); return true; }
+    if (action === 'close-presents-backdrop') {
+      if (el === el.closest('.live-present-picker')) { presentPickerOpen = false; renderOverlay(); }
+      return true;
+    }
+    if (action === 'toggle-present') {
+      togglePresent(el.dataset.pid);
+      // Update just the row visual, no full re-render (préserve scroll)
+      const row = el.closest('.live-present-row');
+      if (row) row.classList.toggle('on', el.checked);
+      // Update le compteur en haut
+      const badge = document.querySelector('.live-presents-btn');
+      const total = sortedPlayers(state().cat).length;
+      if (badge) badge.textContent = `👥 ${presentPids().length}/${total}`;
+      const cnt = document.querySelector('.live-present-bulk span');
+      if (cnt) cnt.textContent = `${presentPids().length}/${total} sélectionnés`;
+      return true;
+    }
+    if (action === 'select-all-presents')  { setAllPresent(true); renderOverlay(); return true; }
+    if (action === 'select-none-presents') { setAllPresent(false); renderOverlay(); return true; }
+
+    // Objectifs
+    if (action === 'inc-obj')      { bumpObjective(el.dataset.key, el.dataset.field); renderOverlay(); return true; }
+    if (action === 'dec-obj')      { decObjective(el.dataset.key, el.dataset.field); renderOverlay(); return true; }
+    if (action === 'toggle-acquis'){ toggleAcquis(el.dataset.key); renderOverlay(); return true; }
+    if (action === 'remove-obj')   {
+      if (!confirm('Retirer cet objectif de la séance ?')) return true;
+      removeObjective(el.dataset.key);
+      renderOverlay();
+      return true;
+    }
+    if (action === 'obj-note') {
+      setObjectiveNote(el.dataset.key, el.value || '');
+      return true;
+    }
+    if (action === 'add-custom-obj') {
+      const input = document.getElementById('live-obj-new-input');
+      addCustomObjective(input?.value || '');
+      if (input) input.value = '';
+      renderOverlay();
+      return true;
+    }
+
     return false;
   }
 
-  function flashFeedback(el) {
-    el.classList.add('live-pulse');
-    setTimeout(() => el.classList.remove('live-pulse'), 300);
-  }
+  /* ── API publique ────────────────────────────────────── */
 
-  /* ── synthèse pour la fiche joueur ─────────────────── */
+  function isPlayerPresentToday(pid) { return isPresent(pid); }
 
-  function summaryFor(pid, cat) {
-    const iso = thisMondayIso();
-    const week = ensureWeek(cat || state().cat, iso);
-    const flash = (week.flash?.[pid]) || [];
-    if (!flash.length) return null;
-    const plus = flash.filter(f => f.kind === 'plus').length;
-    const minus = flash.filter(f => f.kind === 'minus').length;
-    const notes = flash.filter(f => f.kind === 'note');
-    return { iso, label: week.label, total: flash.length, plus, minus, notes };
-  }
+  window.LiveTrainingModule = {
+    open, close, isOpen, handleAction,
+    isPlayerPresentToday,
+  };
 
-  function renderPlayerWidget(pid, cat) {
-    const s = summaryFor(pid, cat);
-    if (!s) return '';
-    return `
-      <div class="player-live-card">
-        <div class="player-live-head">
-          <span class="player-live-title">⚡ Terrain — ${h(s.label)}</span>
-          <span class="player-live-stats">
-            ${s.plus > 0 ? `<span class="live-stat live-stat-plus">+${s.plus}</span>` : ''}
-            ${s.minus > 0 ? `<span class="live-stat live-stat-minus">−${s.minus}</span>` : ''}
-          </span>
-        </div>
-        ${s.notes.length ? `
-          <ul class="player-live-notes">
-            ${s.notes.slice(-3).reverse().map(n => `<li>"${h(n.text)}"</li>`).join('')}
-          </ul>
-        ` : ''}
-      </div>
-    `;
-  }
-
-  /* ── ouverture rapide via raccourci ───────────────── */
-
+  // Raccourci clavier Shift+T pour ouvrir
   document.addEventListener('keydown', e => {
-    // Shift+T pour ouvrir le mode terrain (utile sur tablette avec clavier)
     if (e.shiftKey && e.key === 'T' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       if (!visible) open();
       else close();
     }
   });
-
-  window.LiveTrainingModule = {
-    open, close, isOpen, handleAction,
-    summaryFor, renderPlayerWidget,
-  };
 })();
