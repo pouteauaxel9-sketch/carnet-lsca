@@ -977,6 +977,9 @@ function filteredPlayers() {
     const prof = state.data[state.cat]?.[pid]?.profil || {};
     const hasJuggle = player.seasons[state.season] != null;
 
+    // Exclure les joueurs marqués comme partis (reprise de saison)
+    if (prof.left && prof.left.season && prof.left.season <= state.season) return false;
+
     if (state.filt === 'avec score'  && !hasJuggle)  return false;
     if (state.filt === 'evalues'     && score === 0) return false;
     if (state.filt === 'non-evalues' && score > 0)   return false;
@@ -2546,7 +2549,7 @@ window.appUtils = {
 
 // Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
 document.addEventListener('click', event => {
-  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action],[data-plan-action],[data-advstats-action]');
+  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action],[data-plan-action],[data-advstats-action],[data-stx-action]');
   if (!mt) return;
   // Les <select>, <input>, <textarea> gèrent leurs propres événements (change / input).
   // Sans ce skip, cliquer sur un select déclenche le handler avec value="" et ferme le menu.
@@ -2564,6 +2567,7 @@ document.addEventListener('click', event => {
   if (mt.dataset.liveAction       && window.LiveTrainingModule?.handleAction(mt)) return;
   if (mt.dataset.planAction       && window.SeasonPlanModule?.handleAction(mt))  return;
   if (mt.dataset.advstatsAction   && window.AdvancedStatsModule?.handleAction(mt)) return;
+  if (mt.dataset.stxAction        && window.SeasonTransitionModule?.handleAction(mt)) return;
   if (mt.dataset.obsDim)            window.ObsModule?.handleDimClick(mt);
 });
 
@@ -2772,6 +2776,11 @@ document.addEventListener('click', event => {
 
 
   // Effectif
+  if (action === 'open-season-transition') {
+    window.SeasonTransitionModule?.open?.();
+    return;
+  }
+
   if (action === 'open-roster-create') {
     window.RosterModule?.openCreate?.(target.dataset.cat || state.cat);
     return;
