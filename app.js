@@ -1708,13 +1708,11 @@ function profileBody(pid) {
     <div class="obj-list">${objRows}<button class="add-obj" type="button" data-action="add-obj">+ Ajouter un objectif</button></div>
 
     ${renderCollapsibleSection('📋 Cette semaine', 'weekly-widget',
-       window.WeeklyFocusModule?.renderPlayerWidget(pid, state.cat) || '<p class="collapsible-empty">Aucun critère défini cette semaine.</p>')}
-    ${renderCollapsibleSection('⚡ Notes terrain récentes', 'live-widget',
-       window.LiveTrainingModule?.renderPlayerWidget(pid, state.cat) || '<p class="collapsible-empty">Aucune note terrain récente.</p>')}
+       window.WeeklyFocusModule?.renderPlayerWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucun critère défini cette semaine.</p>')}
     ${renderCollapsibleSection('🩹 Blessures & disponibilité', 'injury-widget',
-       window.InjuryModule?.renderWidget(pid) || '')}
+       window.InjuryModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucune blessure enregistrée.</p>')}
     ${renderCollapsibleSection('📅 Assiduité', 'attendance-widget',
-       window.AttendanceModule?.renderWidget(pid) || '')}
+       window.AttendanceModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucun pointage.</p>')}
 
     <div class="form-footer"><span class="save-hint">Autosauvegarde active</span><button class="btn btn-primary" type="button" data-action="save-player">Sauvegarder maintenant</button></div>
   `;
