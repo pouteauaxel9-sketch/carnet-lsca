@@ -916,15 +916,7 @@ function renderFilters() {
   const items = [
     { key:'tous',       label:'Tous' },
     { key:'evalues',    label:'Évalués' },
-    { key:'avec score', label:'Avec jonglerie' },
     { key:'non-evalues',label:'Non évalués' }
-  ];
-
-  const piedItems = [
-    { key:'',          label:'Tous pieds' },
-    { key:'droit',     label:'Droit' },
-    { key:'gauche',    label:'Gauche' },
-    { key:'ambidextre',label:'Ambi.' }
   ];
 
   const posteOptions = ['', ...POSTES].map(p =>
@@ -956,10 +948,6 @@ function renderFilters() {
       <select class="ftag-select" data-action="set-poste-filter-select" aria-label="Filtrer par poste">
         ${posteOptions}
       </select>
-      ${piedItems.map(p => `
-        <button class="ftag ftag-sm ${state.filtPied === p.key ? 'on' : ''}" type="button"
-          data-action="set-pied-filter" data-pied="${h(p.key)}">${h(p.label)}</button>
-      `).join('')}
     </div>
     <div class="ftag-row ftag-sort-row">
       <span class="ftag-label">Trier :</span>
