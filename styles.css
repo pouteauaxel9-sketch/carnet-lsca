@@ -6859,3 +6859,16 @@ body.season-transition-active { overflow: hidden; }
 .sidebar .player-list {
   padding-top: 4px !important;
 }
+
+/* Retirer l'espace vertical entre la topnav et le début de la sidebar */
+.main-layout {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+.main-layout .sidebar {
+  top: 0 !important;
+  padding-top: 0 !important;
+}
+.sidebar .sb-head {
+  padding-top: 8px !important;
+}
