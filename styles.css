@@ -6872,3 +6872,22 @@ body.season-transition-active { overflow: hidden; }
 .sidebar .sb-head {
   padding-top: 8px !important;
 }
+
+/* Retirer TOUS les espaces vides entre topnav et sidebar/main-content */
+.main-layout {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.main-layout > .sidebar {
+  padding: 0 !important;
+  margin: 0 !important;
+  top: 0 !important; /* pas d'offset sticky, la topnav est déjà sticky */
+}
+.main-layout > .main-content {
+  padding-top: 0 !important;
+}
+/* Le contenu interne de la sidebar peut garder un léger padding */
+.sidebar .sb-head {
+  padding: 12px 12px 8px !important;
+  margin: 0 !important;
+}
