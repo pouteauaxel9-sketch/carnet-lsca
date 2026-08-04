@@ -392,17 +392,48 @@
               const cls = it.custom ? 'is-custom' : (phase === 'avec' ? 'is-avec' : phase === 'sans' ? 'is-sans' : '');
               const tag = it.custom ? 'Perso' : isP ? ('#' + it.principleNum + ' ' + (phase === 'avec' ? 'Avec' : 'Sans'))
                         : ((window.PILLARS && window.PILLARS[cat] && window.PILLARS[cat].find(p => p.key === it.pillar) || {}).label || it.pillar);
+              const obj = it.objective || '';
               return `
-                <div class="weekly-item-chip ${cls}" title="${h(prio.label)}">
-                  <span class="weekly-item-pillar">${h(tag)}</span>
-                  <span class="weekly-item-crit">${h(it.criterion)}</span>
-                  ${isP ? '<span class="weekly-item-prio" style="color:' + prio.color + '">' + prio.icon + '</span>' : ''}
-                  <span class="weekly-item-scale">/ ${it.scale || 5}</span>
-                  <button class="weekly-item-rm" type="button"
-                          data-weekly-action="remove-item" data-item-id="${h(it.id)}">×</button>
+                <div class="weekly-item-chip weekly-item-chip-block ${cls}" title="${h(prio.label)}">
+                  <div class="weekly-item-chip-top">
+                    <span class="weekly-item-pillar">${h(tag)}</span>
+                    <span class="weekly-item-crit">${h(it.criterion)}</span>
+                    ${isP ? '<span class="weekly-item-prio" style="color:' + prio.color + '">' + prio.icon + '</span>' : ''}
+                    <button class="weekly-item-rm" type="button"
+                            data-weekly-action="remove-item" data-item-id="${h(it.id)}">×</button>
+                  </div>
+                  ${isP ? `
+                    <div class="weekly-item-objective">
+                      <span class="weekly-item-obj-lbl">🎯 Objectif :</span>
+                      <input type="text" class="weekly-item-obj-input"
+                             value="${h(obj)}" placeholder="Ex: décrochage axe droit, 2 v 1 côté fort…"
+                             maxlength="120"
+                             data-weekly-action="edit-item-objective" data-item-id="${h(it.id)}">
+                    </div>
+                  ` : ''}
                 </div>`;
             }).join('')}
           </div>`}
+
+        ${week._pendingPrinciple ? `
+          <div class="weekly-principle-popup">
+            <div class="weekly-principle-popup-title">
+              <strong>Principe #${week._pendingPrinciple.num} — ${h(week._pendingPrinciple.label)}</strong>
+            </div>
+            <p class="weekly-principle-popup-hint">
+              Précise ce que tu veux vraiment travailler sur ce principe (ex : "créer des espaces dans l'axe pour la percée du 10").
+            </p>
+            <form onsubmit="return false;" class="weekly-principle-popup-form">
+              <input type="text" id="weekly-principle-obj-input"
+                     placeholder="Objectif précis (obligatoire)…"
+                     maxlength="120" autofocus>
+              <div class="weekly-principle-popup-actions">
+                <button class="btn btn-ghost" type="button" data-weekly-action="cancel-principle">Annuler</button>
+                <button class="btn btn-primary" type="button" data-weekly-action="confirm-principle">Ajouter</button>
+              </div>
+            </form>
+          </div>
+        ` : ''}
         ${week.items.length < 8 ? `
           <details class="weekly-add" ${week.items.length === 0 ? 'open' : ''}>
             <summary>+ Ajouter un principe (${week.items.length}/8)</summary>
@@ -567,17 +598,57 @@
       const num = parseInt(key.replace(/^p/, ''), 10);
       const principle = GAME_PRINCIPLES.find(p => p.num === num);
       if (!principle) return true;
+      // On ne l'ajoute pas direct — on met en attente pour saisir l'objectif précis
       setWeek(cat, iso, w => {
-        if (w.items.length >= 8) return;
         if (w.items.some(it => it.principleNum === num)) return;
+        if (w.items.length >= 8) return;
+        w._pendingPrinciple = {
+          num, label: principle.label,
+          phase: principle.phase, subPhase: principle.subPhase,
+          priority: (principle.priority && principle.priority[cat]) || 'a-definir',
+        };
+      });
+      el.value = '';
+      if (utils().renderAll) utils().renderAll();
+      return true;
+    }
+    if (action === 'confirm-principle') {
+      const objInput = document.getElementById('weekly-principle-obj-input');
+      const objective = (objInput?.value || '').trim();
+      if (!objective) { toast('Objectif précis obligatoire'); objInput?.focus(); return true; }
+      setWeek(cat, iso, w => {
+        const p = w._pendingPrinciple;
+        if (!p) return;
+        if (w.items.length >= 8) { delete w._pendingPrinciple; return; }
         w.items.push({
           id: 'wf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-          pillar: 'tactique', criterion: principle.label, principleNum: num,
-          phase: principle.phase, subPhase: principle.subPhase,
-          priority: (principle.priority && principle.priority[cat]) || 'a-definir', scale: 5,
+          pillar: 'tactique',
+          criterion: p.label,
+          objective,
+          principleNum: p.num,
+          phase: p.phase,
+          subPhase: p.subPhase,
+          priority: p.priority,
+          scale: 5,
         });
+        delete w._pendingPrinciple;
       });
-      el.value = ''; if (utils().renderAll) utils().renderAll(); return true;
+      if (utils().renderAll) utils().renderAll();
+      return true;
+    }
+    if (action === 'cancel-principle') {
+      setWeek(cat, iso, w => { delete w._pendingPrinciple; });
+      if (utils().renderAll) utils().renderAll();
+      return true;
+    }
+    if (action === 'edit-item-objective') {
+      const id = el.dataset.itemId;
+      const val = (el.value || '').trim();
+      setWeek(cat, iso, w => {
+        const it = w.items.find(x => x.id === id);
+        if (it) it.objective = val;
+      });
+      return true; // pas de re-render, sinon perte focus
     }
     if (action === 'add-from-catalog') {
       const key = el.value; if (!key) return true;

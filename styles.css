@@ -7611,3 +7611,128 @@ body.season-transition-active { overflow: hidden; }
   .live-obj-summary { grid-template-columns: repeat(2, 1fr); }
   .live-present-box { max-height: 92vh; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Objectif précis par principe (Semaine + Mode Terrain)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Chip principe en bloc (plus grand pour héberger l'objectif) */
+.weekly-item-chip-block {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  padding: 10px 12px !important;
+  gap: 6px !important;
+}
+.weekly-item-chip-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.weekly-item-objective {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  padding: 4px 8px;
+  border: 1px dashed rgba(15, 23, 42, 0.15);
+}
+.weekly-item-chip-block.is-avec .weekly-item-objective { background: rgba(255,255,255,0.7); }
+.weekly-item-chip-block.is-sans .weekly-item-objective { background: rgba(255,255,255,0.7); }
+.weekly-item-obj-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.weekly-item-obj-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0f172a;
+  font-family: 'Outfit', sans-serif;
+  min-width: 100px;
+}
+.weekly-item-obj-input:focus {
+  outline: none;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0, 150, 64, 0.15);
+}
+
+/* Popup obligatoire pour objectif à l'ajout d'un principe */
+.weekly-principle-popup {
+  background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+.weekly-principle-popup-title {
+  font-size: 15px;
+  color: #78350f;
+  margin-bottom: 6px;
+}
+.weekly-principle-popup-title strong { color: #78350f; }
+.weekly-principle-popup-hint {
+  font-size: 12px;
+  color: #92400e;
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+.weekly-principle-popup-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.weekly-principle-popup-form input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #f59e0b;
+  background: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+.weekly-principle-popup-form input:focus {
+  outline: none;
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2);
+}
+.weekly-principle-popup-actions { display: flex; gap: 6px; }
+
+/* Objectif dans Mode Terrain > Objectifs séance */
+.live-obj-objective {
+  background: #eff6ff;
+  border-left: 3px solid #009640;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #0f172a;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.live-overlay-sun .live-obj-objective {
+  background: #1e3a5f;
+  border-left-color: #22c55e;
+  color: #e0f2fe;
+  font-size: 14px;
+}
+
+/* Objectif dans PDF Bilan */
+.pdf-principle-obj {
+  font-size: 10px;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 2px;
+}

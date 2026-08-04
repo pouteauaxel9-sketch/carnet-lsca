@@ -438,7 +438,9 @@
             const v = w.ratings?.[pid]?.[it.id];
             if (v == null) return;
             const k = it.principleNum;
-            if (!stats[k]) stats[k] = { num: k, label: it.criterion, values: [], weeks: 0 };
+            if (!stats[k]) stats[k] = { num: k, label: it.criterion, objective: it.objective || '', values: [], weeks: 0 };
+            // Prendre le dernier objectif renseigné
+            if (it.objective) stats[k].objective = it.objective;
             stats[k].values.push((v / (it.scale || 5)) * 100);
             stats[k].weeks++;
           });
@@ -451,7 +453,10 @@
               const col = avg >= 70 ? GREEN : avg >= 45 ? AMBER : RED;
               return `<li>
                 <span class="pdf-principle-num">#${s.num}</span>
-                <span class="pdf-principle-label">${h(s.label)}</span>
+                <span class="pdf-principle-label">
+                  ${h(s.label)}
+                  ${s.objective ? `<div class="pdf-principle-obj">🎯 ${h(s.objective)}</div>` : ''}
+                </span>
                 <span class="pdf-principle-avg" style="color:${col}">${avg}%</span>
                 <span class="pdf-principle-weeks">${s.weeks} sem.</span>
               </li>`;

@@ -2933,7 +2933,9 @@ document.addEventListener('input', event => {
     window.LiveTrainingModule?.handleAction(target);
     return;
   }
-  if (target.dataset?.weeklyAction === 'set-theme' || target.dataset?.weeklyAction === 'set-note') {
+  if (target.dataset?.weeklyAction === 'set-theme'
+      || target.dataset?.weeklyAction === 'set-note'
+      || target.dataset?.weeklyAction === 'edit-item-objective') {
     window.WeeklyFocusModule?.handleAction(target);
     return;
   }

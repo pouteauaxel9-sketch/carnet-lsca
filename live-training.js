@@ -144,18 +144,16 @@
     return (w.items || []).map(it => ({
       key: 'p' + (it.principleNum || 'c' + it.id),
       label: it.criterion,
+      objective: it.objective || '',
       principleNum: it.principleNum,
       custom: it.custom,
     }));
   }
 
   function ensureObjectivesFromWeek() {
-    // Idempotent : synchronise les objectifs avec les principes de la Semaine,
-    // sans écraser les compteurs existants.
     const principles = currentWeekPrinciples();
     setSession(s => {
       const existing = new Map(s.objectives.map(o => [o.key, o]));
-      // Ajout des principes manquants
       principles.forEach(p => {
         if (!existing.has(p.key)) {
           s.objectives.push({
@@ -163,12 +161,17 @@
             key: p.key,
             source: p.custom ? 'custom' : 'principle',
             label: p.label,
+            objective: p.objective || '',
             principleNum: p.principleNum,
             reussites: 0,
             tentatives: 0,
             acquis: false,
             notes: '',
           });
+        } else {
+          // Sync l'objectif si maj côté Semaine
+          const o = existing.get(p.key);
+          if (p.objective && o.objective !== p.objective) o.objective = p.objective;
         }
       });
     });
@@ -241,11 +244,12 @@
     const today = todayIso();
     let entry = log.find(e => e.date === today);
     if (!entry) {
-      entry = { date: today, ts: new Date().toISOString(), fort: null, faible: null };
+      entry = { date: today, ts: new Date().toISOString(), gauche: null, droit: null, deux: null };
       log.push(entry);
     }
-    if (foot === 'fort') entry.fort = val;
-    if (foot === 'faible') entry.faible = val;
+    if (foot === 'gauche') entry.gauche = val;
+    if (foot === 'droit')  entry.droit = val;
+    if (foot === 'deux')   entry.deux = val;
     entry.ts = new Date().toISOString();
     utils().schedulePersist && utils().schedulePersist();
   }
@@ -377,40 +381,61 @@
       </div>`;
   }
 
+  // Migration douce : anciennes entrées avec fort/faible → utiliser comme fallback affichage
+  function migrateEntry(entry) {
+    if (!entry) return {};
+    const out = Object.assign({}, entry);
+    // Pas d'écrasement : si gauche/droit/deux existent, ils gagnent. Sinon fort/faible utilisés en lecture seule.
+    return out;
+  }
+
   function renderJuggleRow(pid) {
     const log = loadJuggleLog(pid);
     const today = todayIso();
-    const todayEntry = log.find(e => e.date === today) || {};
-    const last = log.filter(e => e.date !== today)
-                    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
-    const trendFort = last && todayEntry.fort != null && last.fort != null ? todayEntry.fort - last.fort : null;
-    const trendFaible = last && todayEntry.faible != null && last.faible != null ? todayEntry.faible - last.faible : null;
-    const trendCls = t => t == null ? '' : t > 0 ? 'trend-up' : t < 0 ? 'trend-down' : 'trend-flat';
-    const trendIco = t => t == null ? '' : t > 0 ? '↑' : t < 0 ? '↓' : '=';
+    const todayEntry = migrateEntry(log.find(e => e.date === today));
+    const last = migrateEntry(log.filter(e => e.date !== today)
+                    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0]);
+
+    const t = (cur, prev) => cur != null && prev != null ? cur - prev : null;
+    const trendCls = v => v == null ? '' : v > 0 ? 'trend-up' : v < 0 ? 'trend-down' : 'trend-flat';
+    const trendIco = v => v == null ? '' : v > 0 ? '↑' : v < 0 ? '↓' : '=';
+
+    const feet = [
+      { key: 'gauche', label: 'Pied gauche' },
+      { key: 'droit',  label: 'Pied droit' },
+      { key: 'deux',   label: 'Des 2 pieds' },
+    ];
+
+    const inputs = feet.map(f => {
+      const cur = todayEntry[f.key];
+      const prev = last?.[f.key];
+      const trend = t(cur, prev);
+      return `
+        <label class="live-juggle-input-wrap">
+          <span class="live-juggle-lbl">${h(f.label)}</span>
+          <input type="number" min="0" max="500" step="1" inputmode="numeric"
+                 class="live-juggle-input"
+                 value="${cur != null ? cur : ''}"
+                 placeholder="${prev != null ? prev : '—'}"
+                 data-live-action="save-juggle" data-pid="${h(pid)}" data-foot="${f.key}">
+          ${trend != null ? `<span class="live-juggle-trend ${trendCls(trend)}">${trendIco(trend)}${Math.abs(trend)}</span>` : ''}
+        </label>`;
+    }).join('');
+
+    // Ligne de rappel : affiche G / D / 2P de la dernière séance
+    let lastLine = 'Première mesure';
+    if (last?.date) {
+      const g = last.gauche ?? (last.faible ?? '—');
+      const d = last.droit ?? (last.fort ?? '—');
+      const b = last.deux ?? '—';
+      lastLine = `Dernière (${h(last.date)}) — G:${g} · D:${d} · 2P:${b}`;
+    }
+
     return `
       <article class="live-juggle-row" data-pid="${h(pid)}">
         <div class="live-juggle-name">${h(playerLabel(pid))}</div>
-        <div class="live-juggle-inputs">
-          <label class="live-juggle-input-wrap">
-            <span class="live-juggle-lbl">Pied fort</span>
-            <input type="number" min="0" max="500" step="1" inputmode="numeric"
-                   class="live-juggle-input"
-                   value="${todayEntry.fort != null ? todayEntry.fort : ''}"
-                   placeholder="${last?.fort != null ? last.fort : '—'}"
-                   data-live-action="save-juggle" data-pid="${h(pid)}" data-foot="fort">
-            ${trendFort != null ? `<span class="live-juggle-trend ${trendCls(trendFort)}">${trendIco(trendFort)}${Math.abs(trendFort)}</span>` : ''}
-          </label>
-          <label class="live-juggle-input-wrap">
-            <span class="live-juggle-lbl">Pied faible</span>
-            <input type="number" min="0" max="500" step="1" inputmode="numeric"
-                   class="live-juggle-input"
-                   value="${todayEntry.faible != null ? todayEntry.faible : ''}"
-                   placeholder="${last?.faible != null ? last.faible : '—'}"
-                   data-live-action="save-juggle" data-pid="${h(pid)}" data-foot="faible">
-            ${trendFaible != null ? `<span class="live-juggle-trend ${trendCls(trendFaible)}">${trendIco(trendFaible)}${Math.abs(trendFaible)}</span>` : ''}
-          </label>
-        </div>
-        ${last ? `<div class="live-juggle-last">Dernière (${h(last.date)}) : ${last.fort ?? '—'} / ${last.faible ?? '—'}</div>` : '<div class="live-juggle-last">Première mesure</div>'}
+        <div class="live-juggle-inputs">${inputs}</div>
+        <div class="live-juggle-last">${lastLine}</div>
       </article>`;
   }
 
@@ -471,6 +496,7 @@
           <button class="live-obj-rm" type="button" data-live-action="remove-obj" data-key="${h(o.key)}"
                   title="Retirer">×</button>
         </div>
+        ${o.objective ? `<div class="live-obj-objective">🎯 ${h(o.objective)}</div>` : ''}
         <div class="live-obj-counters">
           <div class="live-obj-counter">
             <div class="live-obj-counter-val">${o.reussites || 0}</div>
@@ -514,7 +540,7 @@
     const pres = presentPids();
     return `
       <div class="live-present-picker" data-live-action="close-presents-backdrop">
-        <div class="live-present-box" onclick="event.stopPropagation()">
+        <div class="live-present-box" data-live-action="noop">
           <header class="live-present-head">
             <h3>👥 Présents ce soir</h3>
             <button class="live-close" type="button" data-live-action="close-presents">×</button>
@@ -548,6 +574,7 @@
     const action = el.dataset.liveAction;
     if (!action) return false;
 
+    if (action === 'noop') { return true; }
     if (action === 'close') { close(); return true; }
     if (action === 'toggle-sun') { sunMode = !sunMode; renderOverlay(); return true; }
     if (action === 'set-tab') {
@@ -584,7 +611,12 @@
     if (action === 'open-presents')  { presentPickerOpen = true; renderOverlay(); return true; }
     if (action === 'close-presents') { presentPickerOpen = false; renderOverlay(); return true; }
     if (action === 'close-presents-backdrop') {
-      if (el === el.closest('.live-present-picker')) { presentPickerOpen = false; renderOverlay(); }
+      // Ferme uniquement si l'élément avec cette action est le backdrop lui-même
+      // (pas remonté depuis un enfant qui n'a pas d'action propre)
+      if (el.classList.contains('live-present-picker')) {
+        presentPickerOpen = false;
+        renderOverlay();
+      }
       return true;
     }
     if (action === 'toggle-present') {
