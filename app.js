@@ -2929,6 +2929,10 @@ document.addEventListener('change', event => {
 
 document.addEventListener('input', event => {
   const target = event.target;
+  if (target.dataset?.liveAction === 'search') {
+    window.LiveTrainingModule?.handleAction(target);
+    return;
+  }
   if (target.dataset?.weeklyAction === 'set-theme' || target.dataset?.weeklyAction === 'set-note') {
     window.WeeklyFocusModule?.handleAction(target);
     return;

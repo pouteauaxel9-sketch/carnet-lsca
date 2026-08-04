@@ -33,6 +33,15 @@
   let visible = false;
   let activePid = null;
   let activeMode = 'grid';  // 'grid' | 'note'
+  let searchQuery = '';     // recherche joueur
+  let sunMode = false;      // haute lisibilité plein soleil
+  let sessionStartAt = null;
+  let undoStack = [];       // { pid, flashId } — pour Annuler
+  const UNDO_MAX = 20;
+
+  function haptic() {
+    try { if (navigator.vibrate) navigator.vibrate(10); } catch {}
+  }
 
   /* ── helpers semaine ──────────────────────────────── */
 
@@ -124,6 +133,9 @@
     visible = true;
     activePid = null;
     activeMode = 'grid';
+    searchQuery = '';
+    undoStack = [];
+    sessionStartAt = new Date();
     ensureWeek(state().cat, thisMondayIso());
     renderOverlay();
     document.body.classList.add('live-training-active');
@@ -135,7 +147,35 @@
     document.body.classList.remove('live-training-active');
     const el = document.getElementById('live-training-overlay');
     if (el) el.remove();
+    // Résumé de session
+    if (sessionStartAt) {
+      const dur = Math.round((Date.now() - sessionStartAt.getTime()) / 60000);
+      const totals = countFlashesSession();
+      if (totals.total > 0) {
+        toast('Séance ' + dur + ' min · ' + totals.plus + '👍 · ' + totals.minus + '👎 · ' + totals.note + '📝');
+      }
+    }
+    sessionStartAt = null;
     utils().renderAll?.();
+  }
+
+  function countFlashesSession() {
+    const cat = state().cat;
+    const iso = thisMondayIso();
+    const w = getWeek(cat, iso);
+    if (!w || !w.flash) return { plus: 0, minus: 0, note: 0, total: 0 };
+    const startMs = sessionStartAt ? sessionStartAt.getTime() : 0;
+    let p = 0, m = 0, n = 0;
+    Object.values(w.flash).forEach(arr => {
+      arr.forEach(f => {
+        if (f.ts && new Date(f.ts).getTime() >= startMs) {
+          if (f.kind === 'plus') p++;
+          else if (f.kind === 'minus') m++;
+          else if (f.kind === 'note') n++;
+        }
+      });
+    });
+    return { plus: p, minus: m, note: n, total: p + m + n };
   }
 
   function isOpen() { return visible; }
@@ -148,6 +188,7 @@
       el.className = 'live-overlay';
       document.body.appendChild(el);
     }
+    el.className = 'live-overlay' + (sunMode ? ' live-overlay-sun' : '');
     if (activeMode === 'note' && activePid) {
       el.innerHTML = renderNoteView();
     } else {
@@ -162,9 +203,17 @@
     const players = sortedPlayers(cat);
     const teamFilter = state().selTeam || '';
 
-    const visible = teamFilter
+    let visible = teamFilter
       ? players.filter(p => playerTeam(p) === teamFilter)
       : players;
+
+    // Filtre recherche
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      visible = visible.filter(pid => playerLabel(pid).toLowerCase().includes(q));
+    }
+
+    const canUndo = undoStack.length > 0;
 
     return `
       <div class="live-shell">
@@ -174,20 +223,35 @@
             <div class="live-cat">Mode Terrain — ${h((window.CAT_LABELS?.[cat] || cat).toUpperCase())}</div>
             <div class="live-week">${h(week.label)}${week.theme ? ' · ' + h(week.theme) : ''}</div>
           </div>
-          <button class="live-team-filter" type="button" data-live-action="cycle-team"
-                  title="Filtrer par équipe">
-            ${teamFilter || 'Toutes'}
-          </button>
+          <div class="live-head-actions">
+            <button class="live-icon-btn ${canUndo ? '' : 'is-disabled'}" type="button"
+                    data-live-action="undo" ${canUndo ? '' : 'disabled'}
+                    title="Annuler la dernière action">↶</button>
+            <button class="live-icon-btn ${sunMode ? 'on' : ''}" type="button"
+                    data-live-action="toggle-sun"
+                    title="Mode plein soleil (haut contraste)">☀</button>
+            <button class="live-team-filter" type="button" data-live-action="cycle-team"
+                    title="Filtrer par équipe">
+              ${teamFilter || 'Toutes'}
+            </button>
+          </div>
         </header>
 
-        <div class="live-legend">
-          <span class="live-leg live-leg-plus">👍 Bon</span>
-          <span class="live-leg live-leg-minus">👎 À travailler</span>
-          <span class="live-leg live-leg-note">📝 Note</span>
+        <div class="live-toolbar">
+          <input type="search" class="live-search" placeholder="🔍 Rechercher un joueur…"
+                 value="${h(searchQuery)}" data-live-action="search"
+                 autocomplete="off">
+          <div class="live-legend">
+            <span class="live-leg live-leg-plus">👍 Bon</span>
+            <span class="live-leg live-leg-minus">👎 À travailler</span>
+            <span class="live-leg live-leg-note">📝 Note</span>
+          </div>
         </div>
 
         <div class="live-grid">
-          ${visible.map(pid => renderPlayerTile(pid, week)).join('')}
+          ${visible.length === 0
+            ? '<p class="live-empty">Aucun joueur trouvé.</p>'
+            : visible.map(pid => renderPlayerTile(pid, week)).join('')}
         </div>
 
         ${renderSummaryBar(week, visible)}
@@ -304,16 +368,35 @@
   function pushFlash(pid, kind, text) {
     const cat = state().cat;
     const iso = thisMondayIso();
+    const id = 'fl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
     setWeek(cat, iso, w => {
       if (!w.flash) w.flash = {};
       if (!w.flash[pid]) w.flash[pid] = [];
       w.flash[pid].push({
-        id: 'fl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        id,
         ts: new Date().toISOString(),
         kind,
         text: text || undefined,
       });
     });
+    // Push to undo stack
+    undoStack.push({ pid, flashId: id });
+    if (undoStack.length > UNDO_MAX) undoStack.shift();
+    haptic();
+  }
+
+  function undoLast() {
+    const last = undoStack.pop();
+    if (!last) { toast('Rien à annuler'); return; }
+    const cat = state().cat;
+    const iso = thisMondayIso();
+    setWeek(cat, iso, w => {
+      if (w.flash?.[last.pid]) {
+        w.flash[last.pid] = w.flash[last.pid].filter(f => f.id !== last.flashId);
+      }
+    });
+    toast('Annulé');
+    renderOverlay();
   }
 
   function handleAction(el) {
@@ -373,6 +456,32 @@
       const next = idx === -1 ? teams[0] : teams[idx + 1];
       state().selTeam = next || null;
       renderOverlay();
+      return true;
+    }
+    if (action === 'undo') { undoLast(); return true; }
+    if (action === 'toggle-sun') {
+      sunMode = !sunMode;
+      renderOverlay();
+      return true;
+    }
+    if (action === 'search') {
+      searchQuery = el.value || '';
+      // Ré-rendre uniquement la grille sans perdre le focus de l'input
+      const grid = document.querySelector('.live-grid');
+      if (grid) {
+        const cat = state().cat;
+        const week = ensureWeek(cat, thisMondayIso());
+        const teamFilter = state().selTeam || '';
+        const players = sortedPlayers(cat);
+        let visibleP = teamFilter ? players.filter(p => playerTeam(p) === teamFilter) : players;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          visibleP = visibleP.filter(pid => playerLabel(pid).toLowerCase().includes(q));
+        }
+        grid.innerHTML = visibleP.length === 0
+          ? '<p class="live-empty">Aucun joueur trouvé.</p>'
+          : visibleP.map(pid => renderPlayerTile(pid, week)).join('');
+      }
       return true;
     }
     return false;
