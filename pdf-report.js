@@ -95,14 +95,18 @@
 
   /* ── Composants visuels ─────────────────────────────── */
 
-  function logoHeader(subtitle) {
+  function logoHeader(subtitle, clubOrigine) {
     const logos = window.PDF_LOGOS || {};
+    const clubs = window.CLUBS_ORIGINE || [];
+    // Trouver le club d'origine du joueur, sinon fallback Louverné
+    const club = clubs.find(c => c.key === clubOrigine) || clubs[0] || { label: 'Louverné Sports', logo: 'louverne' };
+    const clubLogo = logos[club.logo];
     return `
       <div class="pdf-topbar">
         <div class="pdf-topbar-left">
-          ${logos.louverne ? `<img src="${logos.louverne}" class="pdf-logo-lsp" alt="Louverné Sports">` : ''}
+          ${clubLogo ? `<img src="${clubLogo}" class="pdf-logo-lsp" alt="${h(club.label)}">` : ''}
           <div class="pdf-topbar-club">
-            <div class="pdf-club-name">Louverné Sports</div>
+            <div class="pdf-club-name">${h(club.label)}</div>
             <div class="pdf-club-sub">${h(subtitle || 'Groupement Jeunes LSCA')}</div>
           </div>
         </div>
@@ -201,7 +205,7 @@
     const objectives = (prof.objectifs || []).filter(Boolean).slice(0, 4);
 
     return `
-      ${logoHeader('Bilan individuel — Saison ' + season)}
+      ${logoHeader('Bilan individuel — Saison ' + season, prof.club_origine)}
 
       <div class="pdf-page1-hero">
         ${photoHtml}
@@ -212,7 +216,6 @@
             ${prof.poste1 ? `<span class="pdf-tag">${h(prof.poste1)}</span>` : ''}
             ${prof.pied   ? `<span class="pdf-tag">Pied ${h(prof.pied)}</span>` : ''}
             ${age         ? `<span class="pdf-tag">${age} ans</span>` : ''}
-            ${prof.annees_club ? `<span class="pdf-tag">${h(prof.annees_club)} an(s) au club</span>` : ''}
           </div>
         </div>
         ${scoreBadge(score)}
@@ -338,7 +341,7 @@
     }
 
     return `
-      ${logoHeader('Détail de l\'évaluation')}
+      ${logoHeader('Détail de l\'évaluation', d.prof.club_origine)}
 
       <section class="pdf-section">
         <h2 class="pdf-h2">Détail par pilier</h2>
@@ -461,7 +464,7 @@
     }
 
     return `
-      ${logoHeader('Contexte & suivi transverse')}
+      ${logoHeader('Contexte & suivi transverse', d.prof.club_origine)}
 
       <div class="pdf-page3-grid">
         <section class="pdf-section">

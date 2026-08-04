@@ -1616,7 +1616,14 @@ function profileBody(pid) {
       <div class="field-group"><label class="field-label" for="pf-birth">Date de naissance</label><input class="field-input" id="pf-birth" type="date" value="${h(prof.naissance)}" data-field="naissance"></div>
       <div class="field-group"><label class="field-label" for="pf-licence">Numero de licence</label><input class="field-input" id="pf-licence" type="text" value="${h(prof.licence)}" data-field="licence"></div>
       <div class="field-group"><label class="field-label" for="pf-years">Annees au club</label><input class="field-input" id="pf-years" type="number" min="0" max="20" value="${h(prof.annees_club)}" data-field="annees_club"></div>
-      <div class="field-group"><label class="field-label" for="pf-parent">Contact parent</label><input class="field-input" id="pf-parent" type="tel" value="${h(prof.contact_parent)}" data-field="contact_parent"></div>
+      <div class="field-group">
+        <label class="field-label" for="pf-club">Club d'origine</label>
+        <select class="field-input" id="pf-club" data-field="club_origine">
+          <option value="">— Choisir —</option>
+          ${(window.CLUBS_ORIGINE || []).map(c =>
+            `<option value="${h(c.key)}" ${prof.club_origine === c.key ? 'selected' : ''}>${h(c.label)}</option>`).join('')}
+        </select>
+      </div>
     </div>
 
     <div class="form-section-title">Profil sportif</div>
@@ -1673,16 +1680,6 @@ function profileBody(pid) {
         <div class="insight-text">${weakest ? `Le travail prioritaire peut se concentrer sur <strong>${h(weakest.label)}</strong>.` : 'Axe principal en attente d observations suffisantes.'}</div>
       </div>
     </div>
-
-    <div class="form-section-title">Morphologie</div>
-    <div class="form-grid">
-      <div class="field-group"><label class="field-label" for="pf-height">Taille (cm)</label><input class="field-input" id="pf-height" type="number" min="100" max="220" value="${h(prof.taille)}" data-field="taille"></div>
-      <div class="field-group"><label class="field-label" for="pf-weight">Poids (kg)</label><input class="field-input" id="pf-weight" type="number" min="20" max="150" value="${h(prof.poids)}" data-field="poids"></div>
-      <div class="field-group full">
-        <button class="btn" type="button" data-action="snapshot-morpho">+ Enregistrer la mesure du jour</button>
-      </div>
-    </div>
-    ${renderMorphoHistory(prof)}
 
     <div class="form-section-title">Objectifs de saison</div>
     <div class="obj-list">${objRows}<button class="add-obj" type="button" data-action="add-obj">+ Ajouter un objectif</button></div>
@@ -2316,7 +2313,11 @@ function updateProfileField(field, value) {
 
 function setFoot(value) {
   updateProfileField('pied', value);
-  renderAll();
+  // Ne PAS renderAll — ça effacerait les inputs en cours de frappe.
+  // On met à jour uniquement l'état visuel des boutons pied.
+  document.querySelectorAll('.foot-btn').forEach(btn => {
+    btn.classList.toggle('on', btn.dataset.value === value);
+  });
 }
 
 function updateObj(index, value) {
@@ -2345,9 +2346,22 @@ function setRating(pillarKey, index, value) {
   ensureData(state.cat, state.selPlayer, state.season);
   const seasonData = state.data[state.cat][state.selPlayer][state.season];
   if (!seasonData.ratings[pillarKey]) seasonData.ratings[pillarKey] = [];
-  seasonData.ratings[pillarKey][index] = seasonData.ratings[pillarKey][index] === value ? 0 : value;
+  const newVal = seasonData.ratings[pillarKey][index] === value ? 0 : value;
+  seasonData.ratings[pillarKey][index] = newVal;
   schedulePersist('Note mise a jour');
-  renderAll();
+  // Update visuel local sans renderAll (préserve les autres champs en cours de frappe)
+  document.querySelectorAll(`.dot[data-pillar="${pillarKey}"][data-index="${index}"]`).forEach(dot => {
+    const dotVal = Number(dot.dataset.value);
+    dot.className = 'dot' + (dotVal === newVal ? ' on-' + newVal : '');
+  });
+  // Mise à jour des scores/radar
+  if (state.selSection === 'evaluation') {
+    // Redraw le radar seulement (moins destructif que renderAll)
+    if (typeof drawRadar === 'function') {
+      const values = pillars().map(p => getPillarPercent(state.cat, state.selPlayer, p.key));
+      drawRadar(state.selPlayer, values, []);
+    }
+  }
 }
 
 function setCritComment(pillarKey, index, value) {
@@ -2815,9 +2829,8 @@ document.addEventListener('click', event => {
     return;
   }
 
-  if (target.dataset.action === 'set-crit-comment') { setCritComment(target.dataset.pillar, Number(target.dataset.index), target.value); return; }
-  if (target.dataset.action === 'set-main-comment') { setMainComment(target.value); return; }
-  if (target.dataset.action === 'set-self-comment') { setSelfComment(target.value); }
+  // NOTE : les handlers set-crit-comment / set-main-comment / set-self-comment
+  // et data-field sont dans le listener 'input' plus bas (pas 'click').
 });
 
 q('#season-sel').addEventListener('change', event => {
@@ -2884,6 +2897,30 @@ document.addEventListener('input', event => {
   const target = event.target;
   if (target.dataset?.weeklyAction === 'set-theme' || target.dataset?.weeklyAction === 'set-note') {
     window.WeeklyFocusModule?.handleAction(target);
+    return;
+  }
+  // Champs profil joueur (Nom, Prénom, Naissance, Licence, Années, Contact, Taille, Poids)
+  const field = target.dataset?.field;
+  if (field && state.selPlayer) {
+    updateProfileField(field, target.value);
+    return;
+  }
+  // Commentaires évaluation (critère, coach, auto)
+  const action = target.dataset?.action;
+  if (action === 'set-crit-comment') {
+    setCritComment(target.dataset.pillar, Number(target.dataset.index), target.value);
+    return;
+  }
+  if (action === 'set-main-comment') { setMainComment(target.value); return; }
+  if (action === 'set-self-comment') { setSelfComment(target.value); return; }
+});
+
+// Change listener pour les <select> profil (poste1, poste2, team)
+document.addEventListener('change', event => {
+  const target = event.target;
+  const field = target.dataset?.field;
+  if (field && state.selPlayer && target.tagName === 'SELECT') {
+    updateProfileField(field, target.value);
   }
 });
 
