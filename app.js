@@ -2929,7 +2929,7 @@ document.addEventListener('change', event => {
 
 document.addEventListener('input', event => {
   const target = event.target;
-  if (target.dataset?.liveAction === 'search') {
+  if (target.dataset?.liveAction === 'search' || target.dataset?.liveAction === 'save-juggle') {
     window.LiveTrainingModule?.handleAction(target);
     return;
   }

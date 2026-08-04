@@ -33,10 +33,11 @@
   let visible = false;
   let activePid = null;
   let activeMode = 'grid';  // 'grid' | 'note'
-  let searchQuery = '';     // recherche joueur
-  let sunMode = false;      // haute lisibilité plein soleil
+  let activeTab = 'notes';  // 'notes' | 'juggle' | 'session'
+  let searchQuery = '';
+  let sunMode = false;
   let sessionStartAt = null;
-  let undoStack = [];       // { pid, flashId } — pour Annuler
+  let undoStack = [];
   const UNDO_MAX = 20;
 
   function haptic() {
@@ -189,11 +190,183 @@
       document.body.appendChild(el);
     }
     el.className = 'live-overlay' + (sunMode ? ' live-overlay-sun' : '');
+    // Vue Note d'un joueur en priorité (overlay dans overlay)
     if (activeMode === 'note' && activePid) {
       el.innerHTML = renderNoteView();
+      return;
+    }
+    // Sinon rend selon l'onglet actif
+    if (activeTab === 'juggle') {
+      el.innerHTML = renderJuggleView();
+    } else if (activeTab === 'session') {
+      el.innerHTML = renderSessionView();
     } else {
       el.innerHTML = renderGridView();
     }
+  }
+
+  /* ── Barre d'onglets commune aux 3 vues ─────────────── */
+  function renderTabs() {
+    const tabs = [
+      { key: 'notes',   label: '🎯 Notes flash' },
+      { key: 'juggle',  label: '⚽ Jonglerie' },
+      { key: 'session', label: '💭 Ressenti séance' },
+    ];
+    return `
+      <nav class="live-tabs" role="tablist">
+        ${tabs.map(t => `
+          <button class="live-tab ${activeTab === t.key ? 'on' : ''}" type="button"
+                  data-live-action="set-tab" data-tab="${t.key}"
+                  role="tab" aria-selected="${activeTab === t.key}">
+            ${h(t.label)}
+          </button>
+        `).join('')}
+      </nav>`;
+  }
+
+  /* ── Vue Jonglerie ──────────────────────────────────── */
+
+  function loadJuggleLog(pid) {
+    const cat = state().cat;
+    const raw = state().data?.[cat]?.[pid]?.juggleLog;
+    return Array.isArray(raw) ? raw : [];
+  }
+
+  function saveJuggle(pid, fort, faible) {
+    const cat = state().cat;
+    if (!state().data[cat][pid]) state().data[cat][pid] = { profil: {} };
+    if (!state().data[cat][pid].juggleLog) state().data[cat][pid].juggleLog = [];
+    const today = new Date().toISOString().slice(0, 10);
+    const log = state().data[cat][pid].juggleLog;
+    // Si déjà une entrée aujourd'hui, on update ; sinon on push
+    const existing = log.find(e => e.date === today);
+    if (existing) {
+      if (fort != null) existing.fort = fort;
+      if (faible != null) existing.faible = faible;
+      existing.ts = new Date().toISOString();
+    } else {
+      log.push({
+        date: today,
+        ts: new Date().toISOString(),
+        fort: fort != null ? fort : null,
+        faible: faible != null ? faible : null,
+      });
+    }
+    utils().schedulePersist && utils().schedulePersist();
+  }
+
+  function renderJuggleView() {
+    const cat = state().cat;
+    const players = sortedPlayers(cat);
+    const teamFilter = state().selTeam || '';
+    let visibleP = teamFilter ? players.filter(p => playerTeam(p) === teamFilter) : players;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      visibleP = visibleP.filter(pid => playerLabel(pid).toLowerCase().includes(q));
+    }
+    const today = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' });
+
+    return `
+      <div class="live-shell">
+        <header class="live-head">
+          <button class="live-close" type="button" data-live-action="close" aria-label="Fermer">×</button>
+          <div class="live-title">
+            <div class="live-cat">Mode Terrain — ${h((window.CAT_LABELS?.[cat] || cat).toUpperCase())}</div>
+            <div class="live-week">Jonglerie · ${h(today)}</div>
+          </div>
+          <div class="live-head-actions">
+            <button class="live-icon-btn ${sunMode ? 'on' : ''}" type="button"
+                    data-live-action="toggle-sun" title="Mode plein soleil">☀</button>
+            <button class="live-team-filter" type="button" data-live-action="cycle-team">${teamFilter || 'Toutes'}</button>
+          </div>
+        </header>
+
+        ${renderTabs()}
+
+        <div class="live-toolbar">
+          <input type="search" class="live-search" placeholder="🔍 Rechercher un joueur…"
+                 value="${h(searchQuery)}" data-live-action="search" autocomplete="off">
+          <span class="live-juggle-legend">Saisie du jour · les mesures précédentes s'affichent en gris</span>
+        </div>
+
+        <div class="live-juggle-list">
+          ${visibleP.length === 0
+            ? '<p class="live-empty">Aucun joueur trouvé.</p>'
+            : visibleP.map(pid => renderJuggleRow(pid)).join('')}
+        </div>
+      </div>`;
+  }
+
+  function renderJuggleRow(pid) {
+    const log = loadJuggleLog(pid);
+    const today = new Date().toISOString().slice(0, 10);
+    const todayEntry = log.find(e => e.date === today) || {};
+    const last = log.filter(e => e.date !== today).sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+
+    const trendFort = last && todayEntry.fort != null && last.fort != null
+      ? todayEntry.fort - last.fort : null;
+    const trendFaible = last && todayEntry.faible != null && last.faible != null
+      ? todayEntry.faible - last.faible : null;
+
+    const trendClass = (t) => t == null ? '' : t > 0 ? 'trend-up' : t < 0 ? 'trend-down' : 'trend-flat';
+    const trendIcon = (t) => t == null ? '' : t > 0 ? '↑' : t < 0 ? '↓' : '=';
+
+    return `
+      <article class="live-juggle-row" data-pid="${h(pid)}">
+        <div class="live-juggle-name">${h(playerLabel(pid))}</div>
+        <div class="live-juggle-inputs">
+          <label class="live-juggle-input-wrap">
+            <span class="live-juggle-lbl">Pied fort</span>
+            <input type="number" min="0" max="500" step="1" inputmode="numeric"
+                   class="live-juggle-input"
+                   value="${todayEntry.fort != null ? todayEntry.fort : ''}"
+                   placeholder="${last?.fort != null ? last.fort : '—'}"
+                   data-live-action="save-juggle" data-pid="${h(pid)}" data-foot="fort">
+            ${trendFort != null ? `<span class="live-juggle-trend ${trendClass(trendFort)}">${trendIcon(trendFort)}${Math.abs(trendFort)}</span>` : ''}
+          </label>
+          <label class="live-juggle-input-wrap">
+            <span class="live-juggle-lbl">Pied faible</span>
+            <input type="number" min="0" max="500" step="1" inputmode="numeric"
+                   class="live-juggle-input"
+                   value="${todayEntry.faible != null ? todayEntry.faible : ''}"
+                   placeholder="${last?.faible != null ? last.faible : '—'}"
+                   data-live-action="save-juggle" data-pid="${h(pid)}" data-foot="faible">
+            ${trendFaible != null ? `<span class="live-juggle-trend ${trendClass(trendFaible)}">${trendIcon(trendFaible)}${Math.abs(trendFaible)}</span>` : ''}
+          </label>
+        </div>
+        ${last ? `<div class="live-juggle-last">Dernière (${h(last.date)}) : ${last.fort ?? '—'} / ${last.faible ?? '—'}</div>` : '<div class="live-juggle-last">Première mesure</div>'}
+      </article>`;
+  }
+
+  /* ── Vue Ressenti séance (placeholder) ──────────────── */
+
+  function renderSessionView() {
+    const cat = state().cat;
+    return `
+      <div class="live-shell">
+        <header class="live-head">
+          <button class="live-close" type="button" data-live-action="close" aria-label="Fermer">×</button>
+          <div class="live-title">
+            <div class="live-cat">Mode Terrain — ${h((window.CAT_LABELS?.[cat] || cat).toUpperCase())}</div>
+            <div class="live-week">Ressenti séance</div>
+          </div>
+        </header>
+
+        ${renderTabs()}
+
+        <div class="live-placeholder">
+          <div class="live-placeholder-icon">💭</div>
+          <h3>Page créée — à construire</h3>
+          <p>Ici viendra le carnet de séance :</p>
+          <ul>
+            <li>Ressenti coach (texte libre + tags rapides)</li>
+            <li>Réussite des principes travaillés (slider %)</li>
+            <li>Score global de séance</li>
+            <li>Points à retenir pour la prochaine</li>
+          </ul>
+          <p class="live-placeholder-hint">On y revient dès que tu es prêt — dis-moi juste quand.</p>
+        </div>
+      </div>`;
   }
 
   function renderGridView() {
@@ -236,6 +409,8 @@
             </button>
           </div>
         </header>
+
+        ${renderTabs()}
 
         <div class="live-toolbar">
           <input type="search" class="live-search" placeholder="🔍 Rechercher un joueur…"
@@ -456,6 +631,19 @@
       const next = idx === -1 ? teams[0] : teams[idx + 1];
       state().selTeam = next || null;
       renderOverlay();
+      return true;
+    }
+    if (action === 'set-tab') {
+      activeTab = el.dataset.tab || 'notes';
+      renderOverlay();
+      return true;
+    }
+    if (action === 'save-juggle') {
+      const pid = el.dataset.pid;
+      const foot = el.dataset.foot; // 'fort' | 'faible'
+      const val = el.value.trim() === '' ? null : Math.max(0, Math.min(500, parseInt(el.value, 10) || 0));
+      if (foot === 'fort') saveJuggle(pid, val, undefined);
+      else if (foot === 'faible') saveJuggle(pid, undefined, val);
       return true;
     }
     if (action === 'undo') { undoLast(); return true; }

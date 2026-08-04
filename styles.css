@@ -7052,3 +7052,205 @@ body.season-transition-active { overflow: hidden; }
   .live-toolbar { padding: 8px 12px; gap: 6px; }
   .live-icon-btn { width: 36px; height: 36px; font-size: 18px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Mode Terrain — Onglets + Vue Jonglerie + Placeholder Ressenti
+   ══════════════════════════════════════════════════════════════════ */
+
+.live-tabs {
+  display: flex;
+  gap: 2px;
+  background: #fff;
+  padding: 6px 12px 0;
+  border-bottom: 2px solid #e5e7eb;
+  overflow-x: auto;
+}
+.live-tab {
+  border: none;
+  background: transparent;
+  padding: 12px 20px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.live-tab:hover { color: #0f172a; background: #f9fafb; }
+.live-tab.on {
+  color: #009640;
+  border-bottom-color: #009640;
+  font-weight: 600;
+}
+
+/* Mode plein soleil : onglets sombres */
+.live-overlay-sun .live-tabs { background: #1a1a1a; border-bottom-color: #333; }
+.live-overlay-sun .live-tab { color: #94a3b8; font-size: 15px; }
+.live-overlay-sun .live-tab:hover { color: #fff; background: #262626; }
+.live-overlay-sun .live-tab.on { color: #22c55e; border-bottom-color: #22c55e; }
+
+/* ── Vue Jonglerie ── */
+.live-juggle-legend {
+  font-size: 11px;
+  color: #64748b;
+  font-style: italic;
+}
+.live-juggle-list {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.live-juggle-row {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 14px;
+  align-items: center;
+}
+.live-juggle-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #0f172a;
+  min-width: 140px;
+}
+.live-juggle-inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.live-juggle-input-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+.live-juggle-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+.live-juggle-input {
+  width: 76px;
+  padding: 10px 8px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  background: #f9fafb;
+  font-family: 'Outfit', sans-serif;
+  color: #0f172a;
+  transition: all 0.12s;
+}
+.live-juggle-input:focus {
+  outline: none;
+  border-color: #009640;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 150, 64, 0.15);
+}
+.live-juggle-input::placeholder { color: #cbd5e1; font-weight: 500; }
+.live-juggle-trend {
+  position: absolute;
+  right: -8px;
+  top: 26px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #64748b;
+}
+.live-juggle-trend.trend-up { background: #dcfce7; color: #166534; }
+.live-juggle-trend.trend-down { background: #fee2e2; color: #991b1b; }
+.live-juggle-trend.trend-flat { background: #f3f4f6; color: #64748b; }
+.live-juggle-last {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+  border-top: 1px dashed #f3f4f6;
+  padding-top: 6px;
+  margin-top: 2px;
+}
+
+/* Mode plein soleil : jonglerie */
+.live-overlay-sun .live-juggle-row {
+  background: #1a1a1a;
+  border-color: #333;
+}
+.live-overlay-sun .live-juggle-name { color: #fff; font-size: 17px; }
+.live-overlay-sun .live-juggle-lbl { color: #94a3b8; }
+.live-overlay-sun .live-juggle-input {
+  background: #262626;
+  border-color: #444;
+  color: #fff;
+  font-size: 22px;
+  width: 90px;
+  padding: 14px 8px;
+}
+.live-overlay-sun .live-juggle-input:focus {
+  background: #333;
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+}
+.live-overlay-sun .live-juggle-last { color: #666; }
+.live-overlay-sun .live-juggle-legend { color: #94a3b8; }
+
+/* ── Placeholder Ressenti ── */
+.live-placeholder {
+  padding: 60px 24px;
+  text-align: center;
+  color: #64748b;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.live-placeholder-icon {
+  font-size: 56px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+.live-placeholder h3 {
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.live-placeholder p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+.live-placeholder ul {
+  text-align: left;
+  display: inline-block;
+  margin: 12px 0;
+  padding-left: 22px;
+}
+.live-placeholder ul li { margin: 4px 0; font-size: 14px; }
+.live-placeholder-hint {
+  font-style: italic;
+  color: #94a3b8;
+  font-size: 13px;
+  margin-top: 20px;
+}
+.live-overlay-sun .live-placeholder,
+.live-overlay-sun .live-placeholder p { color: #cbd5e1; }
+.live-overlay-sun .live-placeholder h3 { color: #fff; }
+.live-overlay-sun .live-placeholder-hint { color: #64748b; }
+
+/* Mobile : layout jonglerie en colonne */
+@media (max-width: 640px) {
+  .live-juggle-row { grid-template-columns: 1fr; }
+  .live-juggle-inputs { justify-content: space-around; }
+  .live-juggle-input { width: 68px; font-size: 16px; }
+}
