@@ -308,25 +308,43 @@
       seanceHtml = '<div class="pdf-muted">Aucune séance d\'atelier saisie cette saison.</div>';
     }
 
-    // Observations match
+    // Observations match — bloc stats + tableau récent
     let obsHtml = '';
     if (observations.length) {
+      // Stats saison agrégées via ObsModule.seasonStats
+      const stats = window.ObsModule?.seasonStats?.(observations) || null;
+      let statsHtml = '';
+      if (stats) {
+        statsHtml = `
+          <div class="pdf-obs-stats">
+            <div class="pdf-obs-stat"><div class="pdf-obs-val">${stats.matches}</div><div class="pdf-obs-lbl">Matchs joués</div></div>
+            <div class="pdf-obs-stat"><div class="pdf-obs-val">${stats.buts}</div><div class="pdf-obs-lbl">⚽ Buts</div><div class="pdf-obs-sub">${stats.matches ? '⌀ ' + stats.buts_par_match + '/match' : ''}</div></div>
+            <div class="pdf-obs-stat"><div class="pdf-obs-val">${stats.passes_d}</div><div class="pdf-obs-lbl">🅰 Passes déc.</div><div class="pdf-obs-sub">${stats.matches ? '⌀ ' + stats.passes_par_match + '/match' : ''}</div></div>
+            <div class="pdf-obs-stat"><div class="pdf-obs-val">${stats.implications}</div><div class="pdf-obs-lbl">Implications</div><div class="pdf-obs-sub">(buts + passes)</div></div>
+            <div class="pdf-obs-stat"><div class="pdf-obs-val">${stats.noteAvg != null ? stats.noteAvg : '—'}</div><div class="pdf-obs-lbl">Note moy.</div><div class="pdf-obs-sub">${stats.noteAvg != null ? '/10' : ''}</div></div>
+          </div>`;
+      }
+
       const recent = observations.slice(0, 5);
-      obsHtml = `
+      obsHtml = statsHtml + `
         <table class="pdf-table pdf-table-compact">
           <thead>
             <tr>
-              <th>Date</th><th>Adversaire</th><th>Score</th><th>Note</th><th>Résumé</th>
+              <th>Date</th><th>Adversaire</th><th>Score</th><th>G</th><th>A</th><th>Note</th><th>Résumé</th>
             </tr>
           </thead>
           <tbody>
             ${recent.map(o => {
               const dt = o.date_match ? new Date(o.date_match).toLocaleDateString('fr-FR', { day:'2-digit', month:'short' }) : '—';
-              const notes = (o.notes_libres || o.commentaire || '').slice(0, 80);
+              const notes = (o.notes_libres || o.commentaire || '').slice(0, 60);
+              const g = o.stats?.buts || 0;
+              const a = o.stats?.passes_d || 0;
               return `<tr>
                 <td>${h(dt)}</td>
                 <td>${h(o.adversaire || '—')}</td>
                 <td>${h(o.score_match || '—')}</td>
+                <td>${g || '—'}</td>
+                <td>${a || '—'}</td>
                 <td><strong>${o.note_match ?? '—'}</strong></td>
                 <td class="pdf-td-note">${h(notes)}</td>
               </tr>`;
@@ -740,6 +758,23 @@ body {
 .pdf-status-hist { list-style: none; padding-left: 0; font-size: 11px; }
 .pdf-status-hist li { padding: 3px 0; border-bottom: 1px dashed ${BORDER}; }
 .pdf-status-hist li:last-child { border: none; }
+
+.pdf-obs-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.pdf-obs-stat {
+  background: ${GREEN_SOFT};
+  border-radius: 6px;
+  padding: 8px 4px;
+  text-align: center;
+  border: 1px solid ${BORDER};
+}
+.pdf-obs-val { font-size: 18px; font-weight: 700; color: ${GREEN_DARK}; line-height: 1; }
+.pdf-obs-lbl { font-size: 9px; text-transform: uppercase; color: ${TEXT}; margin-top: 3px; font-weight: 600; letter-spacing: 0.03em; }
+.pdf-obs-sub { font-size: 8px; color: ${MUTED}; margin-top: 2px; font-style: italic; }
 
 .pdf-att-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .pdf-att-cell {
