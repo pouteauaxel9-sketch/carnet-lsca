@@ -2615,3 +2615,12 @@ document.addEventListener('change', event => {
 
 loadAll();
 updateBackupBanner();
+
+// Retire le splash screen une fois l'app rendue (attendre un frame pour la fluidité)
+requestAnimationFrame(() => {
+  const splash = document.getElementById('boot-splash');
+  if (splash) {
+    splash.classList.add('is-hidden');
+    setTimeout(() => splash.remove(), 400);
+  }
+});
