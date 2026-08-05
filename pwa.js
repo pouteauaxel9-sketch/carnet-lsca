@@ -19,17 +19,28 @@
   /* ── Enregistrement du SW ─────────────────────────────── */
 
   if ('serviceWorker' in navigator) {
+    let reloadingForUpdate = false;
+
+    // Quand un nouveau SW prend le contrôle → reload automatique (une fois)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloadingForUpdate) return;
+      reloadingForUpdate = true;
+      location.reload();
+    });
+
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js')
         .then(reg => {
-          // Détecter une nouvelle version
+          // Détecter une nouvelle version pendant l'utilisation
           reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
             if (!newWorker) return;
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // Une nouvelle version est en attente
-                window.appUtils?.showToast?.('Mise à jour dispo — recharge la page');
+                // Nouvelle version installée en attente → on la force à prendre le relais
+                // (le SW appelle déjà skipWaiting sur install, mais on double-tape par sécurité)
+                window.appUtils?.showToast?.('Mise à jour appliquée — actualisation...');
+                newWorker.postMessage('SKIP_WAITING');
               }
             });
           });
@@ -115,7 +126,7 @@
     const apply = () => {
       const state = window.appState;
       if (!state) return setTimeout(apply, 100);
-      if (view && ['dashboard', 'categories', 'player', 'team', 'analyses'].includes(view)) {
+      if (view && ['dashboard', 'player', 'team', 'weekly', 'bilans'].includes(view)) {
         state.view = view;
         window.appUtils?.renderAll?.();
       }

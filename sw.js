@@ -1,18 +1,28 @@
 /**
  * sw.js — Service Worker du Carnet Formation
  *
- * Stratégie de cache :
- *  - HTML / CSS / JS : STALE-WHILE-REVALIDATE
- *      → l'app démarre vite (cache) MAIS on fetch en parallèle
- *      → la prochaine visite verra la version fraîche
- *      → plus jamais de "j'ai push mais je vois l'ancienne version"
+ * ┌──────────────────────────────────────────────────────────────┐
+ * │ POINT UNIQUE DE BUMP DE VERSION : la constante CACHE_VERSION │
+ * │ ci-dessous. Change juste cette ligne à chaque déploiement    │
+ * │ qui touche à app.js / *.js / styles.css / index.html.        │
+ * └──────────────────────────────────────────────────────────────┘
+ *
+ * Comportement :
+ *  - Nouveau CACHE_VERSION → nouveau STATIC_CACHE + RUNTIME_CACHE
+ *  - install() : pré-cache les assets statiques
+ *  - activate() : purge les anciens caches cfb-*
+ *  - self.skipWaiting() → le nouveau SW ne reste pas en attente
+ *  - self.clients.claim() → prend le contrôle des onglets ouverts
+ *  - pwa.js écoute controllerchange → recharge la page automatiquement
+ *
+ * Stratégies :
+ *  - HTML / CSS / JS : STALE-WHILE-REVALIDATE (cache instantané +
+ *    revalidation en arrière-plan pour la prochaine visite)
  *  - feeds.json GitHub : network-first
  *  - APIs externes : network-only
- *
- * Versioning : bump CACHE_VERSION à chaque changement du SW lui-même.
  */
 
-const CACHE_VERSION = 'v3.9.2-fiche-compacte';
+const CACHE_VERSION = 'v4.0.0-cache-unifie';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
