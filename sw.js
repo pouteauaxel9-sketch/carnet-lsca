@@ -12,7 +12,7 @@
  * Versioning : bump CACHE_VERSION à chaque changement du SW lui-même.
  */
 
-const CACHE_VERSION = 'v3.4.0-tops-par-pied';
+const CACHE_VERSION = 'v3.5.0-cleanup-dead-code';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

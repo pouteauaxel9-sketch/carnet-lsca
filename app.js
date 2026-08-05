@@ -179,7 +179,7 @@ window.CLUB_DATA  = CLUB_DATA;
 window.POSTES     = POSTES;
 
 let state = {
-  view:'dashboard',  // 'dashboard' | 'categories' | 'player' | 'team' | 'analyses'
+  view:'dashboard',  // 'dashboard' | 'player' | 'team' | 'weekly' | 'bilans'
   cat:'u13',
   season:'2026-2027',
   selPlayer:null,
@@ -1339,87 +1339,6 @@ function renderDashboard() {
   `;
 }
 
-function renderCategoryOverview() {
-  const summary = getCategorySummary(state.cat);
-  const teams = CLUB_DATA.categories[state.cat]?.teams || [];
-  const identity = getClubIdentity(state.cat);
-  const configuredTeams = getConfiguredTeamsForCategory(state.cat);
-  const feeds = buildDashboardFeeds(state.cat);
-  const avgCol = summary.avgScore == null ? '#9ca3af' : summary.avgScore >= 60 ? '#16a34a' : summary.avgScore >= 40 ? '#d97706' : '#dc2626';
-  return `
-    <section class="category-shell">
-      <div class="category-toolbar">
-        <div class="view-switcher">
-          ${Object.keys(CAT_LABELS).map(cat => `
-            <button class="view-chip ${state.cat === cat ? 'on' : ''}" type="button" data-action="switch-category" data-cat="${cat}">
-              ${h(CAT_LABELS[cat])}
-            </button>
-          `).join('')}
-        </div>
-        <div class="toolbar-right">
-          <button class="btn btn-primary" type="button" data-action="open-postmatch" data-cat="${state.cat}">
-            + Saisie post-match
-          </button>
-          <button class="btn" type="button" data-action="open-roster-manage" data-cat="${state.cat}">
-            Gérer l'effectif
-          </button>
-          <button class="btn" type="button" data-action="open-roster-create" data-cat="${state.cat}">
-            + Joueur
-          </button>
-        </div>
-      </div>
-
-      <div class="category-hero">
-        <div>
-          <div class="card-kicker">Catégorie</div>
-          <h1>${h(CAT_LABELS[state.cat])}</h1>
-          <p>Vue d'ensemble — effectif, scores, classements et matchs. Identité active : <strong>${h(identity)}</strong>.</p>
-        </div>
-        <div class="dashboard-stats">
-          <div class="dash-stat"><span>Joueurs</span><strong>${summary.count}</strong></div>
-          <div class="dash-stat"><span>Équipes</span><strong>${summary.teamsCount}</strong></div>
-          <div class="dash-stat dash-stat-accent" style="--accent:${avgCol}">
-            <span>Score moyen</span>
-            <strong>${summary.avgScore != null ? summary.avgScore + '%' : '—'}</strong>
-          </div>
-          <div class="dash-stat">
-            <span>Complétion</span>
-            <strong>${summary.completion}% <small style="font-weight:400;opacity:0.6">(${summary.evaluated}/${summary.count})</small></strong>
-          </div>
-        </div>
-      </div>
-
-      ${renderCategoryPlayerTable()}
-
-      <div class="dashboard-main-grid">
-        ${renderStandingsCard(feeds.standings)}
-        ${renderMatchCard('Matchs à venir', 'Agenda ' + (CAT_LABELS[state.cat] || state.cat).toUpperCase(), feeds.upcoming, true)}
-        ${renderMatchCard('Résultats récents', 'Derniers matchs ' + (CAT_LABELS[state.cat] || state.cat).toUpperCase(), feeds.past, false)}
-      </div>
-
-      <div class="dashboard-grid">
-        <section class="dashboard-card">
-          <div class="card-head"><div><div class="card-kicker">Équipes</div><h2>Organisation</h2></div></div>
-          <div class="team-list">
-            ${teams.map(team => `<button class="team-item team-item-clickable" type="button" data-action="open-team" data-team="${h(team)}">${h(team)}</button>`).join('')}
-          </div>
-        </section>
-
-        <section class="dashboard-card">
-          <div class="card-head"><div><div class="card-kicker">Sources FFF</div><h2>Statut synchro</h2></div></div>
-          <div class="info-list">
-            ${configuredTeams.length ? configuredTeams.map(team => {
-              const remote = state.remoteSources[team.key] || {};
-              const statusIcon = team.pending ? '⏳' : remote.error ? '⚠' : '✅';
-              return `<div class="info-item"><strong>${statusIcon} ${h(team.teamLabel)}</strong> — ${team.pending ? 'source à renseigner' : 'source configurée'}${remote.error ? ` — ${h(remote.error)}` : ''}</div>`;
-            }).join('') : '<div class="info-item">Aucune source configurée pour cette catégorie.</div>'}
-          </div>
-        </section>
-      </div>
-    </section>
-  `;
-}
-
 function getLastObsDate(pid, season = state.season) {
   const obs = state.data[state.cat]?.[pid]?.observations?.[season] || [];
   if (!obs.length) return null;
@@ -1718,35 +1637,6 @@ function profileBody(pid) {
 
     <div class="form-footer"><span class="save-hint">Autosauvegarde active</span><button class="btn btn-primary" type="button" data-action="save-player">Sauvegarder maintenant</button></div>
   `;
-}
-
-function juggleBody(pid) {
-  const jd = jdata();
-  const player = players().find(item => item.name === pid);
-  const jScore = player?.seasons || {};
-  const allSeasons = Object.keys(jScore).sort().reverse();
-
-  if (!allSeasons.length) return `<div class="jg-absent">Aucun resultat de jonglerie enregistre pour ce joueur.</div>`;
-
-  const { target, acq } = jd;
-  const current = jScore[state.season];
-  const currentBlock = current != null ? `
-    <div class="jg-score-card">
-      <div class="jg-season-label">Saison ${h(state.season)}</div>
-      <div class="jg-big-score" style="color:${current >= target ? '#639922' : current >= acq ? '#BA7517' : '#D85A30'}">${current}</div>
-      <div class="jg-of">/ ${target} jonglages</div>
-      <div class="jg-bar-bg"><div class="jg-bar-fill" style="width:${Math.min(Math.round((current / target) * 100), 100)}%;background:${current >= target ? '#639922' : current >= acq ? '#BA7517' : '#D85A30'}"></div></div>
-      <span class="jg-status" style="background:${LBG[current >= target ? 3 : current >= acq ? 2 : 1]};border:1px solid ${LBD[current >= target ? 3 : current >= acq ? 2 : 1]};color:${LTX[current >= target ? 3 : current >= acq ? 2 : 1]}">${current >= target ? 'Objectif atteint' : current >= acq ? 'En cours d acquisition' : 'En apprentissage'}</span>
-    </div>
-  ` : `<div class="jg-absent">Aucun passage sur le test de la saison ${h(state.season)}.</div>`;
-
-  const historyRows = allSeasons.filter(item => item !== state.season && jScore[item] != null).map(item => {
-    const value = jScore[item];
-    const color = value >= target ? '#639922' : value >= acq ? '#BA7517' : '#D85A30';
-    return `<div class="hist-row"><span class="hist-s">${h(item)}</span><div class="hist-bg"><div class="hist-fill" style="width:${Math.min(Math.round((value / target) * 100), 100)}%;background:${color}"></div></div><span class="hist-v" style="color:${color}">${value}</span></div>`;
-  }).join('');
-
-  return `<div class="jg-cards">${currentBlock}</div>${historyRows ? `<div class="jg-hist-card"><div class="jg-hist-title">Historique des saisons</div>${historyRows}</div>` : ''}`;
 }
 
 function renderMorphoHistory(prof) {
@@ -2137,7 +2027,6 @@ function renderBilansMegaView() {
 function renderMain() {
   const el = q('#main-content');
   if (state.view === 'dashboard') el.innerHTML = renderDashboard();
-  else if (state.view === 'categories') el.innerHTML = renderCategoryOverview();
   else if (state.view === 'player' && state.selPlayer) {
     try {
       el.innerHTML = renderPlayerView();
@@ -2623,7 +2512,7 @@ document.addEventListener('click', event => {
     else if (next === 'plan')     { state.view = 'bilans'; state.bilansTab = 'plan'; }
     else if (next === 'analyses') { state.view = 'bilans'; state.bilansTab = 'analyses'; }
     else if (next === 'direction'){ state.view = 'bilans'; state.bilansTab = 'direction'; }
-    else if (next === 'categories') { state.view = 'player'; }
+    else if (next === 'categories') { state.view = 'bilans'; state.bilansTab = 'equipes'; state.selTeam = null; }
     else                         state.view = next;
     if (state.view !== 'player') state.selPlayer = null;
     if (state.view !== 'bilans') state.selTeam = null;
@@ -2728,7 +2617,9 @@ document.addEventListener('click', event => {
   if (action === 'open-category' || action === 'switch-category') {
     state.cat = target.dataset.cat;
     state.selPlayer = null;
-    state.view = 'categories';
+    state.view = 'bilans';
+    state.bilansTab = 'equipes';
+    state.selTeam = null;
     state.comparePlayer = '';
     renderAll();
     return;
@@ -2750,7 +2641,9 @@ document.addEventListener('click', event => {
   }
 
   if (action === 'back-to-category') {
-    state.view = 'categories';
+    state.view = 'bilans';
+    state.bilansTab = 'equipes';
+    state.selTeam = null;
     renderAll();
     return;
   }
