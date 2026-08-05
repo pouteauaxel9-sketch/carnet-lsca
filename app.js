@@ -1327,34 +1327,6 @@ function profileBody(pid) {
     </section>`;
 
   return `
-    <div class="detail-grid">
-      <div class="detail-card span-2">
-        <div class="card-kicker">Lecture coach</div>
-        <h3>Insights automatiques</h3>
-        ${insightsMarkup(insights)}
-      </div>
-      <div class="detail-card">
-        <div class="card-kicker">Priorite</div>
-        <h3>Axe principal</h3>
-        <div class="priority-box">
-          <strong>${weakest ? h(weakest.label) : 'A definir'}</strong>
-          <p>${weakest ? `C est le pilier le plus faible a ${weakest.score}% sur cette saison.` : 'Aucun axe prioritaire ne ressort encore.'}</p>
-        </div>
-      </div>
-      <div class="detail-card">
-        <div class="card-kicker">Lecture rapide</div>
-        <h3>Resume</h3>
-        <div class="insight-text">
-          ${strongest ? `Point fort actuel: <strong>${h(strongest.label)}</strong> (${strongest.score}%).` : 'Aucun pilier assez renseigne pour ressortir un point fort clair.'}
-          ${weakest ? ` Axe principal: <strong>${h(weakest.label)}</strong> (${weakest.score}%).` : ''}
-          ${completion.total ? ` Dossier rempli a ${completion.percent}%.` : ''}
-        </div>
-      </div>
-      ${evolutionCard(pid)}
-    </div>
-
-    ${followupBlock}
-
     <div class="form-section-title">Identite</div>
     <div class="form-grid">
       <div class="field-group"><label class="field-label" for="pf-nom">Nom</label><input class="field-input" id="pf-nom" type="text" value="${h(prof.nom)}" data-field="nom"></div>
@@ -1407,6 +1379,34 @@ function profileBody(pid) {
         </div>
       </div>
     </div>
+
+    <div class="detail-grid">
+      <div class="detail-card span-2">
+        <div class="card-kicker">Lecture coach</div>
+        <h3>Insights automatiques</h3>
+        ${insightsMarkup(insights)}
+      </div>
+      <div class="detail-card">
+        <div class="card-kicker">Priorite</div>
+        <h3>Axe principal</h3>
+        <div class="priority-box">
+          <strong>${weakest ? h(weakest.label) : 'A definir'}</strong>
+          <p>${weakest ? `C est le pilier le plus faible a ${weakest.score}% sur cette saison.` : 'Aucun axe prioritaire ne ressort encore.'}</p>
+        </div>
+      </div>
+      <div class="detail-card">
+        <div class="card-kicker">Lecture rapide</div>
+        <h3>Resume</h3>
+        <div class="insight-text">
+          ${strongest ? `Point fort actuel: <strong>${h(strongest.label)}</strong> (${strongest.score}%).` : 'Aucun pilier assez renseigne pour ressortir un point fort clair.'}
+          ${weakest ? ` Axe principal: <strong>${h(weakest.label)}</strong> (${weakest.score}%).` : ''}
+          ${completion.total ? ` Dossier rempli a ${completion.percent}%.` : ''}
+        </div>
+      </div>
+      ${evolutionCard(pid)}
+    </div>
+
+    ${followupBlock}
 
     <div class="insight-grid">
       <div class="insight-card">
