@@ -64,7 +64,7 @@
       const pillarsValues = {};
       PILLARS.forEach(p => {
         const avg = pAvg(cat, pid, p.key, season);
-        pillarsValues[p.key] = avg ? Math.round((avg / 4) * 100) : 0;
+        pillarsValues[p.key] = avg ? Math.round((avg / 5) * 100) : 0;
       });
       return {
         season,

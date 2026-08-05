@@ -9025,3 +9025,11 @@ body.season-transition-active { overflow: hidden; }
 @media (max-width: 640px) {
   .live-finish-btn { padding: 8px 10px; font-size: 12px; }
 }
+
+/* ── 5e dot (nouvelle échelle 1-5) ── */
+.dot.on-5 {
+  background: #dcf7e4 !important;
+  border-color: #009640 !important;
+  color: #006e2f !important;
+  animation: popIn 0.18s ease;
+}

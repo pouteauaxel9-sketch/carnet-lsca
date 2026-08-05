@@ -41,7 +41,7 @@
     pillars.forEach(p => {
       const avg = pAvg(cat, pid, p.key, season);
       if (avg > 0) {
-        total += (avg / 4) * 100 * (WEIGHTS[p.key] || 0.1);
+        total += (avg / 5) * 100 * (WEIGHTS[p.key] || 0.1);
         wsum += WEIGHTS[p.key] || 0.1;
       }
     });
@@ -261,14 +261,14 @@
   function renderPillarAveragesCard(avgs, pillars) {
     const rows = pillars.map(p => {
       const avg = avgs[p.key];
-      const pct = avg ? Math.round((avg / 4) * 100) : 0;
+      const pct = avg ? Math.round((avg / 5) * 100) : 0;
       const color = pct >= 60 ? '#639922' : pct >= 40 ? '#ba7517' : pct > 0 ? '#d85a30' : '#8d897f';
       return `<div class="pillar-avg-row">
         <span class="pillar-avg-name">${h(p.label)}</span>
         <div class="pillar-avg-bar-bg">
           <div class="pillar-avg-bar-fill" style="width:${pct}%;background:${color}"></div>
         </div>
-        <span class="pillar-avg-val" style="color:${color}"><strong>${avg != null ? avg.toFixed(2) : '—'}</strong> / 4</span>
+        <span class="pillar-avg-val" style="color:${color}"><strong>${avg != null ? avg.toFixed(2) : '—'}</strong> / 5</span>
       </div>`;
     }).join('');
     return `<section class="dashboard-card span-2">

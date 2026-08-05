@@ -40,7 +40,7 @@
     const pillarScores = {};
     PILLARS.forEach(p => {
       const avg = _pAvg(cat, pid, p.key, season);
-      pillarScores[p.key] = { avg, pct: avg ? Math.round((avg / 4) * 100) : 0 };
+      pillarScores[p.key] = { avg, pct: avg ? Math.round((avg / 5) * 100) : 0 };
     });
 
     const seances = (pdata.seances?.[season] || [null, null, null]).slice(0, 3);
@@ -78,7 +78,7 @@
       const avg = _pAvg(cat, pid, p.key, season);
       if (avg > 0) {
         const w = WEIGHTS[p.key] || 0.2;
-        sum += (avg / 4 * 100) * w;
+        sum += (avg / 5 * 100) * w;
         total += w;
       }
     });

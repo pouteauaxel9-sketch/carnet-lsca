@@ -77,7 +77,7 @@
     let total = 0, wsum = 0;
     PILLARS.forEach(p => {
       const avg = pAvg(cat, pid, p.key, season);
-      if (avg > 0) { total += (avg / 4) * 100 * (WEIGHTS[p.key] || 0.1); wsum += WEIGHTS[p.key] || 0.1; }
+      if (avg > 0) { total += (avg / 5) * 100 * (WEIGHTS[p.key] || 0.1); wsum += WEIGHTS[p.key] || 0.1; }
     });
     return wsum ? Math.round(total / wsum) : 0;
   }

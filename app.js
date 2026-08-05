@@ -25,7 +25,7 @@ const PCOLS = {
   mental:'#993556',
   perso:'#5F5E5A'
 };
-const DLABELS = ['', 'Non acquis', 'En cours', 'Acquis', 'Maitrise'];
+const DLABELS = ['', '1', '2', '3', '4', '5'];
 const LBG = ['', '#FAECE7', '#FAEEDA', '#EAF3DE', '#E6F1FB'];
 const LBD = ['', '#D85A30', '#BA7517', '#639922', '#185FA5'];
 const LTX = ['', '#712B13', '#633806', '#27500A', '#0C447C'];
@@ -377,7 +377,7 @@ function pAvg(cat, pid, pillarKey, season = state.season) {
 
 function getPillarPercent(cat, pid, pillarKey, season = state.season) {
   const avg = pAvg(cat, pid, pillarKey, season);
-  return avg ? Math.round((avg / 4) * 100) : 0;
+  return avg ? Math.round((avg / 5) * 100) : 0;
 }
 
 function pScore(cat, pid, season = state.season) {
@@ -389,7 +389,7 @@ function pScore(cat, pid, season = state.season) {
   PILLARS[cat].forEach(pillar => {
     const avg = pAvg(cat, pid, pillar.key, season);
     if (avg > 0) {
-      total += (avg / 4) * 100 * WEIGHTS[pillar.key];
+      total += (avg / 5) * 100 * WEIGHTS[pillar.key];
       weightSum += WEIGHTS[pillar.key];
     }
   });
@@ -1404,7 +1404,7 @@ function profileBody(pid) {
         <div class="player-collapsible-body">
           <div class="gap-list">
             ${Object.entries(gap).map(([key, value]) => {
-              const pct = Math.max(4, Math.round((1 - Math.min(value, 4) / 4) * 100));
+              const pct = Math.max(4, Math.round((1 - Math.min(value, 5) / 5) * 100));
               return `<div class="gap-row"><span>${h(key)}</span><div class="gap-bar"><div class="gap-bar-fill" style="width:${pct}%"></div></div><strong>${value.toFixed(1)}</strong></div>`;
             }).join('')}
           </div>
@@ -1492,7 +1492,7 @@ function renderCategoryComparison(pid) {
     const deltaCls = delta == null ? '' : delta > 0.1 ? 'delta-up' : delta < -0.1 ? 'delta-down' : 'delta-flat';
     return `<div class="vsavg-row">
       <span class="vsavg-name">${h(p.label)}</span>
-      <span class="vsavg-mine"><strong>${playerAvg.toFixed(2)}</strong> / 4</span>
+      <span class="vsavg-mine"><strong>${playerAvg.toFixed(2)}</strong> / 5</span>
       <span class="vsavg-avg">moy. catégorie ${catAvg != null ? catAvg.toFixed(2) : '—'}</span>
       <span class="vsavg-delta ${deltaCls}">${delta == null ? '—' : (delta > 0 ? '+' : '') + delta}</span>
       <span class="vsavg-pct">${pct != null ? pct + 'ᵉ percentile' : '—'}</span>
@@ -1521,7 +1521,7 @@ function evaluationBody(pid) {
   const criteria = pillar.criteria.map((criterion, index) => {
     const val = seasonData.ratings?.[pillar.key]?.[index] || 0;
     const comment = seasonData.critComments?.[pillar.key]?.[index] || '';
-    const dots = [1,2,3,4].map(dot => `<button class="dot ${val === dot ? 'on-' + dot : ''}" type="button" data-action="set-rating" data-pillar="${h(pillar.key)}" data-index="${index}" data-value="${dot}" aria-label="Note ${dot} pour ${h(criterion)}">${dot}</button>`).join('');
+    const dots = [1,2,3,4,5].map(dot => `<button class="dot ${val === dot ? 'on-' + dot : ''}" type="button" data-action="set-rating" data-pillar="${h(pillar.key)}" data-index="${index}" data-value="${dot}" aria-label="Note ${dot} pour ${h(criterion)}">${dot}</button>`).join('');
     return `<div class="crit-row"><div class="crit-top"><div class="crit-name">${h(criterion)}</div><div class="dots">${dots}</div></div>${val ? `<div class="crit-note">${h(DLABELS[val])}</div>` : ''}<textarea class="crit-comment" rows="2" placeholder="Commentaire sur ce critere..." data-action="set-crit-comment" data-pillar="${h(pillar.key)}" data-index="${index}">${h(comment)}</textarea></div>`;
   }).join('');
 
@@ -1536,10 +1536,11 @@ function evaluationBody(pid) {
     ${window.ProfilingModule?.renderTags?.(pid) || ''}
     <div class="pillar-nav">${pillarTabs}</div>
     <div class="legend-bar">
-      <div class="litem"><div class="ldot" style="background:#FAECE7;border:1px solid #D85A30"></div>1 Non acquis</div>
-      <div class="litem"><div class="ldot" style="background:#FAEEDA;border:1px solid #BA7517"></div>2 En cours</div>
-      <div class="litem"><div class="ldot" style="background:#EAF3DE;border:1px solid #639922"></div>3 Acquis</div>
-      <div class="litem"><div class="ldot" style="background:#E6F1FB;border:1px solid #185FA5"></div>4 Maitrise</div>
+      <div class="litem"><div class="ldot" style="background:#FAECE7;border:1px solid #D85A30"></div>1</div>
+      <div class="litem"><div class="ldot" style="background:#FCE4CF;border:1px solid #E07B31"></div>2</div>
+      <div class="litem"><div class="ldot" style="background:#FAEEDA;border:1px solid #BA7517"></div>3</div>
+      <div class="litem"><div class="ldot" style="background:#EAF3DE;border:1px solid #639922"></div>4</div>
+      <div class="litem"><div class="ldot" style="background:#DCF7E4;border:1px solid #009640"></div>5</div>
     </div>
     <div class="crit-list">${criteria}</div>
     <div class="eval-footer">
@@ -2614,7 +2615,42 @@ document.addEventListener('change', event => {
 });
 
 loadAll();
+migrateRatings1to5();
 updateBackupBanner();
+
+// Migration one-shot : ancien 3 → 4, ancien 4 → 5 (échelle 1-4 vers 1-5)
+function migrateRatings1to5() {
+  const KEY = 'cfb6_ratings_migrated_1to5';
+  if (localStorage.getItem(KEY) === 'done') return;
+  let changed = 0;
+  try {
+    Object.keys(state.data || {}).forEach(cat => {
+      const players = state.data[cat] || {};
+      Object.keys(players).forEach(pid => {
+        const pdata = players[pid] || {};
+        Object.keys(pdata).forEach(season => {
+          const ratings = pdata[season]?.ratings;
+          if (!ratings || typeof ratings !== 'object') return;
+          Object.keys(ratings).forEach(pillarKey => {
+            const arr = ratings[pillarKey];
+            if (!Array.isArray(arr)) return;
+            for (let i = 0; i < arr.length; i++) {
+              if (arr[i] === 3) { arr[i] = 4; changed++; }
+              else if (arr[i] === 4) { arr[i] = 5; changed++; }
+            }
+          });
+        });
+      });
+    });
+    if (changed > 0) {
+      saveAppState();
+      showToast(`Migration : ${changed} note(s) mise(s) à l'échelle 1-5`);
+    }
+    localStorage.setItem(KEY, 'done');
+  } catch (err) {
+    console.error('[migration 1→5]', err);
+  }
+}
 
 // Retire le splash screen une fois l'app rendue (attendre un frame pour la fluidité)
 requestAnimationFrame(() => {

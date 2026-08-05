@@ -39,7 +39,7 @@
     const vals = ratings.filter(v => v != null && v > 0);
     if (!vals.length) return null;
     const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-    return Math.round((avg / 4) * 100);
+    return Math.round((avg / 5) * 100);
   }
 
   function globalScore(pid, cat) {

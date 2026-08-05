@@ -42,7 +42,7 @@
     PILLARS.forEach(p => {
       const avg = pAvg(cat, pid, p.key, season);
       if (avg > 0) {
-        total += (avg / 4) * 100 * (WEIGHTS[p.key] || 0.1);
+        total += (avg / 5) * 100 * (WEIGHTS[p.key] || 0.1);
         wsum += WEIGHTS[p.key] || 0.1;
       }
     });
@@ -94,7 +94,7 @@
       PILLARS.forEach(pillar => {
         const avg = pAvg(cat, pid, pillar.key, season);
         row[pillar.label + ' (moy. 1-4)'] = avg ? +avg.toFixed(2) : '';
-        row[pillar.label + ' (%)'] = avg ? Math.round((avg / 4) * 100) : '';
+        row[pillar.label + ' (%)'] = avg ? Math.round((avg / 5) * 100) : '';
       });
       return row;
     });
