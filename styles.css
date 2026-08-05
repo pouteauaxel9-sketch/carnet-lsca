@@ -8456,38 +8456,51 @@ body.season-transition-active { overflow: hidden; }
 
 /* ══════════════════════════════════════════════════════════
    Sous-onglets de la vue Semaine (Cette semaine / Vue saison)
+   Style aligné sur bilans-subtabs mais en vert Louverné
    ══════════════════════════════════════════════════════════ */
 
 .weekly-shell {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
 }
 .weekly-tabs {
   display: flex;
-  gap: 6px;
-  padding: 6px;
-  background: #f1f5f9;
-  border-radius: 12px;
-  align-self: flex-start;
-  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0;
+  background: transparent;
 }
 .weekly-tab {
-  padding: 8px 16px;
+  padding: 12px 22px;
   border: none;
-  border-radius: 8px;
   background: transparent;
-  color: #475569;
-  font-weight: 600;
-  font-size: 13px;
   cursor: pointer;
-  transition: background .15s, color .15s;
+  font-weight: 500;
+  font-size: 14px;
+  color: #6b7280;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s, background .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 0;
+  box-shadow: none;
 }
-.weekly-tab:hover { background: rgba(0,150,64,.08); color: #0f172a; }
+.weekly-tab:hover {
+  color: #009640;
+  background: rgba(0, 150, 64, .05);
+}
 .weekly-tab.on {
-  background: #009640;
-  color: #fff;
-  box-shadow: 0 1px 3px rgba(0,150,64,.3);
+  color: #009640;
+  border-bottom-color: #009640;
+  font-weight: 700;
+  background: transparent;
 }
 .weekly-tab-body {
   animation: fadeInWeekly .18s ease-out;
@@ -8495,4 +8508,8 @@ body.season-transition-active { overflow: hidden; }
 @keyframes fadeInWeekly {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .weekly-tab { padding: 10px 14px; font-size: 13px; }
 }
