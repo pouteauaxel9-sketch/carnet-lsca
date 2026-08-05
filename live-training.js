@@ -296,6 +296,23 @@
       el = document.createElement('div');
       el.id = 'live-training-overlay';
       document.body.appendChild(el);
+      // Listener direct — bypass le dispatcher global (utile si app.js encore en cache).
+      // 'change' fire sur les checkbox natives quel que soit le clic (label, input, tap).
+      el.addEventListener('change', ev => {
+        const t = ev.target;
+        if (t && t.matches && t.matches('input[type="checkbox"][data-live-action="toggle-present"]')) {
+          const pid = t.dataset.pid;
+          if (!pid) return;
+          togglePresent(pid);
+          const row = t.closest('.live-present-row');
+          if (row) row.classList.toggle('on', t.checked);
+          const total = sortedPlayers(state().cat).length;
+          const badge = document.querySelector('.live-presents-btn');
+          if (badge) badge.textContent = `👥 ${presentPids().length}/${total}`;
+          const cnt = document.querySelector('.live-present-bulk span');
+          if (cnt) cnt.textContent = `${presentPids().length}/${total} sélectionnés`;
+        }
+      });
     }
     el.className = 'live-overlay' + (sunMode ? ' live-overlay-sun' : '');
     let body;

@@ -21,7 +21,7 @@
 /* One-shot cleanup — purge l'ancien service worker + caches périmés.
    S'exécute une seule fois par navigateur, marqué par localStorage. */
 (function() {
-  var KEY = 'cfb_sw_reset_v3_1_0';
+  var KEY = 'cfb_sw_reset_v3_2_0';
   if (localStorage.getItem(KEY) === 'done') return;
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(function(regs) {

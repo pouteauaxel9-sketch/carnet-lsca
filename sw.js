@@ -12,7 +12,7 @@
  * Versioning : bump CACHE_VERSION à chaque changement du SW lui-même.
  */
 
-const CACHE_VERSION = 'v3.1.0-2026-08';
+const CACHE_VERSION = 'v3.2.0-checkbox-fix';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -40,6 +40,8 @@ const STATIC_ASSETS = [
   './advanced-stats.js',
   './ux-polish.js',
   './live-training.js',
+  './sessions-history.js',
+  './season-transition.js',
   './pdf-report.js',
   './pdf-logos.js',
   './pwa.js',
