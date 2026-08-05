@@ -208,7 +208,6 @@ let rchart = null;
 let historyChart = null;
 let autosaveTimer = null;
 let toastTimer = null;
-let activeModal = null;
 
 const q = (selector, root = document) => root.querySelector(selector);
 const qq = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -979,9 +978,8 @@ function renderStandingsCard(standings) {
     <section class="dashboard-card">
       <div class="card-head">
         <div><div class="card-kicker">Classement</div><h2>Classements</h2></div>
-        <button class="card-edit-btn" type="button" data-action="open-modal" data-modal-type="standings" data-modal-cat="${state.cat}">Modifier</button>
       </div>
-      <div class="standings-list">${renderDashEmptyState('Classement non disponible', 'Clique sur Modifier pour saisir les données FFF.')}</div>
+      <div class="standings-list">${renderDashEmptyState('Classement non disponible', 'En attente de la synchronisation FFF.')}</div>
     </section>`;
   }
 
@@ -1029,7 +1027,6 @@ function renderStandingsCard(standings) {
     <section class="dashboard-card">
       <div class="card-head">
         <div><div class="card-kicker">Classement</div><h2>Classements</h2></div>
-        <button class="card-edit-btn" type="button" data-action="open-modal" data-modal-type="standings" data-modal-cat="${state.cat}">Modifier</button>
       </div>
       <div class="standings-list">${groupsHtml}</div>
     </section>`;
@@ -1931,55 +1928,6 @@ function drawHistoryChart(pid) {
   });
 }
 
-const MODAL_TITLES = { standings:'Classements' };
-const MODAL_HINTS = {
-  standings:`[ { "team": "U13 A", "rank": "3e", "points": 24, "played": 14 }, ... ]`,
-};
-const MODAL_DEFAULTS = {
-  standings:[
-    { team:'U13 A', rank:'1er', points:28, played:14 },
-    { team:'U13 B', rank:'5e', points:18, played:14 }
-  ],
-};
-
-function renderModalOverlay() {
-  if (!activeModal) return '';
-  const { type, cat } = activeModal;
-  const manual = loadManualFeeds();
-  const current = manual[cat]?.[type];
-  const value = JSON.stringify(current || MODAL_DEFAULTS[type], null, 2);
-  return `
-    <div class="modal-overlay" id="modal-overlay">
-      <div class="modal-box">
-        <div class="modal-head">
-          <div>
-            <div class="card-kicker">${h(CAT_LABELS[cat])}</div>
-            <h3>${MODAL_TITLES[type]}</h3>
-          </div>
-          <button class="modal-close" type="button" data-action="close-modal" aria-label="Fermer">×</button>
-        </div>
-        <p class="modal-hint">Format JSON — <code>${h(MODAL_HINTS[type])}</code></p>
-        <textarea id="modal-input" class="modal-textarea" rows="12" spellcheck="false">${h(value)}</textarea>
-        <div class="modal-footer">
-          ${current ? `<button class="btn-ghost btn-danger" type="button" data-action="clear-modal" data-modal-type="${type}" data-modal-cat="${cat}">Effacer</button>` : ''}
-          <span style="flex:1"></span>
-          <button class="btn-ghost" type="button" data-action="close-modal">Annuler</button>
-          <button class="btn-primary" type="button" data-action="save-modal" data-modal-type="${type}" data-modal-cat="${cat}">Enregistrer</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-function renderModal() {
-  let el = q('#modal-root');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'modal-root';
-    document.body.appendChild(el);
-  }
-  el.innerHTML = renderModalOverlay();
-}
-
 function renderAll() {
   const layout = q('.main-layout');
   layout.classList.toggle('dashboard-mode', state.view === 'dashboard');
@@ -1992,7 +1940,6 @@ function renderAll() {
   q('#sb-search').value = state.search;
   q('#refresh-btn').textContent = state.remoteStatus === 'refreshing' ? 'Actualisation...' : 'Actualiser';
   q('#refresh-btn').disabled = state.remoteStatus === 'refreshing';
-  renderModal();
 }
 
 function updateProfileField(field, value) {
@@ -2247,7 +2194,6 @@ document.addEventListener('click', event => {
   if (mt.dataset.educatorAction   && window.EducatorModule?.handleAction(mt))   return;
   if (mt.dataset.rosterAction     && window.RosterModule?.handleAction(mt))     return;
   if (mt.dataset.postmatchAction  && window.PostMatchModule?.handleAction(mt))  return;
-  if (mt.dataset.feedsAction      && window.FeedsFormModule?.handleAction(mt))  return;
   if (mt.dataset.attendanceAction && window.AttendanceModule?.handleAction(mt)) return;
   if (mt.dataset.injuryAction     && window.InjuryModule?.handleAction(mt))     return;
   if (mt.dataset.careerAction     && window.CareerModule?.handleAction(mt))     return;
@@ -2407,25 +2353,6 @@ document.addEventListener('click', event => {
     return;
   }
   if (action === 'clear-player-photo') { clearPlayerPhoto(); return; }
-
-  if (action === 'open-modal') {
-    const type = target.dataset.modalType;
-    const cat = target.dataset.modalCat;
-    // Délégation : le module FeedsForm gère son propre cycle (UI tabulaire)
-    if (window.FeedsFormModule?.openModal && type === 'standings') {
-      window.FeedsFormModule.openModal(type, cat);
-      return;
-    }
-    activeModal = { type, cat };
-    renderModal();
-    return;
-  }
-
-  if (action === 'close-modal') {
-    activeModal = null;
-    renderModal();
-    return;
-  }
 
   // Menu actions secondaires (Importer JSON / Exporter JSON / Imprimer)
   if (action === 'trigger-import') {

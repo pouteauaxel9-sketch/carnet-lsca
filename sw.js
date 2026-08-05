@@ -12,7 +12,7 @@
  * Versioning : bump CACHE_VERSION à chaque changement du SW lui-même.
  */
 
-const CACHE_VERSION = 'v3.6.0-dashboard-standings-only';
+const CACHE_VERSION = 'v3.7.0-no-manual-edit';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -26,7 +26,6 @@ const STATIC_ASSETS = [
   './observation-match.js',
   './roster.js',
   './post-match.js',
-  './feeds-form.js',
   './excel-export.js',
   './team-view.js',
   './transverse-view.js',
