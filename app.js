@@ -1745,7 +1745,6 @@ function renderBilansMegaView() {
   const tabs = [
     { key: 'equipes',   label: 'Équipes' },
     { key: 'seances',   label: '📝 Séances' },
-    { key: 'plan',      label: 'Plan saison' },
     { key: 'analyses',  label: 'Analyses' },
     { key: 'direction', label: 'Direction' + (alerts > 0 ? ` (${alerts})` : '') },
   ];
@@ -1758,8 +1757,6 @@ function renderBilansMegaView() {
     else body = renderTeamListShell();
   } else if (sub === 'seances') {
     body = window.SessionsHistoryModule?.renderBody?.(cat) || '<p>Module Séances non chargé.</p>';
-  } else if (sub === 'plan') {
-    body = window.SeasonPlanModule?.renderBody(cat) || '<p>Module Plan saison non chargé.</p>';
   } else if (sub === 'analyses') {
     const advHtml = window.AdvancedStatsModule?.renderBody(cat) || '';
     const trvHtml = window.TransverseModule?.renderBody(cat) || '';
@@ -2219,7 +2216,7 @@ document.addEventListener('click', event => {
     const next = target.dataset.view;
     if (next === 'player')      state.view = state.selPlayer ? 'player' : 'player';
     else if (next === 'team')   { state.view = 'bilans'; state.bilansTab = 'equipes'; state.selTeam = null; }
-    else if (next === 'plan')     { state.view = 'bilans'; state.bilansTab = 'plan'; }
+    else if (next === 'plan')     { state.view = 'weekly'; state.weeklyView = 'season'; }
     else if (next === 'analyses') { state.view = 'bilans'; state.bilansTab = 'analyses'; }
     else if (next === 'direction'){ state.view = 'bilans'; state.bilansTab = 'direction'; }
     else if (next === 'categories') { state.view = 'bilans'; state.bilansTab = 'equipes'; state.selTeam = null; }

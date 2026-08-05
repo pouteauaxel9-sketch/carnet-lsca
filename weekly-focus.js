@@ -106,6 +106,30 @@
 
   function render(target) {
     const cat = state().cat;
+    const view = state().weeklyView || 'current';
+
+    // Sous-onglets Semaine / Vue saison
+    const tabsHtml = `
+      <nav class="weekly-tabs" role="tablist" aria-label="Sous-onglets Semaine">
+        <button class="weekly-tab ${view === 'current' ? 'on' : ''}" type="button"
+                data-weekly-action="set-view" data-view="current"
+                role="tab" aria-selected="${view === 'current'}">
+          📋 Cette semaine
+        </button>
+        <button class="weekly-tab ${view === 'season' ? 'on' : ''}" type="button"
+                data-weekly-action="set-view" data-view="season"
+                role="tab" aria-selected="${view === 'season'}">
+          📅 Vue saison
+        </button>
+      </nav>`;
+
+    if (view === 'season') {
+      const seasonHtml = window.SeasonPlanModule?.renderBody?.(cat)
+        || '<p>Module Plan saison non chargé.</p>';
+      target.innerHTML = `<div class="weekly-shell">${tabsHtml}<div class="weekly-tab-body">${seasonHtml}</div></div>`;
+      return;
+    }
+
     const iso = currentWeekIso();
     const week = ensureWeek(cat, iso);
     const players = sortedPlayers(cat);
@@ -113,29 +137,34 @@
     const isFuture = iso > thisMondayIso();
 
     target.innerHTML = `
-      <div class="weekly-wrap">
-        <header class="weekly-head">
-          <div class="weekly-nav">
-            <button class="btn btn-ghost" data-weekly-action="prev-week" title="Semaine précédente">←</button>
-            <div class="weekly-title">
-              <div class="weekly-label">${h(week.label)}</div>
-              <div class="weekly-sub">${isCurrent ? 'Semaine en cours' : isFuture ? 'À venir' : 'Archive'}</div>
-            </div>
-            <button class="btn btn-ghost" data-weekly-action="next-week" title="Semaine suivante">→</button>
-            ${isCurrent ? '' : '<button class="btn" data-weekly-action="goto-current">Cette semaine</button>'}
+      <div class="weekly-shell">
+        ${tabsHtml}
+        <div class="weekly-tab-body">
+          <div class="weekly-wrap">
+            <header class="weekly-head">
+              <div class="weekly-nav">
+                <button class="btn btn-ghost" data-weekly-action="prev-week" title="Semaine précédente">←</button>
+                <div class="weekly-title">
+                  <div class="weekly-label">${h(week.label)}</div>
+                  <div class="weekly-sub">${isCurrent ? 'Semaine en cours' : isFuture ? 'À venir' : 'Archive'}</div>
+                </div>
+                <button class="btn btn-ghost" data-weekly-action="next-week" title="Semaine suivante">→</button>
+                ${isCurrent ? '' : '<button class="btn" data-weekly-action="goto-current">Cette semaine</button>'}
+              </div>
+              <div class="weekly-theme">
+                <input id="weekly-theme-input" class="weekly-theme-input" type="text"
+                       placeholder="Thème de la semaine (ex: conduite + démarquage)"
+                       value="${h(week.theme || '')}" data-weekly-action="set-theme">
+              </div>
+              ${renderSeances(week)}
+            </header>
+            ${renderItemsEditor(cat, week)}
+            ${week.items.length === 0
+              ? '<div class="weekly-empty"><p>Aucun critère défini pour cette semaine.</p><p class="weekly-empty-hint">Ajoute jusqu’à 8 critères pour démarrer.</p></div>'
+              : renderGrid(cat, week, players)
+            }
           </div>
-          <div class="weekly-theme">
-            <input id="weekly-theme-input" class="weekly-theme-input" type="text"
-                   placeholder="Thème de la semaine (ex: conduite + démarquage)"
-                   value="${h(week.theme || '')}" data-weekly-action="set-theme">
-          </div>
-          ${renderSeances(week)}
-        </header>
-        ${renderItemsEditor(cat, week)}
-        ${week.items.length === 0
-          ? '<div class="weekly-empty"><p>Aucun critère défini pour cette semaine.</p><p class="weekly-empty-hint">Ajoute jusqu’à 8 critères pour démarrer.</p></div>'
-          : renderGrid(cat, week, players)
-        }
+        </div>
       </div>
     `;
   }
@@ -588,6 +617,7 @@
     if (action === 'next-week')    { viewWeekIso = shiftWeek(iso,  1); if (utils().renderAll) utils().renderAll(); return true; }
     if (action === 'goto-current') { viewWeekIso = thisMondayIso(); if (utils().renderAll) utils().renderAll(); return true; }
     if (action === 'close')        { close(); return true; }
+    if (action === 'set-view')     { state().weeklyView = el.dataset.view || 'current'; if (utils().renderAll) utils().renderAll(); return true; }
 
     if (action === 'set-theme') {
       setWeek(cat, iso, w => { w.theme = el.value || ''; });

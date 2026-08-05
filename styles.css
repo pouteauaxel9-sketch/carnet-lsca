@@ -8453,3 +8453,46 @@ body.season-transition-active { overflow: hidden; }
   font-weight: 600;
   color: #475569;
 }
+
+/* ══════════════════════════════════════════════════════════
+   Sous-onglets de la vue Semaine (Cette semaine / Vue saison)
+   ══════════════════════════════════════════════════════════ */
+
+.weekly-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.weekly-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  align-self: flex-start;
+  flex-wrap: wrap;
+}
+.weekly-tab {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.weekly-tab:hover { background: rgba(0,150,64,.08); color: #0f172a; }
+.weekly-tab.on {
+  background: #009640;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0,150,64,.3);
+}
+.weekly-tab-body {
+  animation: fadeInWeekly .18s ease-out;
+}
+@keyframes fadeInWeekly {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
