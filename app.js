@@ -2571,7 +2571,7 @@ document.addEventListener('change', event => {
    Chaque entrée liste les valeurs d'action qui doivent être routées vers le module. */
 const INPUT_DISPATCHERS = [
   { dataAttr: 'liveAction',    module: 'LiveTrainingModule',    actions: ['search', 'save-juggle'] },
-  { dataAttr: 'historyAction', module: 'SessionsHistoryModule', actions: ['edit-juggle', 'set-obj-past'] },
+  { dataAttr: 'historyAction', module: 'SessionsHistoryModule', actions: ['edit-juggle', 'set-obj-past', 'set-bilan-note'] },
   { dataAttr: 'weeklyAction',  module: 'WeeklyFocusModule',     actions: ['set-theme', 'set-note', 'edit-item-objective'] },
 ];
 

@@ -167,7 +167,93 @@
             </div>` : ''}
         </section>
 
+        ${renderRessentisBlock(cat, sessions, dates)}
+
         ${renderCategoryJuggleStats(cat)}
+      </div>`;
+  }
+
+  /* ── Courbe évolution de mes ressentis (pliable, discret) ── */
+
+  function renderRessentisBlock(cat, sessions, dates) {
+    const filled = dates.filter(d => isBilanFilled(sessions[d]));
+    if (filled.length === 0) return '';
+    const show = !!state().historyShowRessentis;
+    const summaryLabel = show
+      ? `▲ Masquer l'évolution de mes ressentis`
+      : `▼ Voir l'évolution de mes ressentis (${filled.length} bilan${filled.length > 1 ? 's' : ''} rempli${filled.length > 1 ? 's' : ''})`;
+    return `
+      <section class="sh-ressentis-block">
+        <button class="sh-ressentis-toggle" type="button" data-history-action="toggle-ressentis-chart">
+          ${summaryLabel}
+        </button>
+        ${show ? renderRessentisChart(cat, sessions, filled) : ''}
+      </section>`;
+  }
+
+  function renderRessentisChart(cat, sessions, filledDates) {
+    // Trier chronologiquement (plus ancien à gauche)
+    const ordered = filledDates.slice().sort();
+    const points = ordered.map(date => {
+      const b = sessions[date].bilan || {};
+      return {
+        date,
+        ressenti:      b.ressenti      || null,
+        engagement:    b.engagement    || null,
+        comprehension: b.comprehension || null,
+        plaisir:       b.plaisir       || null,
+      };
+    });
+
+    const W = 640, H = 180, PAD_L = 24, PAD_R = 14, PAD_T = 24, PAD_B = 28;
+    const chartW = W - PAD_L - PAD_R;
+    const chartH = H - PAD_T - PAD_B;
+    const maxVal = 5;
+    const n = points.length;
+    const xStep = n > 1 ? chartW / (n - 1) : chartW;
+
+    function makeLine(key, color) {
+      const pts = points.map((p, i) => {
+        if (p[key] == null) return null;
+        return { x: PAD_L + i * xStep, y: PAD_T + chartH - (p[key] / maxVal) * chartH, v: p[key] };
+      }).filter(Boolean);
+      if (pts.length === 0) return '';
+      const path = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p.x + ',' + p.y).join(' ');
+      const dots = pts.map(p => `<circle cx="${p.x}" cy="${p.y}" r="3" fill="${color}"><title>${p.v}/5</title></circle>`).join('');
+      return `<path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>${dots}`;
+    }
+
+    const gridLines = [1, 2, 3, 4, 5].map(v => {
+      const y = PAD_T + chartH - (v / maxVal) * chartH;
+      return `<line x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}" stroke="#f3f4f6" stroke-width="1"/>
+              <text x="${PAD_L - 4}" y="${y + 3}" font-size="9" text-anchor="end" fill="#94a3b8">${v}</text>`;
+    }).join('');
+
+    const step = Math.max(1, Math.ceil(n / 6));
+    const xLabels = points.map((p, i) => {
+      if (i % step !== 0 && i !== n - 1) return '';
+      const x = PAD_L + i * xStep;
+      return `<text x="${x}" y="${H - 8}" font-size="9" text-anchor="middle" fill="#94a3b8">${h(formatShortDate(p.date))}</text>`;
+    }).join('');
+
+    const colors = { ressenti: '#009640', engagement: '#3b82f6', comprehension: '#f59e0b', plaisir: '#a855f7' };
+
+    return `
+      <div class="sh-ressentis-chart-wrap">
+        <svg class="sh-ressentis-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+          ${gridLines}
+          ${makeLine('ressenti',      colors.ressenti)}
+          ${makeLine('engagement',    colors.engagement)}
+          ${makeLine('comprehension', colors.comprehension)}
+          ${makeLine('plaisir',       colors.plaisir)}
+          ${xLabels}
+          <g transform="translate(${PAD_L}, 12)">
+            <circle cx="0"   cy="0" r="3" fill="${colors.ressenti}"/><text x="6" y="3" font-size="10" fill="#0f172a">Ressenti</text>
+            <circle cx="60"  cy="0" r="3" fill="${colors.engagement}"/><text x="66" y="3" font-size="10" fill="#0f172a">Engagement</text>
+            <circle cx="145" cy="0" r="3" fill="${colors.comprehension}"/><text x="151" y="3" font-size="10" fill="#0f172a">Compréhension</text>
+            <circle cx="245" cy="0" r="3" fill="${colors.plaisir}"/><text x="251" y="3" font-size="10" fill="#0f172a">Plaisir</text>
+          </g>
+        </svg>
       </div>`;
   }
 
@@ -179,12 +265,17 @@
     const totalTs = objectives.reduce((a, o) => a + (o.tentatives || 0), 0);
     const ratio = totalTs > 0 ? Math.round((totalRs / totalTs) * 100) : null;
     const ratioCol = ratio == null ? '#94a3b8' : ratio >= 70 ? '#16a34a' : ratio >= 45 ? '#d97706' : '#dc2626';
+    const bilanFilled = isBilanFilled(s);
+    const bilanBadge = bilanFilled
+      ? `<span class="sh-bilan-badge sh-bilan-badge-done" title="Bilan de séance rempli">📝 ${s.bilan.ressenti}/5</span>`
+      : `<span class="sh-bilan-badge sh-bilan-badge-todo" title="Bilan de séance à faire">📝 À faire</span>`;
 
     return `
       <article class="sh-row" data-history-action="open-detail" data-date="${h(date)}">
         <div class="sh-row-date">
           <div class="sh-row-day">${h(formatShortDate(date))}</div>
           <div class="sh-row-full">${h(formatDate(date))}</div>
+          ${bilanBadge}
         </div>
         <div class="sh-row-stats">
           <div class="sh-row-stat"><strong>${nbPresents}</strong><span>👥 Présents</span></div>
@@ -194,6 +285,64 @@
         </div>
         <div class="sh-row-arrow">✎</div>
       </article>`;
+  }
+
+  /* ── Bilan de séance : critères 1-5 + notes libres ──── */
+
+  const BILAN_FIELDS = [
+    { key: 'ressenti',      icon: '📊', label: 'Ressenti global sur la séance' },
+    { key: 'engagement',    icon: '💪', label: 'Mon engagement' },
+    { key: 'comprehension', icon: '🧠', label: 'Compréhension des consignes' },
+    { key: 'plaisir',       icon: '😊', label: 'Ma prise de plaisir' },
+  ];
+
+  function isBilanFilled(s) {
+    const b = s?.bilan;
+    return !!(b && typeof b.ressenti === 'number' && b.ressenti > 0);
+  }
+
+  function renderStarRow(field, value) {
+    const stars = [1, 2, 3, 4, 5].map(n => {
+      const on = value != null && n <= value;
+      return `<button class="sh-star ${on ? 'on' : ''}" type="button"
+                      data-history-action="set-bilan-rating"
+                      data-field="${field}" data-value="${n}"
+                      aria-label="Note ${n}">★</button>`;
+    }).join('');
+    return `<div class="sh-stars">${stars}${value != null ? `<span class="sh-star-val">${value}/5</span>` : ''}</div>`;
+  }
+
+  function renderBilanSection(cat, date, s) {
+    const b = s.bilan || {};
+    const filled = isBilanFilled(s);
+    return `
+      <section class="sh-section sh-bilan-section ${filled ? 'is-done' : ''}">
+        <div class="sh-section-title-row">
+          <h3>📝 Bilan de séance ${filled ? '<span class="sh-bilan-tag">✓ rempli</span>' : '<span class="sh-bilan-tag sh-bilan-tag-todo">à faire</span>'}</h3>
+        </div>
+        <div class="sh-bilan-grid">
+          ${BILAN_FIELDS.map(f => `
+            <div class="sh-bilan-row">
+              <div class="sh-bilan-label"><span class="sh-bilan-icon">${f.icon}</span>${h(f.label)}</div>
+              ${renderStarRow(f.key, b[f.key])}
+            </div>
+          `).join('')}
+        </div>
+        <div class="sh-bilan-notes">
+          <label class="sh-bilan-note-block">
+            <span class="sh-bilan-note-label">✅ Ce qui a bien marché</span>
+            <textarea class="sh-bilan-textarea" rows="2"
+                      placeholder="Points positifs de la séance..."
+                      data-history-action="set-bilan-note" data-field="bienMarche">${h(b.bienMarche || '')}</textarea>
+          </label>
+          <label class="sh-bilan-note-block">
+            <span class="sh-bilan-note-label">❌ Ce qui a moins bien marché</span>
+            <textarea class="sh-bilan-textarea" rows="2"
+                      placeholder="Points à améliorer..."
+                      data-history-action="set-bilan-note" data-field="moinsMarche">${h(b.moinsMarche || '')}</textarea>
+          </label>
+        </div>
+      </section>`;
   }
 
   /* ── Bloc stats jonglerie catégorie ──────────────────── */
@@ -445,6 +594,8 @@
           </div>
           <p class="sh-detail-help">✎ Tout est éditable — les modifications sont sauvegardées automatiquement.</p>
         </header>
+
+        ${renderBilanSection(cat, date, s)}
 
         ${renderPresentsSection(cat, date, s, editPresent)}
 
@@ -848,6 +999,44 @@
       if (!obj) return true;
       obj.acquis = !obj.acquis;
       saveSessions(store);
+      utils().renderAll?.();
+      return true;
+    }
+
+    // ── Bilan de séance : notation étoiles
+    if (action === 'set-bilan-rating') {
+      const date = el.dataset.date || state().historySessionDate;
+      const field = el.dataset.field;
+      const value = parseInt(el.dataset.value, 10) || 0;
+      const store = loadSessions();
+      const s = store[cat]?.[date];
+      if (!s || !field) return true;
+      if (!s.bilan) s.bilan = {};
+      // Clic sur la même étoile → reset à null (permet de "déselectionner")
+      s.bilan[field] = s.bilan[field] === value ? null : value;
+      s.bilan.filledAt = new Date().toISOString();
+      saveSessions(store);
+      utils().renderAll?.();
+      return true;
+    }
+
+    // ── Bilan de séance : notes libres (bien / moins bien)
+    if (action === 'set-bilan-note') {
+      const date = state().historySessionDate;
+      const field = el.dataset.field;
+      const store = loadSessions();
+      const s = store[cat]?.[date];
+      if (!s || !field) return true;
+      if (!s.bilan) s.bilan = {};
+      s.bilan[field] = el.value || '';
+      s.bilan.filledAt = new Date().toISOString();
+      saveSessions(store);
+      return true;
+    }
+
+    // ── Toggle courbe évolution ressentis
+    if (action === 'toggle-ressentis-chart') {
+      state().historyShowRessentis = !state().historyShowRessentis;
       utils().renderAll?.();
       return true;
     }

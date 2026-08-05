@@ -8778,3 +8778,167 @@ body.season-transition-active { overflow: hidden; }
   .backup-banner-msg { font-size: 12px; }
   .backup-banner-btn { padding: 5px 10px; font-size: 11px; }
 }
+
+/* ══════════════════════════════════════════════════════════
+   Bilan de séance (détail + badge liste + courbe pliable)
+   ══════════════════════════════════════════════════════════ */
+
+/* Badge dans la liste des séances */
+.sh-bilan-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.sh-bilan-badge-done { background: #dcfce7; color: #15803d; }
+.sh-bilan-badge-todo { background: #fef3c7; color: #92400e; }
+
+/* Section bilan dans le détail */
+.sh-bilan-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 16px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.sh-bilan-section.is-done {
+  border-color: #16a34a;
+  background: linear-gradient(180deg, #f0fdf4 0%, #fff 40%);
+}
+.sh-bilan-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #dcfce7;
+  color: #15803d;
+  margin-left: 8px;
+}
+.sh-bilan-tag-todo { background: #fef3c7; color: #92400e; }
+
+.sh-bilan-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sh-bilan-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+@media (max-width: 640px) {
+  .sh-bilan-row { grid-template-columns: 1fr; gap: 6px; }
+}
+.sh-bilan-label {
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sh-bilan-icon { font-size: 16px; }
+
+/* Étoiles cliquables */
+.sh-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.sh-star {
+  width: 30px; height: 30px;
+  border: none;
+  background: transparent;
+  color: #d1d5db;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: color .12s, transform .12s;
+}
+.sh-star:hover { transform: scale(1.15); }
+.sh-star.on { color: #f59e0b; }
+.sh-star-val {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+/* Notes libres */
+.sh-bilan-notes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 640px) {
+  .sh-bilan-notes { grid-template-columns: 1fr; }
+}
+.sh-bilan-note-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sh-bilan-note-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.sh-bilan-textarea {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+  min-height: 60px;
+}
+.sh-bilan-textarea:focus {
+  outline: 2px solid #009640;
+  border-color: #009640;
+}
+
+/* Bloc courbe évolution ressentis (pliable) */
+.sh-ressentis-block {
+  margin-bottom: 18px;
+}
+.sh-ressentis-toggle {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background .15s, border-color .15s;
+}
+.sh-ressentis-toggle:hover {
+  background: #f0fdf4;
+  border-color: #009640;
+  color: #009640;
+}
+.sh-ressentis-chart-wrap {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #fafafa;
+  border-radius: 8px;
+  animation: fadeInRess .18s ease-out;
+}
+@keyframes fadeInRess {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sh-ressentis-chart { width: 100%; height: auto; display: block; }
