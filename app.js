@@ -1709,6 +1709,8 @@ function profileBody(pid) {
 
     ${renderCollapsibleSection('📋 Cette semaine', 'weekly-widget',
        window.WeeklyFocusModule?.renderPlayerWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucun critère défini cette semaine.</p>')}
+    ${renderCollapsibleSection('⚽ Évolution jonglerie', 'juggle-widget',
+       window.SessionsHistoryModule?.renderPlayerJuggleWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucune mesure enregistrée.</p>')}
     ${renderCollapsibleSection('🩹 Blessures & disponibilité', 'injury-widget',
        window.InjuryModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucune blessure enregistrée.</p>')}
     ${renderCollapsibleSection('📅 Assiduité', 'attendance-widget',
@@ -2083,6 +2085,7 @@ function renderBilansMegaView() {
   const catLabel = (CAT_LABELS[cat] || cat).toUpperCase();
   const tabs = [
     { key: 'equipes',   label: 'Équipes' },
+    { key: 'seances',   label: '📝 Séances' },
     { key: 'plan',      label: 'Plan saison' },
     { key: 'analyses',  label: 'Analyses' },
     { key: 'direction', label: 'Direction' + (alerts > 0 ? ` (${alerts})` : '') },
@@ -2094,6 +2097,8 @@ function renderBilansMegaView() {
     if (!teamModule) body = '<p>Module équipes non chargé.</p>';
     else if (state.selTeam) body = teamModule.renderTeamBody(cat, state.selTeam);
     else body = renderTeamListShell();
+  } else if (sub === 'seances') {
+    body = window.SessionsHistoryModule?.renderBody?.(cat) || '<p>Module Séances non chargé.</p>';
   } else if (sub === 'plan') {
     body = window.SeasonPlanModule?.renderBody(cat) || '<p>Module Plan saison non chargé.</p>';
   } else if (sub === 'analyses') {
@@ -2578,7 +2583,7 @@ window.appUtils = {
 
 // Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
 document.addEventListener('click', event => {
-  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action],[data-plan-action],[data-advstats-action],[data-stx-action]');
+  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action],[data-plan-action],[data-advstats-action],[data-stx-action],[data-history-action]');
   if (!mt) return;
   // Les <select>, <input>, <textarea> gèrent leurs propres événements (change / input).
   // Sans ce skip, cliquer sur un select déclenche le handler avec value="" et ferme le menu.
@@ -2597,6 +2602,7 @@ document.addEventListener('click', event => {
   if (mt.dataset.planAction       && window.SeasonPlanModule?.handleAction(mt))  return;
   if (mt.dataset.advstatsAction   && window.AdvancedStatsModule?.handleAction(mt)) return;
   if (mt.dataset.stxAction        && window.SeasonTransitionModule?.handleAction(mt)) return;
+  if (mt.dataset.historyAction    && window.SessionsHistoryModule?.handleAction(mt)) return;
   if (mt.dataset.obsDim)            window.ObsModule?.handleDimClick(mt);
 });
 
