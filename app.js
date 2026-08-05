@@ -2175,28 +2175,49 @@ window.appUtils = {
 };
 
 // Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
+/* ══════════════════════════════════════════════════════════
+   Registre unique des dispatchers de modules
+   ══════════════════════════════════════════════════════════
+   Ajouter un module = 1 ligne ici (pas de duplication de code).
+   dataAttr = clé camelCase dans dataset (ex 'liveAction' pour data-live-action)
+   module   = nom global window.XxxModule qui expose handleAction(el)
+   ────────────────────────────────────────────────────────── */
+const MODULE_DISPATCHERS = [
+  { dataAttr: 'seanceAction',     module: 'SeanceModule' },
+  { dataAttr: 'obsAction',        module: 'ObsModule' },
+  { dataAttr: 'educatorAction',   module: 'EducatorModule' },
+  { dataAttr: 'rosterAction',     module: 'RosterModule' },
+  { dataAttr: 'postmatchAction',  module: 'PostMatchModule' },
+  { dataAttr: 'attendanceAction', module: 'AttendanceModule' },
+  { dataAttr: 'injuryAction',     module: 'InjuryModule' },
+  { dataAttr: 'careerAction',     module: 'CareerModule' },
+  { dataAttr: 'weeklyAction',     module: 'WeeklyFocusModule' },
+  { dataAttr: 'liveAction',       module: 'LiveTrainingModule' },
+  { dataAttr: 'planAction',       module: 'SeasonPlanModule' },
+  { dataAttr: 'advstatsAction',   module: 'AdvancedStatsModule' },
+  { dataAttr: 'stxAction',        module: 'SeasonTransitionModule' },
+  { dataAttr: 'historyAction',    module: 'SessionsHistoryModule' },
+];
+
+// Sélecteur combiné généré automatiquement (data-xxx-action + data-obs-dim)
+const MODULE_CLICK_SELECTOR = MODULE_DISPATCHERS
+  .map(d => `[data-${d.dataAttr.replace(/([A-Z])/g, '-$1').toLowerCase()}]`)
+  .concat('[data-obs-dim]')
+  .join(',');
+
 document.addEventListener('click', event => {
-  const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action],[data-plan-action],[data-advstats-action],[data-stx-action],[data-history-action]');
+  const mt = event.target.closest(MODULE_CLICK_SELECTOR);
   if (!mt) return;
   // Les <select>, <input text/number>, <textarea> gèrent leurs propres événements (change / input).
-  // MAIS les checkbox/radio doivent passer par le click dispatcher (leur toggle est déjà fait par le clic).
+  // MAIS les checkbox/radio doivent passer par le click dispatcher.
   if (mt.tagName === 'SELECT' || mt.tagName === 'TEXTAREA') return;
   if (mt.tagName === 'INPUT' && mt.type !== 'checkbox' && mt.type !== 'radio') return;
-  if (mt.dataset.seanceAction     && window.SeanceModule?.handleAction(mt))     return;
-  if (mt.dataset.obsAction        && window.ObsModule?.handleAction(mt))        return;
-  if (mt.dataset.educatorAction   && window.EducatorModule?.handleAction(mt))   return;
-  if (mt.dataset.rosterAction     && window.RosterModule?.handleAction(mt))     return;
-  if (mt.dataset.postmatchAction  && window.PostMatchModule?.handleAction(mt))  return;
-  if (mt.dataset.attendanceAction && window.AttendanceModule?.handleAction(mt)) return;
-  if (mt.dataset.injuryAction     && window.InjuryModule?.handleAction(mt))     return;
-  if (mt.dataset.careerAction     && window.CareerModule?.handleAction(mt))     return;
-  if (mt.dataset.weeklyAction     && window.WeeklyFocusModule?.handleAction(mt)) return;
-  if (mt.dataset.liveAction       && window.LiveTrainingModule?.handleAction(mt)) return;
-  if (mt.dataset.planAction       && window.SeasonPlanModule?.handleAction(mt))  return;
-  if (mt.dataset.advstatsAction   && window.AdvancedStatsModule?.handleAction(mt)) return;
-  if (mt.dataset.stxAction        && window.SeasonTransitionModule?.handleAction(mt)) return;
-  if (mt.dataset.historyAction    && window.SessionsHistoryModule?.handleAction(mt)) return;
-  if (mt.dataset.obsDim)            window.ObsModule?.handleDimClick(mt);
+
+  for (const { dataAttr, module } of MODULE_DISPATCHERS) {
+    if (mt.dataset[dataAttr] && window[module]?.handleAction?.(mt)) return;
+  }
+  // Cas spécial : ObsModule expose aussi handleDimClick pour les dim des piliers
+  if (mt.dataset.obsDim) window.ObsModule?.handleDimClick?.(mt);
 });
 
 document.addEventListener('click', event => {
@@ -2504,31 +2525,34 @@ document.addEventListener('change', event => {
   }
 });
 
+/* Registre des actions transitant par l'event 'input' (text / number)
+   Chaque entrée liste les valeurs d'action qui doivent être routées vers le module. */
+const INPUT_DISPATCHERS = [
+  { dataAttr: 'liveAction',    module: 'LiveTrainingModule',    actions: ['search', 'save-juggle'] },
+  { dataAttr: 'historyAction', module: 'SessionsHistoryModule', actions: ['edit-juggle', 'set-obj-past'] },
+  { dataAttr: 'weeklyAction',  module: 'WeeklyFocusModule',     actions: ['set-theme', 'set-note', 'edit-item-objective'] },
+];
+
 document.addEventListener('input', event => {
   const target = event.target;
-  if (target.dataset?.liveAction === 'search' || target.dataset?.liveAction === 'save-juggle') {
-    window.LiveTrainingModule?.handleAction(target);
-    return;
+
+  // 1) Actions module (routage via registre)
+  for (const { dataAttr, module, actions } of INPUT_DISPATCHERS) {
+    const val = target.dataset?.[dataAttr];
+    if (val && actions.includes(val)) {
+      window[module]?.handleAction?.(target);
+      return;
+    }
   }
-  // Historique séances : édition jonglages et compteurs objectifs
-  if (target.dataset?.historyAction === 'edit-juggle'
-      || target.dataset?.historyAction === 'set-obj-past') {
-    window.SessionsHistoryModule?.handleAction(target);
-    return;
-  }
-  if (target.dataset?.weeklyAction === 'set-theme'
-      || target.dataset?.weeklyAction === 'set-note'
-      || target.dataset?.weeklyAction === 'edit-item-objective') {
-    window.WeeklyFocusModule?.handleAction(target);
-    return;
-  }
-  // Champs profil joueur (Nom, Prénom, Naissance, Licence, Années, Contact, Taille, Poids)
+
+  // 2) Champs profil joueur (Nom, Prénom, etc.)
   const field = target.dataset?.field;
   if (field && state.selPlayer) {
     updateProfileField(field, target.value);
     return;
   }
-  // Commentaires évaluation (critère, coach, auto)
+
+  // 3) Commentaires évaluation (critère, coach, auto)
   const action = target.dataset?.action;
   if (action === 'set-crit-comment') {
     setCritComment(target.dataset.pillar, Number(target.dataset.index), target.value);
