@@ -9006,3 +9006,22 @@ body.season-transition-active { overflow: hidden; }
   0%, 80%, 100% { transform: scale(0.6); opacity: .5; }
   40%           { transform: scale(1);   opacity: 1; }
 }
+
+/* ── Bouton "Séance terminée" dans le header Mode Terrain ── */
+.live-finish-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  background: #16a34a;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, .3);
+}
+.live-finish-btn:hover  { background: #15803d; transform: translateY(-1px); }
+.live-finish-btn:active { transform: translateY(0); }
+@media (max-width: 640px) {
+  .live-finish-btn { padding: 8px 10px; font-size: 12px; }
+}

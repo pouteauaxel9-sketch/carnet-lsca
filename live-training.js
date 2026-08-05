@@ -327,6 +327,11 @@
           </button>
           <button class="live-icon-btn ${sunMode ? 'on' : ''}" type="button"
                   data-live-action="toggle-sun" title="Mode plein soleil">☀</button>
+          <button class="live-finish-btn" type="button"
+                  data-live-action="finish-session"
+                  title="Terminer la séance et proposer le bilan">
+            ✅ Séance terminée
+          </button>
         </div>
       </header>`;
   }
@@ -580,6 +585,30 @@
     if (action === 'noop') { return true; }
     if (action === 'close') { close(); return true; }
     if (action === 'toggle-sun') { sunMode = !sunMode; renderOverlay(); return true; }
+    if (action === 'finish-session') {
+      const iso = todayIso();
+      const cat = state().cat;
+      const goToBilan = confirm(
+        'Séance terminée ✅\n\n' +
+        'Veux-tu faire le bilan de séance maintenant ?\n' +
+        '(Ressenti, engagement, ce qui a marché…)\n\n' +
+        'OK = ouvrir le bilan\nAnnuler = fermer juste le Mode Terrain'
+      );
+      close();
+      if (goToBilan) {
+        // Naviguer vers Bilans → Séances → détail de la séance du jour
+        state().view = 'bilans';
+        state().bilansTab = 'seances';
+        state().historySessionDate = iso;
+        utils().renderAll?.();
+        // Petit délai pour scroller sur le bloc bilan
+        setTimeout(() => {
+          const bilanEl = document.querySelector('.sh-bilan-section');
+          if (bilanEl) bilanEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 200);
+      }
+      return true;
+    }
     if (action === 'set-tab') {
       activeTab = el.dataset.tab || 'juggle';
       renderOverlay();
