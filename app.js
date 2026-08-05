@@ -2585,9 +2585,10 @@ window.appUtils = {
 document.addEventListener('click', event => {
   const mt = event.target.closest('[data-seance-action],[data-obs-action],[data-educator-action],[data-obs-dim],[data-roster-action],[data-postmatch-action],[data-feeds-action],[data-attendance-action],[data-injury-action],[data-career-action],[data-weekly-action],[data-live-action],[data-plan-action],[data-advstats-action],[data-stx-action],[data-history-action]');
   if (!mt) return;
-  // Les <select>, <input>, <textarea> gèrent leurs propres événements (change / input).
-  // Sans ce skip, cliquer sur un select déclenche le handler avec value="" et ferme le menu.
-  if (mt.tagName === 'SELECT' || mt.tagName === 'INPUT' || mt.tagName === 'TEXTAREA') return;
+  // Les <select>, <input text/number>, <textarea> gèrent leurs propres événements (change / input).
+  // MAIS les checkbox/radio doivent passer par le click dispatcher (leur toggle est déjà fait par le clic).
+  if (mt.tagName === 'SELECT' || mt.tagName === 'TEXTAREA') return;
+  if (mt.tagName === 'INPUT' && mt.type !== 'checkbox' && mt.type !== 'radio') return;
   if (mt.dataset.seanceAction     && window.SeanceModule?.handleAction(mt))     return;
   if (mt.dataset.obsAction        && window.ObsModule?.handleAction(mt))        return;
   if (mt.dataset.educatorAction   && window.EducatorModule?.handleAction(mt))   return;
@@ -2609,8 +2610,10 @@ document.addEventListener('click', event => {
 document.addEventListener('click', event => {
   const target = event.target.closest('[data-action]');
   if (!target) return;
-  // Idem : on laisse passer click sur les selects/inputs/textarea pour qu'ils ouvrent leur menu.
-  if (target.tagName === 'SELECT' || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+  // Idem : on laisse passer click sur les selects/inputs texte/textarea (change/input les gèrent).
+  // Checkbox et radio doivent recevoir le click.
+  if (target.tagName === 'SELECT' || target.tagName === 'TEXTAREA') return;
+  if (target.tagName === 'INPUT' && target.type !== 'checkbox' && target.type !== 'radio') return;
   const action = target.dataset.action;
 
   if (action === 'set-view') {
