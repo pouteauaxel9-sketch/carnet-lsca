@@ -8418,3 +8418,38 @@ body.season-transition-active { overflow: hidden; }
   border-top: 1px solid #e5e7eb;
   text-align: right;
 }
+
+/* ── Stats jonglerie catégorie : 3 blocs par type de pied ── */
+.sh-cat-foot-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.sh-cat-foot-block {
+  padding: 12px 14px 14px;
+  background: #fafafa;
+  border-radius: 10px;
+  border-left: 4px solid transparent;
+}
+.sh-cat-foot-title {
+  margin: 0 0 12px;
+  padding-left: 8px;
+  border-left: 4px solid #009640;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sh-cat-foot-swatch {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+}
+.sh-cat-top h5 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}

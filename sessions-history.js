@@ -247,35 +247,76 @@
     });
     const svg = renderCategoryChart(chartData);
 
-    // ── Top 5 meilleurs jongleurs (meilleur score max — 2 pieds prioritaire, sinon best all)
-    const topBest = perPlayer.map(({ pid, entries }) => {
-      // Score de référence : meilleur "2 pieds" jamais atteint, sinon meilleur toute jambe
-      let deuxMax = null, allMax = null;
-      entries.forEach(e => {
-        if (e.deux != null && (deuxMax == null || e.deux > deuxMax)) deuxMax = e.deux;
-        if (e.best != null && (allMax  == null || e.best > allMax )) allMax  = e.best;
-      });
-      const last = entries[entries.length - 1];
-      return {
-        pid,
-        score: deuxMax != null ? deuxMax : allMax,
-        useDeux: deuxMax != null,
-        lastDate: last?.date,
-      };
-    }).filter(x => x.score != null)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
+    // ── Top 5 par type de pied : meilleurs + meilleures progressions
+    const foots = [
+      { key: 'gauche', label: 'Pied gauche', icon: '🦵', color: '#3b82f6' },
+      { key: 'droit',  label: 'Pied droit',  icon: '🦵', color: '#009640' },
+      { key: 'deux',   label: 'Des 2 pieds', icon: '⚽', color: '#f59e0b' },
+    ];
 
-    // ── Top 5 progressions (delta best score : dernière séance vs séance précédente)
-    const topProg = perPlayer.map(({ pid, entries }) => {
-      if (entries.length < 2) return null;
-      const last = entries[entries.length - 1];
-      const prev = entries[entries.length - 2];
-      if (last.best == null || prev.best == null) return null;
-      return { pid, delta: last.best - prev.best, last: last.best, prev: prev.best, lastDate: last.date };
-    }).filter(x => x && x.delta > 0)
-      .sort((a, b) => b.delta - a.delta)
-      .slice(0, 5);
+    function topsForFoot(footKey) {
+      // Meilleurs : max de tous les scores enregistrés pour ce pied
+      const bests = perPlayer.map(({ pid, entries }) => {
+        let max = null;
+        entries.forEach(e => {
+          const v = e[footKey];
+          if (v != null && (max == null || v > max)) max = v;
+        });
+        return max != null ? { pid, score: max } : null;
+      }).filter(Boolean)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+      // Progressions : delta entre les 2 dernières mesures NON-NULLES pour ce pied
+      const progs = perPlayer.map(({ pid, entries }) => {
+        const measured = entries.filter(e => e[footKey] != null);
+        if (measured.length < 2) return null;
+        const last = measured[measured.length - 1];
+        const prev = measured[measured.length - 2];
+        return { pid, delta: last[footKey] - prev[footKey], last: last[footKey], prev: prev[footKey] };
+      }).filter(x => x && x.delta > 0)
+        .sort((a, b) => b.delta - a.delta)
+        .slice(0, 5);
+
+      return { bests, progs };
+    }
+
+    function renderFootBlock(foot) {
+      const { bests, progs } = topsForFoot(foot.key);
+      return `
+        <div class="sh-cat-foot-block">
+          <h4 class="sh-cat-foot-title" style="border-left-color:${foot.color}">
+            <span class="sh-cat-foot-swatch" style="background:${foot.color}"></span>
+            ${foot.label}
+          </h4>
+          <div class="sh-cat-tops">
+            <div class="sh-cat-top">
+              <h5>🏆 Top 5 meilleurs</h5>
+              ${bests.length === 0 ? '<p class="sh-muted">—</p>' : `
+                <ol class="sh-cat-top-list">
+                  ${bests.map((t, i) => `
+                    <li class="sh-cat-top-item">
+                      <span class="sh-cat-top-rank">${i + 1}</span>
+                      <span class="sh-cat-top-name">${h(playerLabel(t.pid, cat))}</span>
+                      <span class="sh-cat-top-score">${t.score}</span>
+                    </li>`).join('')}
+                </ol>`}
+            </div>
+            <div class="sh-cat-top">
+              <h5>📈 Top 5 progressions</h5>
+              ${progs.length === 0 ? '<p class="sh-muted">Pas encore (min. 2 mesures).</p>' : `
+                <ol class="sh-cat-top-list">
+                  ${progs.map((t, i) => `
+                    <li class="sh-cat-top-item">
+                      <span class="sh-cat-top-rank">${i + 1}</span>
+                      <span class="sh-cat-top-name">${h(playerLabel(t.pid, cat))}</span>
+                      <span class="sh-cat-top-score sh-cat-top-delta">+${t.delta} <em>(${t.prev}→${t.last})</em></span>
+                    </li>`).join('')}
+                </ol>`}
+            </div>
+          </div>
+        </div>`;
+    }
 
     return `
       <section class="sh-section-block sh-cat-stats">
@@ -286,32 +327,8 @@
           ${svg}
         </div>
 
-        <div class="sh-cat-tops">
-          <div class="sh-cat-top">
-            <h4>🏆 Top 5 jongleurs</h4>
-            ${topBest.length === 0 ? '<p class="sh-muted">—</p>' : `
-              <ol class="sh-cat-top-list">
-                ${topBest.map((t, i) => `
-                  <li class="sh-cat-top-item">
-                    <span class="sh-cat-top-rank">${i + 1}</span>
-                    <span class="sh-cat-top-name">${h(playerLabel(t.pid, cat))}</span>
-                    <span class="sh-cat-top-score">${t.score}${t.useDeux ? ' <em>2P</em>' : ''}</span>
-                  </li>`).join('')}
-              </ol>`}
-          </div>
-
-          <div class="sh-cat-top">
-            <h4>📈 Top 5 progressions</h4>
-            ${topProg.length === 0 ? '<p class="sh-muted">Pas encore de progression (min. 2 mesures).</p>' : `
-              <ol class="sh-cat-top-list">
-                ${topProg.map((t, i) => `
-                  <li class="sh-cat-top-item">
-                    <span class="sh-cat-top-rank">${i + 1}</span>
-                    <span class="sh-cat-top-name">${h(playerLabel(t.pid, cat))}</span>
-                    <span class="sh-cat-top-score sh-cat-top-delta">+${t.delta} <em>(${t.prev}→${t.last})</em></span>
-                  </li>`).join('')}
-              </ol>`}
-          </div>
+        <div class="sh-cat-foot-blocks">
+          ${foots.map(renderFootBlock).join('')}
         </div>
       </section>`;
   }
