@@ -1293,6 +1293,39 @@ function profileBody(pid) {
     </div>
   `).join('');
 
+  // Bloc Suivi joueur (mini-onglets : Semaine / Jonglerie / Blessures / Assiduité)
+  const followup = state.selFollowup || 'weekly';
+  const followupTabs = [
+    { key: 'weekly',     label: 'Cette semaine',  icon: '📋' },
+    { key: 'juggle',     label: 'Jonglerie',      icon: '⚽' },
+    { key: 'injury',     label: 'Blessures',      icon: '🩹' },
+    { key: 'attendance', label: 'Assiduité',      icon: '📅' },
+  ];
+  let followupContent = '';
+  if (followup === 'weekly')     followupContent = window.WeeklyFocusModule?.renderPlayerWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucun critère défini cette semaine.</p>';
+  else if (followup === 'juggle')     followupContent = window.SessionsHistoryModule?.renderPlayerJuggleWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucune mesure enregistrée.</p>';
+  else if (followup === 'injury')     followupContent = window.InjuryModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucune blessure enregistrée.</p>';
+  else if (followup === 'attendance') followupContent = window.AttendanceModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucun pointage.</p>';
+
+  const followupBlock = `
+    <section class="player-followup">
+      <div class="player-followup-header">
+        <div class="card-kicker">Suivi joueur</div>
+        <nav class="player-followup-tabs" role="tablist" aria-label="Suivi du joueur">
+          ${followupTabs.map(t => `
+            <button class="player-followup-tab ${followup === t.key ? 'on' : ''}"
+                    type="button"
+                    data-action="set-followup" data-followup="${t.key}"
+                    role="tab" aria-selected="${followup === t.key}">
+              <span class="pft-icon">${t.icon}</span>
+              <span class="pft-label">${h(t.label)}</span>
+            </button>
+          `).join('')}
+        </nav>
+      </div>
+      <div class="player-followup-body">${followupContent}</div>
+    </section>`;
+
   return `
     <div class="detail-grid">
       <div class="detail-card span-2">
@@ -1319,6 +1352,8 @@ function profileBody(pid) {
       </div>
       ${evolutionCard(pid)}
     </div>
+
+    ${followupBlock}
 
     <div class="form-section-title">Identite</div>
     <div class="form-grid">
@@ -1394,15 +1429,6 @@ function profileBody(pid) {
 
     <div class="form-section-title">Objectifs de saison</div>
     <div class="obj-list">${objRows}<button class="add-obj" type="button" data-action="add-obj">+ Ajouter un objectif</button></div>
-
-    ${renderCollapsibleSection('📋 Cette semaine', 'weekly-widget',
-       window.WeeklyFocusModule?.renderPlayerWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucun critère défini cette semaine.</p>')}
-    ${renderCollapsibleSection('⚽ Évolution jonglerie', 'juggle-widget',
-       window.SessionsHistoryModule?.renderPlayerJuggleWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucune mesure enregistrée.</p>')}
-    ${renderCollapsibleSection('🩹 Blessures & disponibilité', 'injury-widget',
-       window.InjuryModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucune blessure enregistrée.</p>')}
-    ${renderCollapsibleSection('📅 Assiduité', 'attendance-widget',
-       window.AttendanceModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucun pointage.</p>')}
 
     <div class="form-footer"><span class="save-hint">Autosauvegarde active</span><button class="btn btn-primary" type="button" data-action="save-player">Sauvegarder maintenant</button></div>
   `;
@@ -1719,21 +1745,6 @@ function renderPlayerEmptyState() {
         <div class="empty-tip">💡 Astuce : tape <kbd>/</kbd> ou <kbd>Ctrl+K</kbd> pour rechercher un joueur</div>
       </div>
     </div>
-  `;
-}
-
-// Helper : section repliable pour la fiche joueur
-function renderCollapsibleSection(title, key, content) {
-  return `
-    <details class="player-collapsible" data-section="${h(key)}">
-      <summary class="player-collapsible-summary">
-        <span>${h(title)}</span>
-        <span class="player-collapsible-chevron">▾</span>
-      </summary>
-      <div class="player-collapsible-body">
-        ${content}
-      </div>
-    </details>
   `;
 }
 
@@ -2337,6 +2348,7 @@ document.addEventListener('click', event => {
   }
 
   if (action === 'set-section') { state.selSection = target.dataset.section; renderMain(); return; }
+  if (action === 'set-followup') { state.selFollowup = target.dataset.followup || 'weekly'; renderMain(); return; }
   if (action === 'set-view-mode') { state.viewMode = target.dataset.viewMode; renderMain(); return; }
   if (action === 'set-pillar') { state.selPillar = Number(target.dataset.index); renderMain(); return; }
   if (action === 'set-foot') { setFoot(target.dataset.value); return; }

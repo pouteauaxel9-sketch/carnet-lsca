@@ -8513,3 +8513,72 @@ body.season-transition-active { overflow: hidden; }
 @media (max-width: 768px) {
   .weekly-tab { padding: 10px 14px; font-size: 13px; }
 }
+
+/* ══════════════════════════════════════════════════════════
+   Fiche joueur → Bloc "Suivi joueur" (mini-onglets)
+   Semaine / Jonglerie / Blessures / Assiduité
+   ══════════════════════════════════════════════════════════ */
+
+.player-followup {
+  margin: 20px 0 24px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.player-followup-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.player-followup-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 2px solid #e5e7eb;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.player-followup-tab {
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  color: #6b7280;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s, background .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.player-followup-tab:hover {
+  color: #009640;
+  background: rgba(0, 150, 64, .05);
+}
+.player-followup-tab.on {
+  color: #009640;
+  border-bottom-color: #009640;
+  font-weight: 700;
+}
+.pft-icon { font-size: 15px; }
+.pft-label { }
+@media (max-width: 640px) {
+  .pft-label { display: none; }
+  .player-followup-tab { padding: 10px 12px; }
+  .pft-icon { font-size: 17px; }
+}
+
+.player-followup-body {
+  padding: 14px 4px 4px;
+  animation: fadeInFollowup .18s ease-out;
+  min-height: 100px;
+}
+@keyframes fadeInFollowup {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
