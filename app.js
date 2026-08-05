@@ -2097,6 +2097,35 @@ function generateReport() {
   setTimeout(() => reportWindow.print(), 300);
 }
 
+const BACKUP_KEY  = 'cfb6_last_export_at';
+const BACKUP_DAYS = 15; // seuil d'avertissement
+
+function markBackupDone() {
+  try { localStorage.setItem(BACKUP_KEY, new Date().toISOString()); } catch {}
+  updateBackupBanner();
+}
+function daysSinceLastBackup() {
+  const iso = localStorage.getItem(BACKUP_KEY);
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (isNaN(t)) return null;
+  return Math.floor((Date.now() - t) / 86400000);
+}
+function updateBackupBanner() {
+  const el = q('#backup-banner');
+  if (!el) return;
+  const days = daysSinceLastBackup();
+  const overdue = days === null || days >= BACKUP_DAYS;
+  el.hidden = !overdue;
+  if (overdue) {
+    const label = days === null
+      ? 'Aucune sauvegarde JSON enregistrée.'
+      : `Dernière sauvegarde il y a ${days} jour${days > 1 ? 's' : ''}.`;
+    const msgEl = q('#backup-banner-msg');
+    if (msgEl) msgEl.textContent = label;
+  }
+}
+
 function exportData() {
   const payload = { exportedAt: new Date().toISOString(), app: 'carnet-formation-football', version: 2, data: state.data };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
@@ -2106,7 +2135,8 @@ function exportData() {
   a.download = 'carnet-foot-' + state.season + '.json';
   a.click();
   URL.revokeObjectURL(url);
-  showToast('Export JSON termine');
+  markBackupDone();
+  showToast('Export JSON terminé');
 }
 
 function importData(file) {
@@ -2380,6 +2410,13 @@ document.addEventListener('click', event => {
     exportData();
     return;
   }
+  if (action === 'dismiss-backup') {
+    // Snooze de 3 jours : on décale la "date de dernière sauvegarde" pour laisser du répit
+    const soon = new Date(Date.now() - (BACKUP_DAYS - 3) * 86400000);
+    try { localStorage.setItem(BACKUP_KEY, soon.toISOString()); } catch {}
+    updateBackupBanner();
+    return;
+  }
   if (action === 'trigger-print') {
     toggleMoreMenu(false);
     window.print();
@@ -2577,3 +2614,4 @@ document.addEventListener('change', event => {
 });
 
 loadAll();
+updateBackupBanner();

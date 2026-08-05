@@ -47,6 +47,13 @@
     </div>
   </nav>
 
+  <div class="backup-banner" id="backup-banner" hidden role="alert">
+    <span class="backup-banner-icon">💾</span>
+    <span class="backup-banner-msg" id="backup-banner-msg"></span>
+    <button class="backup-banner-btn" type="button" data-action="trigger-export-json">Sauvegarder maintenant</button>
+    <button class="backup-banner-close" type="button" data-action="dismiss-backup" title="Rappeler dans 3 jours">×</button>
+  </div>
+
   <div class="main-layout">
     <aside class="sidebar" aria-label="Liste des joueurs">
       <div class="sb-head">

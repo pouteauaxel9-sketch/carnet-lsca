@@ -8727,3 +8727,54 @@ body.season-transition-active { overflow: hidden; }
   cursor: default;
 }
 .more-menu-item span { flex: 1; }
+
+/* ══════════════════════════════════════════════════════════
+   Bandeau rappel auto-backup (Sauvegarde JSON)
+   ══════════════════════════════════════════════════════════ */
+
+.backup-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, #fef3c7, #fde68a);
+  border-bottom: 1px solid #f59e0b;
+  color: #78350f;
+  font-size: 13px;
+  font-weight: 500;
+  animation: slideDownBackup .25s ease-out;
+}
+.backup-banner[hidden] { display: none; }
+@keyframes slideDownBackup {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.backup-banner-icon { font-size: 18px; }
+.backup-banner-msg  { flex: 1; }
+.backup-banner-btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #d97706;
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.backup-banner-btn:hover { background: #b45309; }
+.backup-banner-close {
+  width: 28px; height: 28px;
+  border: none;
+  background: transparent;
+  color: #78350f;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background .12s;
+}
+.backup-banner-close:hover { background: rgba(120, 53, 15, .1); }
+@media (max-width: 640px) {
+  .backup-banner-msg { font-size: 12px; }
+  .backup-banner-btn { padding: 5px 10px; font-size: 11px; }
+}
