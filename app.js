@@ -622,96 +622,8 @@ function getRefreshLabel() {
   return 'Jamais actualise';
 }
 
-// Overrides de score saisis manuellement par l'éducateur. Survivent aux runs
-// suivants du scraper (qui réécrit cfb6_feeds mais pas cfb6_score_overrides).
-const SCORE_OVERRIDES_KEY = 'cfb6_score_overrides';
-
-function loadScoreOverrides() {
-  try { return JSON.parse(localStorage.getItem(SCORE_OVERRIDES_KEY) || '{}') || {}; }
-  catch { return {}; }
-}
-function saveScoreOverridesMap(map) {
-  localStorage.setItem(SCORE_OVERRIDES_KEY, JSON.stringify(map));
-}
-function scoreOverrideKey(cat, date, team, opponent) {
-  return [cat || '', date || '', team || '', opponent || ''].join('||');
-}
-function saveScoreOverride(cat, date, team, opponent, score) {
-  const map = loadScoreOverrides();
-  map[scoreOverrideKey(cat, date, team, opponent)] = score;
-  saveScoreOverridesMap(map);
-}
-function applyScoreOverrides(cat, feeds) {
-  const map = loadScoreOverrides();
-  if (!Object.keys(map).length) return feeds;
-  function apply(list) {
-    return list.map(m => {
-      const k = scoreOverrideKey(cat, m.date, m.team || '', m.opponent || '');
-      const ov = map[k];
-      return ov ? { ...m, score: ov, manualScore: true } : m;
-    });
-  }
-  return {
-    ...feeds,
-    past: apply(feeds.past || []),
-    upcoming: apply(feeds.upcoming || []),
-  };
-}
-
-// Re-route les matchs "upcoming" dont la date est passée vers "past".
-// Utile entre deux runs du scraper hebdomadaire : un match joué hier ne reste
-// pas affiché en "à venir". Le score est laissé vide ("-") tant que le scraper
-// n'a pas récupéré le résultat — l'éducateur peut le saisir manuellement.
-function rebalanceUpcomingPast(feeds) {
-  if (!feeds || !Array.isArray(feeds.upcoming) || !Array.isArray(feeds.past)) return feeds;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const todayMs = today.getTime();
-
-  function toMs(d) {
-    if (!d) return null;
-    if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
-      const t = new Date(d).getTime();
-      return isNaN(t) ? null : t;
-    }
-    const m = String(d).match(/(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})/);
-    if (!m) return null;
-    const t = new Date(`${m[3]}-${m[2]}-${m[1]}`).getTime();
-    return isNaN(t) ? null : t;
-  }
-
-  function alreadyInPast(match) {
-    return feeds.past.some(p =>
-      (p.date || '') === (match.date || '') &&
-      (p.opponent || '') === (match.opponent || '') &&
-      (p.team || '') === (match.team || '')
-    );
-  }
-
-  const stillUpcoming = [];
-  const newlyPast = [];
-  feeds.upcoming.forEach(m => {
-    const ts = toMs(m.date);
-    if (ts != null && ts < todayMs && !alreadyInPast(m)) {
-      newlyPast.push({
-        ...m,
-        score: m.score || '-',
-        autoMoved: true,    // marqueur pour éventuel affichage
-      });
-    } else {
-      stillUpcoming.push(m);
-    }
-  });
-
-  if (!newlyPast.length) return feeds;
-  // On insère les nouveaux past en tête (plus récents) sans dupliquer
-  return {
-    ...feeds,
-    upcoming: stillUpcoming,
-    past: [...newlyPast, ...feeds.past],
-  };
-}
-
 function buildDashboardFeeds(cat = state.cat) {
+  // Uniquement les classements (les matchs à venir/résultats ont été retirés).
   if (state.remoteClubData) {
     const category = state.remoteClubData.categories?.find(item => item.code === cat);
     const teams = state.remoteClubData.teams?.filter(team => team.category_id === category?.id) || [];
@@ -725,84 +637,27 @@ function buildDashboardFeeds(cat = state.cat) {
         note:team.official_name || team.label
       };
     });
-
-    const upcoming = (state.remoteClubData.fixtures || [])
-      .filter(item => teams.some(team => team.id === item.team_id))
-      .slice(0, 6)
-      .map(item => ({
-        date:item.match_date ? new Date(item.match_date).toLocaleDateString('fr-FR') : 'A definir',
-        team:item.is_home ? item.home_team : item.away_team,
-        opponent:item.is_home ? item.away_team : item.home_team,
-        score:item.is_home ? 'Domicile' : 'Exterieur',
-        competition:item.competition_label || 'Competition'
-      }));
-
-    const past = (state.remoteClubData.results || [])
-      .filter(item => teams.some(team => team.id === item.team_id))
-      .slice(0, 6)
-      .map(item => ({
-        date:item.match_date ? new Date(item.match_date).toLocaleDateString('fr-FR') : 'A definir',
-        team:item.is_home ? item.home_team : item.away_team,
-        opponent:item.is_home ? item.away_team : item.home_team,
-        score:item.home_score != null && item.away_score != null ? item.home_score + ' - ' + item.away_score : '-',
-        competition:item.competition_label || 'Competition'
-      }));
-
-    return applyScoreOverrides(cat, rebalanceUpcomingPast({ standings, upcoming, past }));
+    return { standings };
   }
 
   const manual = loadManualFeeds()[cat];
-  if (manual && (manual.standings?.length || manual.upcoming?.length || manual.past?.length)) {
-    return rebalanceUpcomingPast({
-      standings: manual.standings || [],
-      upcoming: manual.upcoming || [],
-      past: manual.past || []
-    });
+  if (manual && manual.standings?.length) {
+    return { standings: manual.standings };
   }
 
   const teams = getConfiguredTeamsForCategory(cat);
-  const standings = [];
-  const upcoming = [];
-  const past = [];
-
-  teams.forEach(team => {
+  const standings = teams.map(team => {
     const remote = state.remoteSources[team.key] || {};
     const sourceStatus = remote.status || 'configured';
-
-    standings.push({
+    return {
       team:team.teamLabel,
       rank:remote.ranking?.rank || (team.pending ? 'Source manquante' : sourceStatus === 'synced' ? '-' : 'Pret a brancher'),
       points:remote.ranking?.points || '-',
       played:remote.ranking?.played || '-',
       note:team.officialName
-    });
-
-    if (remote.agenda?.length) {
-      remote.agenda.forEach(match => upcoming.push(match));
-    } else {
-      upcoming.push({
-        date:'A synchroniser',
-        team:team.teamLabel,
-        opponent:team.pending ? 'Source a renseigner' : 'Source configuree FFF',
-        score:'-',
-        competition:team.officialName
-      });
-    }
-
-    if (remote.results?.length) {
-      remote.results.forEach(match => past.push(match));
-    } else {
-      past.push({
-        date:'A synchroniser',
-        team:team.teamLabel,
-        opponent:team.pending ? 'Source a renseigner' : 'Source configuree FFF',
-        score:'-',
-        competition:team.officialName
-      });
-    }
+    };
   });
-
-  return applyScoreOverrides(cat, rebalanceUpcomingPast({ standings, upcoming, past }));
+  return { standings };
 }
 
 async function tryFetchTeamSource(team) {
@@ -1118,81 +973,6 @@ function renderDashEmptyState(message, hint) {
     </div>`;
 }
 
-function renderMatchList(matches, isUpcoming) {
-  const hasSyncPlaceholder = matches.length === 1 && matches[0].date === 'A synchroniser';
-  if (!matches.length || hasSyncPlaceholder) {
-    return renderDashEmptyState(
-      isUpcoming ? 'Aucun match programmé' : 'Aucun résultat disponible',
-      'Configure les sources FFF pour activer la synchronisation.'
-    );
-  }
-  return `<div class="fixture-list">${matches.map(match => {
-    let resultClass = '';
-    let resultBadge = '';
-    if (!isUpcoming && match.score && match.score !== '-') {
-      const parts = match.score.split('-').map(s => parseInt(s.trim()));
-      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        const ourGoals  = match.isHome ? parts[0] : parts[1];
-        const theirGoals = match.isHome ? parts[1] : parts[0];
-        if (ourGoals > theirGoals)  { resultClass = 'fixture-win';  resultBadge = 'V'; }
-        else if (ourGoals === theirGoals) { resultClass = 'fixture-draw'; resultBadge = 'N'; }
-        else                         { resultClass = 'fixture-loss'; resultBadge = 'D'; }
-      }
-    }
-    const homeLabel = h(match.home || match.team);
-    const awayLabel = h(match.away || match.opponent);
-    const ourSideClass = (name) => {
-      if (!match.home) return '';
-      return name === homeLabel && match.isHome ? 'fixture-team--ours' :
-             name === awayLabel && !match.isHome ? 'fixture-team--ours' : '';
-    };
-    // Si match passé sans score, on remplace "vs" par un bouton "+ Score"
-    const needsScore = !isUpcoming && (!match.score || match.score === '-' || match.score === '');
-    const scoreCell = isUpcoming
-      ? 'vs'
-      : needsScore
-        ? `<button class="fixture-score-btn" type="button"
-              data-action="quick-score"
-              data-cat="${state.cat}"
-              data-date="${h(match.date)}"
-              data-team="${h(match.team || '')}"
-              data-opponent="${h(match.opponent || '')}"
-              title="Saisir le score">+ Score</button>`
-        : h(match.score);
-
-    return `
-    <div class="fixture-item ${resultClass}">
-      <div class="fixture-meta">
-        ${match.team ? `<span class="fixture-team-badge">${h(match.team)}</span>` : ''}
-        <span class="fixture-date">${h(match.date)}${match.time ? ` · ${h(match.time)}` : ''}</span>
-        ${match.isHome !== undefined
-          ? `<span class="fixture-loc ${match.isHome ? 'fixture-loc--home' : 'fixture-loc--away'}">${match.isHome ? 'Dom' : 'Ext'}</span>`
-          : ''}
-        ${resultBadge ? `<span class="fixture-result-badge fixture-result-${resultClass.replace('fixture-','')}">${resultBadge}</span>` : ''}
-        ${match.autoMoved ? `<span class="fixture-auto-moved" title="Match déplacé automatiquement de À venir vers Résultats car la date est passée. Le scraper FFF n'a pas encore récupéré le score.">⏱ en attente du score</span>` : ''}
-      </div>
-      <div class="fixture-teams">
-        <span class="fixture-team ${ourSideClass(homeLabel)}">${homeLabel}</span>
-        <span class="fixture-score">${scoreCell}</span>
-        <span class="fixture-team ${ourSideClass(awayLabel)}">${awayLabel}</span>
-      </div>
-      <div class="fixture-comp">${h(match.competition || '')}</div>
-    </div>`;
-  }).join('')}</div>`;
-}
-
-function renderMatchCard(title, kicker, matches, isUpcoming) {
-  const modalType = isUpcoming ? 'upcoming' : 'past';
-  return `
-    <section class="dashboard-card">
-      <div class="card-head">
-        <div><div class="card-kicker">${h(kicker)}</div><h2>${h(title)}</h2></div>
-        <button class="card-edit-btn" type="button" data-action="open-modal" data-modal-type="${modalType}" data-modal-cat="${state.cat}">Modifier</button>
-      </div>
-      ${renderMatchList(matches, isUpcoming)}
-    </section>`;
-}
-
 function renderStandingsCard(standings) {
   if (!standings.length) {
     return `
@@ -1311,7 +1091,7 @@ function renderDashboard() {
         <div class="dash-hero-main">
           <div class="dash-identity-badge" style="background:${identityBg};color:${identityFg};border:1px solid ${identityBorder}">${h(currentIdentity)}</div>
           <h1>${h(getClubDisplayName(state.cat))}</h1>
-          <p>Vue globale du club — résultats, rencontres et accès aux catégories.</p>
+          <p>Vue globale du club — classements et accès aux catégories.</p>
           ${renderSyncBadge(supabaseConfig)}
         </div>
         <div class="dashboard-stats">
@@ -1327,14 +1107,6 @@ function renderDashboard() {
         ${renderStandingsCard(feeds.standings)}
         ${renderInfoCard(CLUB_DATA.infos)}
       </div>
-
-      <details class="dashboard-matches-toggle" open>
-        <summary>📅 Matchs & Résultats <span class="dashboard-matches-counter">${(feeds.upcoming || []).length} à venir · ${(feeds.past || []).length} récents</span></summary>
-        <div class="dashboard-main-grid dashboard-matches-grid">
-          ${renderMatchCard('Matchs à venir', 'Agenda', (feeds.upcoming || []).slice(0, 4), true)}
-          ${renderMatchCard('Résultats', 'Derniers matchs', (feeds.past || []).slice(0, 6), false)}
-        </div>
-      </details>
     </section>
   `;
 }
@@ -2159,23 +1931,15 @@ function drawHistoryChart(pid) {
   });
 }
 
-const MODAL_TITLES = { standings:'Classements', upcoming:'Matchs à venir', past:'Résultats' };
+const MODAL_TITLES = { standings:'Classements' };
 const MODAL_HINTS = {
   standings:`[ { "team": "U13 A", "rank": "3e", "points": 24, "played": 14 }, ... ]`,
-  upcoming:`[ { "date": "30/04/2026", "team": "U13 A", "opponent": "Laval FC", "competition": "Championnat" }, ... ]`,
-  past:`[ { "date": "23/04/2026", "team": "U13 A", "opponent": "Laval FC", "score": "3 - 1", "competition": "Championnat" }, ... ]`
 };
 const MODAL_DEFAULTS = {
   standings:[
     { team:'U13 A', rank:'1er', points:28, played:14 },
     { team:'U13 B', rank:'5e', points:18, played:14 }
   ],
-  upcoming:[
-    { date:'30/04/2026', team:'U13 A', opponent:'Laval FC', competition:'Championnat District' }
-  ],
-  past:[
-    { date:'23/04/2026', team:'U13 A', opponent:'Laval FC', score:'3 - 1', competition:'Championnat District' }
-  ]
 };
 
 function renderModalOverlay() {
@@ -2467,7 +2231,7 @@ function loadAll() {
 window.appUtils = {
   h, q, qq, showToast, schedulePersist,
   renderMain, renderAll, saveAppState,
-  buildDashboardFeeds, renderStandingsCard, renderMatchCard,
+  buildDashboardFeeds, renderStandingsCard,
 };
 
 // Listener dédié aux actions des modules (data-seance-action, data-obs-action, etc.)
@@ -2549,25 +2313,6 @@ document.addEventListener('click', event => {
     state.view = 'player';
     state.selSection = 'profil';
     state.selPillar = 0;
-    renderAll();
-    return;
-  }
-
-  if (action === 'quick-score') {
-    const cat  = target.dataset.cat || state.cat;
-    const date = target.dataset.date || '';
-    const team = target.dataset.team || '';
-    const opp  = target.dataset.opponent || '';
-    const label = (team && opp) ? `${team} vs ${opp} (${date})` : `${date}`;
-    const score = prompt(`Score final pour : ${label}\n\nFormat : "2-1" (équipe à domicile - équipe à l'extérieur)`, '');
-    if (score == null) return;
-    const trimmed = score.trim();
-    if (!trimmed) return;
-    const m = trimmed.match(/^\s*(\d+)\s*[-–:]\s*(\d+)\s*$/);
-    if (!m) { showToast('Format invalide. Ex : 2-1'); return; }
-    const normalized = `${m[1]} - ${m[2]}`;
-    saveScoreOverride(cat, date, team, opp, normalized);
-    showToast('Score enregistré : ' + normalized);
     renderAll();
     return;
   }
@@ -2667,7 +2412,7 @@ document.addEventListener('click', event => {
     const type = target.dataset.modalType;
     const cat = target.dataset.modalCat;
     // Délégation : le module FeedsForm gère son propre cycle (UI tabulaire)
-    if (window.FeedsFormModule?.openModal && ['standings', 'upcoming', 'past'].includes(type)) {
+    if (window.FeedsFormModule?.openModal && type === 'standings') {
       window.FeedsFormModule.openModal(type, cat);
       return;
     }

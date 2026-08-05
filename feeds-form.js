@@ -1,15 +1,10 @@
 /**
- * feeds-form.js — Édition tabulaire des feeds manuels (classements, matchs).
+ * feeds-form.js — Édition tabulaire des classements manuels.
  *
- * Remplace l'ancienne modal JSON brut par un formulaire en tableau,
- * lisible et utilisable par un non-développeur.
+ * (Les modes 'upcoming' et 'past' ont été retirés en 2026-08 : le dashboard
+ *  n'affiche plus que les classements.)
  *
- * Trois types gérés :
- *   - standings : tableau classements (équipe, place, points, etc.)
- *   - upcoming  : matchs à venir
- *   - past      : résultats récents
- *
- * Expose window.FeedsFormModule.{ render, handleAction, getRowsByType }
+ * Expose window.FeedsFormModule.{ openModal, closeModal, handleAction, getRowsByType }
  */
 (function () {
   'use strict';
@@ -43,28 +38,10 @@
       { key: 'competition',   label: 'Compétition', type: 'text',  placeholder: 'Championnat District U13' },
       { key: 'isOurTeam',     label: 'Nôtre',      type: 'check',  width: 70 },
     ],
-    upcoming: [
-      { key: 'date',          label: 'Date',       type: 'text',   placeholder: '30/04/2026', width: 110 },
-      { key: 'time',          label: 'Heure',      type: 'text',   placeholder: '15:00',      width: 80 },
-      { key: 'team',          label: 'Notre équipe', type: 'text', placeholder: 'U13 A' },
-      { key: 'opponent',      label: 'Adversaire', type: 'text',   placeholder: 'Laval FC' },
-      { key: 'isHome',        label: 'Dom.',       type: 'check',  width: 70 },
-      { key: 'competition',   label: 'Compétition', type: 'text',  placeholder: 'Championnat' },
-    ],
-    past: [
-      { key: 'date',          label: 'Date',       type: 'text',   placeholder: '23/04/2026', width: 110 },
-      { key: 'team',          label: 'Notre équipe', type: 'text', placeholder: 'U13 A' },
-      { key: 'opponent',      label: 'Adversaire', type: 'text',   placeholder: 'Laval FC' },
-      { key: 'score',         label: 'Score',      type: 'text',   placeholder: '3 - 1',     width: 100 },
-      { key: 'isHome',        label: 'Dom.',       type: 'check',  width: 70 },
-      { key: 'competition',   label: 'Compétition', type: 'text',  placeholder: 'Championnat' },
-    ],
   };
 
   const TYPE_TITLES = {
     standings: 'Classements',
-    upcoming:  'Matchs à venir',
-    past:      'Résultats récents',
   };
 
   /* ── état session ─────────────────────────────────────── */
