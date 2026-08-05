@@ -8582,3 +8582,43 @@ body.season-transition-active { overflow: hidden; }
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ══════════════════════════════════════════════════════════
+   Fiche joueur — mise en page compacte
+   ══════════════════════════════════════════════════════════ */
+
+/* Grille 3 colonnes pour la fiche joueur (plus dense que 2 cols) */
+.form-grid-3col {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+@media (max-width: 900px) {
+  .form-grid-3col { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 560px) {
+  .form-grid-3col { grid-template-columns: 1fr !important; }
+}
+
+/* Detail-grid compact : cartes plus petites, moins d'air */
+.detail-grid-compact {
+  gap: 10px !important;
+  margin-top: 16px !important;
+}
+.detail-grid-compact .detail-card {
+  padding: 12px 14px !important;
+  min-height: auto !important;
+}
+.detail-grid-compact .detail-card h3 {
+  font-size: 14px !important;
+  margin: 4px 0 6px !important;
+}
+.detail-grid-compact .card-kicker {
+  font-size: 10px !important;
+}
+.detail-grid-compact .priority-box strong {
+  font-size: 14px !important;
+}
+.detail-grid-compact .priority-box p {
+  font-size: 12px !important;
+  margin-top: 4px !important;
+}

@@ -1327,13 +1327,13 @@ function profileBody(pid) {
     </section>`;
 
   return `
-    <div class="form-section-title">Identite</div>
-    <div class="form-grid">
+    <div class="form-section-title">Fiche joueur</div>
+    <div class="form-grid form-grid-3col">
       <div class="field-group"><label class="field-label" for="pf-nom">Nom</label><input class="field-input" id="pf-nom" type="text" value="${h(prof.nom)}" data-field="nom"></div>
       <div class="field-group"><label class="field-label" for="pf-prenom">Prenom</label><input class="field-input" id="pf-prenom" type="text" value="${h(prof.prenom)}" data-field="prenom"></div>
       <div class="field-group"><label class="field-label" for="pf-birth">Date de naissance</label><input class="field-input" id="pf-birth" type="date" value="${h(prof.naissance)}" data-field="naissance"></div>
-      <div class="field-group"><label class="field-label" for="pf-licence">Numero de licence</label><input class="field-input" id="pf-licence" type="text" value="${h(prof.licence)}" data-field="licence"></div>
-      <div class="field-group"><label class="field-label" for="pf-years">Annees au club</label><input class="field-input" id="pf-years" type="number" min="0" max="20" value="${h(prof.annees_club)}" data-field="annees_club"></div>
+      <div class="field-group"><label class="field-label" for="pf-licence">N° licence</label><input class="field-input" id="pf-licence" type="text" value="${h(prof.licence)}" data-field="licence"></div>
+      <div class="field-group"><label class="field-label" for="pf-years">Années au club</label><input class="field-input" id="pf-years" type="number" min="0" max="20" value="${h(prof.annees_club)}" data-field="annees_club"></div>
       <div class="field-group">
         <label class="field-label" for="pf-club">Club d'origine</label>
         <select class="field-input" id="pf-club" data-field="club_origine">
@@ -1342,12 +1342,8 @@ function profileBody(pid) {
             `<option value="${h(c.key)}" ${prof.club_origine === c.key ? 'selected' : ''}>${h(c.label)}</option>`).join('')}
         </select>
       </div>
-    </div>
-
-    <div class="form-section-title">Profil sportif</div>
-    <div class="form-grid">
       <div class="field-group">
-        <label class="field-label" for="pf-team">Équipe principale</label>
+        <label class="field-label" for="pf-team">Équipe</label>
         <select class="field-input" id="pf-team" data-field="team">
           <option value="">— Non assigné —</option>
           ${(CLUB_DATA.categories[state.cat]?.teams || []).map(t =>
@@ -1380,7 +1376,7 @@ function profileBody(pid) {
       </div>
     </div>
 
-    <div class="detail-grid">
+    <div class="detail-grid detail-grid-compact">
       <div class="detail-card span-2">
         <div class="card-kicker">Lecture coach</div>
         <h3>Insights automatiques</h3>
@@ -1391,16 +1387,7 @@ function profileBody(pid) {
         <h3>Axe principal</h3>
         <div class="priority-box">
           <strong>${weakest ? h(weakest.label) : 'A definir'}</strong>
-          <p>${weakest ? `C est le pilier le plus faible a ${weakest.score}% sur cette saison.` : 'Aucun axe prioritaire ne ressort encore.'}</p>
-        </div>
-      </div>
-      <div class="detail-card">
-        <div class="card-kicker">Lecture rapide</div>
-        <h3>Resume</h3>
-        <div class="insight-text">
-          ${strongest ? `Point fort actuel: <strong>${h(strongest.label)}</strong> (${strongest.score}%).` : 'Aucun pilier assez renseigne pour ressortir un point fort clair.'}
-          ${weakest ? ` Axe principal: <strong>${h(weakest.label)}</strong> (${weakest.score}%).` : ''}
-          ${completion.total ? ` Dossier rempli a ${completion.percent}%.` : ''}
+          <p>${weakest ? `Pilier le plus faible : ${weakest.score}%.` : 'Aucun axe prioritaire pour l\'instant.'}</p>
         </div>
       </div>
       ${evolutionCard(pid)}
@@ -1408,24 +1395,22 @@ function profileBody(pid) {
 
     ${followupBlock}
 
-    <div class="insight-grid">
-      <div class="insight-card">
-        <h4>Ecart au poste</h4>
-        ${gap ? `
+    ${gap ? `
+      <details class="player-collapsible" data-section="gap-poste">
+        <summary class="player-collapsible-summary">
+          <span>🎯 Écart au poste principal</span>
+          <span class="player-collapsible-chevron">▾</span>
+        </summary>
+        <div class="player-collapsible-body">
           <div class="gap-list">
             ${Object.entries(gap).map(([key, value]) => {
               const pct = Math.max(4, Math.round((1 - Math.min(value, 4) / 4) * 100));
               return `<div class="gap-row"><span>${h(key)}</span><div class="gap-bar"><div class="gap-bar-fill" style="width:${pct}%"></div></div><strong>${value.toFixed(1)}</strong></div>`;
             }).join('')}
           </div>
-          <div class="gap-help">Plus la valeur est basse, plus le profil actuel se rapproche du poste principal choisi.</div>
-        ` : `<div class="insight-text">Choisis un poste principal pour afficher un repere simple par rapport au profil type.</div>`}
-      </div>
-      <div class="insight-card">
-        <h4>Objectif de construction</h4>
-        <div class="insight-text">${weakest ? `Le travail prioritaire peut se concentrer sur <strong>${h(weakest.label)}</strong>.` : 'Axe principal en attente d observations suffisantes.'}</div>
-      </div>
-    </div>
+          <div class="gap-help">Plus la valeur est basse, plus le profil actuel se rapproche du poste principal.</div>
+        </div>
+      </details>` : ''}
 
     <div class="form-section-title">Objectifs de saison</div>
     <div class="obj-list">${objRows}<button class="add-obj" type="button" data-action="add-obj">+ Ajouter un objectif</button></div>

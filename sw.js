@@ -12,7 +12,7 @@
  * Versioning : bump CACHE_VERSION à chaque changement du SW lui-même.
  */
 
-const CACHE_VERSION = 'v3.9.1-identite-first';
+const CACHE_VERSION = 'v3.9.2-fiche-compacte';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
