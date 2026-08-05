@@ -2469,6 +2469,7 @@ q('#season-sel').addEventListener('change', event => {
   state.season = event.target.value;
   if (state.selPlayer) ensureData(state.cat, state.selPlayer, state.season);
   renderAll();
+  toggleMoreMenu(false);
 });
 
 // Menu ⋯ : ouverture/fermeture + fermeture au clic hors du menu
@@ -2492,9 +2493,13 @@ document.addEventListener('click', e => {
   }
 });
 
-q('#refresh-btn').addEventListener('click', () => { refreshRemoteData(); });
+q('#refresh-btn').addEventListener('click', () => {
+  toggleMoreMenu(false);
+  refreshRemoteData();
+});
 
 q('#export-xlsx-btn')?.addEventListener('click', () => {
+  toggleMoreMenu(false);
   if (state.view === 'dashboard') window.ExcelExportModule?.exportAll?.(state.season);
   else window.ExcelExportModule?.exportCategory?.(state.cat, state.season);
 });

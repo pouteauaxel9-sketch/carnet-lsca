@@ -8622,3 +8622,108 @@ body.season-transition-active { overflow: hidden; }
   font-size: 12px !important;
   margin-top: 4px !important;
 }
+
+/* ══════════════════════════════════════════════════════════
+   Menu unifié ⋯ (barre nav droite regroupée)
+   ══════════════════════════════════════════════════════════ */
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.more-actions-btn {
+  padding: 8px 14px !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  border-radius: 10px !important;
+  min-width: 44px;
+}
+.mab-icon { font-weight: 700; letter-spacing: 2px; }
+
+.more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 260px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.12);
+  padding: 8px 6px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fadeMenu .15s ease-out;
+}
+@keyframes fadeMenu {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.more-menu[hidden] { display: none; }
+
+.more-menu-slot { padding: 4px 8px 6px; }
+.more-menu-slot .educator-badge {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+}
+
+.more-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px 8px;
+}
+.more-menu-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #6b7280;
+}
+.more-menu-section .season-sel {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.more-menu-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 4px 8px;
+}
+
+.more-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: calc(100% - 8px);
+  margin: 0 4px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background .12s;
+}
+.more-menu-item:hover:not(:disabled) {
+  background: rgba(0, 150, 64, .08);
+  color: #009640;
+}
+.more-menu-item:disabled {
+  opacity: .5;
+  cursor: default;
+}
+.more-menu-item span { flex: 1; }

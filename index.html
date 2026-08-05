@@ -27,15 +27,22 @@
     </a>
     <div class="nav-cat-tabs" id="nav-cat-tabs" role="tablist" aria-label="Categories"></div>
     <div class="nav-right">
-      <label class="sr-only" for="season-sel">Choisir une saison</label>
-      <select class="season-sel" id="season-sel" aria-label="Choix de la saison"></select>
-      <button class="btn" id="refresh-btn" type="button">Actualiser</button>
-      <button class="btn" id="export-xlsx-btn" type="button" title="Exporter en Excel">Excel</button>
-      <button class="btn install-chip" type="button" data-action="install-pwa" id="install-pwa-item" hidden title="Installer l'application sur ton téléphone / ordinateur">📱 Installer</button>
-      <button class="btn btn-ghost" id="more-actions-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Plus d'actions">⋯</button>
+      <button class="btn btn-ghost more-actions-btn" id="more-actions-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Menu">
+        <span class="mab-icon">⋯</span>
+      </button>
       <div class="more-menu" id="more-menu" hidden role="menu">
-        <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">📂 Importer JSON</button>
-        <button class="more-menu-item" type="button" data-action="trigger-export-json" role="menuitem">💾 Exporter JSON</button>
+        <div class="more-menu-slot" id="more-menu-educator"></div>
+        <div class="more-menu-section">
+          <label class="more-menu-label" for="season-sel">Saison</label>
+          <select class="season-sel" id="season-sel" aria-label="Choix de la saison"></select>
+        </div>
+        <div class="more-menu-divider"></div>
+        <button class="more-menu-item" type="button" id="refresh-btn" role="menuitem">🔄 <span>Actualiser</span></button>
+        <button class="more-menu-item" type="button" id="export-xlsx-btn" role="menuitem" title="Exporter en Excel">📊 <span>Exporter Excel</span></button>
+        <button class="more-menu-item install-chip" type="button" data-action="install-pwa" id="install-pwa-item" hidden role="menuitem">📱 <span>Installer l'app</span></button>
+        <div class="more-menu-divider"></div>
+        <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">📂 <span>Importer JSON</span></button>
+        <button class="more-menu-item" type="button" data-action="trigger-export-json" role="menuitem">💾 <span>Exporter JSON</span></button>
       </div>
       <input id="import-file" class="sr-only" type="file" accept="application/json">
     </div>

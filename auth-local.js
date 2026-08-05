@@ -33,11 +33,12 @@
   }
 
   function injectBadge() {
-    const navRight = document.querySelector('.nav-right');
-    if (!navRight) return;
-    const existing = navRight.querySelector('.educator-badge');
+    // Cible : slot dédié dans le menu déroulant (fallback : nav-right)
+    const slot = document.querySelector('#more-menu-educator') || document.querySelector('.nav-right');
+    if (!slot) return;
+    const existing = slot.querySelector('.educator-badge');
     if (existing) existing.remove();
-    navRight.insertAdjacentHTML('afterbegin', renderBadgeHtml());
+    slot.insertAdjacentHTML('afterbegin', renderBadgeHtml());
   }
 
   let configOpen = false;
