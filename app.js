@@ -2951,6 +2951,12 @@ document.addEventListener('input', event => {
     window.LiveTrainingModule?.handleAction(target);
     return;
   }
+  // Historique séances : édition jonglages et compteurs objectifs
+  if (target.dataset?.historyAction === 'edit-juggle'
+      || target.dataset?.historyAction === 'set-obj-past') {
+    window.SessionsHistoryModule?.handleAction(target);
+    return;
+  }
   if (target.dataset?.weeklyAction === 'set-theme'
       || target.dataset?.weeklyAction === 'set-note'
       || target.dataset?.weeklyAction === 'edit-item-objective') {

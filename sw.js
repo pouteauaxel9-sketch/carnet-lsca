@@ -12,7 +12,7 @@
  * Versioning : bump CACHE_VERSION à chaque changement du SW lui-même.
  */
 
-const CACHE_VERSION = 'v3.2.0-checkbox-fix';
+const CACHE_VERSION = 'v3.3.0-history-edit';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
