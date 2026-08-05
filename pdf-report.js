@@ -367,6 +367,72 @@
   function buildPage3Html(d) {
     const { pid, cat, season } = d;
 
+    // Évolution jonglerie
+    let juggleHtml = '';
+    try {
+      const log = (window.appState?.data?.[cat]?.[pid]?.juggleLog || [])
+        .filter(e => e && e.date)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      if (log.length) {
+        const jgVal = (e, foot) => {
+          if (foot === 'gauche') return e.gauche ?? e.faible ?? null;
+          if (foot === 'droit')  return e.droit  ?? e.fort   ?? null;
+          if (foot === 'deux')   return e.deux ?? null;
+          return null;
+        };
+        const values = { gauche: [], droit: [], deux: [] };
+        log.forEach(e => {
+          const g = jgVal(e, 'gauche'); if (g != null) values.gauche.push(g);
+          const dr = jgVal(e, 'droit'); if (dr != null) values.droit.push(dr);
+          const de = jgVal(e, 'deux');  if (de != null) values.deux.push(de);
+        });
+        const max = v => v.length ? Math.max(...v) : null;
+        const avg = v => v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
+        const best = { g: max(values.gauche), d: max(values.droit), b: max(values.deux) };
+        const moy  = { g: avg(values.gauche), d: avg(values.droit), b: avg(values.deux) };
+
+        // Mini courbe SVG dernières 10 mesures
+        const last10 = log.slice(-10);
+        const W = 260, H = 60, PAD = 8;
+        let maxVal = 0;
+        last10.forEach(e => [jgVal(e, 'gauche'), jgVal(e, 'droit'), jgVal(e, 'deux')].forEach(v => { if (v != null && v > maxVal) maxVal = v; }));
+        if (maxVal === 0) maxVal = 10;
+        maxVal = Math.ceil(maxVal * 1.1);
+        const n = last10.length;
+        const xStep = n > 1 ? (W - 2 * PAD) / (n - 1) : (W - 2 * PAD);
+        const line = (foot, color) => {
+          const pts = last10.map((e, i) => {
+            const v = jgVal(e, foot);
+            if (v == null) return null;
+            const x = PAD + i * xStep;
+            const y = PAD + (H - 2 * PAD) - (v / maxVal) * (H - 2 * PAD);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+          }).filter(Boolean).join(' ');
+          if (!pts) return '';
+          return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/>`;
+        };
+        const svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" class="pdf-juggle-spark">
+          ${line('gauche', '#3b82f6')}
+          ${line('droit',  '#009640')}
+          ${line('deux',   '#f59e0b')}
+        </svg>`;
+
+        juggleHtml = `
+          <div class="pdf-juggle-grid">
+            <div class="pdf-juggle-cell"><div class="pdf-juggle-val">${best.g ?? '—'}</div><div class="pdf-juggle-lbl">🔵 Meil. G</div></div>
+            <div class="pdf-juggle-cell"><div class="pdf-juggle-val">${best.d ?? '—'}</div><div class="pdf-juggle-lbl">🟢 Meil. D</div></div>
+            <div class="pdf-juggle-cell"><div class="pdf-juggle-val">${best.b ?? '—'}</div><div class="pdf-juggle-lbl">🟠 Meil. 2P</div></div>
+            <div class="pdf-juggle-cell"><div class="pdf-juggle-val">${moy.g ?? '—'}</div><div class="pdf-juggle-lbl">Moy. G</div></div>
+            <div class="pdf-juggle-cell"><div class="pdf-juggle-val">${moy.d ?? '—'}</div><div class="pdf-juggle-lbl">Moy. D</div></div>
+            <div class="pdf-juggle-cell"><div class="pdf-juggle-val">${moy.b ?? '—'}</div><div class="pdf-juggle-lbl">Moy. 2P</div></div>
+          </div>
+          ${svg}
+          <div class="pdf-juggle-count">${log.length} mesure${log.length > 1 ? 's' : ''} enregistrée${log.length > 1 ? 's' : ''} sur la saison.</div>`;
+      } else {
+        juggleHtml = '<div class="pdf-muted-small">Aucune mesure de jonglerie enregistrée.</div>';
+      }
+    } catch (e) { juggleHtml = '<div class="pdf-muted-small">Données non disponibles.</div>'; }
+
     // Disponibilité (blessures)
     let injHtml = '';
     const inj = window.InjuryModule;
@@ -487,8 +553,13 @@
           ${profHtml || '<div class="pdf-muted-small">—</div>'}
         </section>
 
+        <section class="pdf-section">
+          <h2 class="pdf-h2">⚽ Jonglerie</h2>
+          ${juggleHtml}
+        </section>
+
         <section class="pdf-section pdf-section-wide">
-          <h2 class="pdf-h2">⚽ Principes de jeu travaillés</h2>
+          <h2 class="pdf-h2">🎯 Principes de jeu travaillés</h2>
           ${principlesHtml}
         </section>
       </div>
@@ -676,6 +747,15 @@ body {
 }
 .pdf-att-val { font-size: 22px; font-weight: 700; color: ${GREEN_DARK}; line-height: 1; }
 .pdf-att-lbl { font-size: 9px; text-transform: uppercase; color: ${MUTED}; margin-top: 4px; font-weight: 600; letter-spacing: 0.05em; }
+
+.pdf-juggle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 6px; }
+.pdf-juggle-cell {
+  background: ${BG_SOFT}; border-radius: 6px; padding: 6px 4px; text-align: center;
+}
+.pdf-juggle-val { font-size: 16px; font-weight: 700; color: ${GREEN_DARK}; line-height: 1; }
+.pdf-juggle-lbl { font-size: 8px; text-transform: uppercase; color: ${MUTED}; margin-top: 2px; font-weight: 600; }
+.pdf-juggle-spark { width: 100%; height: 60px; display: block; margin: 4px 0; }
+.pdf-juggle-count { font-size: 9px; color: ${MUTED}; text-align: center; font-style: italic; }
 
 .pdf-profile-tags { display: flex; flex-direction: column; gap: 5px; }
 .pdf-profile-tag {
