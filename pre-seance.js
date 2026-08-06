@@ -447,39 +447,59 @@
           ${Array.from({ length: 12 }, () => '<div class="ps-pdf-line"></div>').join('')}
         </div>`;
 
+    // Le contenu séance a-t-il une image ou du texte substantiel ?
+    const hasRichContent = !!(draft.contenuHtml || (draft.contenu && draft.contenu.length > 60));
+
     const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><title>Fiche pré-séance ${draft.date}</title>
 <style>${buildPdfCss()}</style></head>
 <body>
-  <header class="ps-pdf-head">
-    <div>
-      <div class="ps-pdf-kicker">P'tits Verts · ${h(catLbl)}</div>
-      <h1>Fiche pré-séance</h1>
-      <div class="ps-pdf-date">${h(dateLabel)}${draft.theme ? ' · <em>' + h(draft.theme) + '</em>' : ''}</div>
-    </div>
-    <div class="ps-pdf-stats">
-      <div><strong>${draft.presentPids.length}</strong><span>Présents prévus</span></div>
-      <div><strong>${draft.nbGroupes}</strong><span>Groupes</span></div>
-      <div><strong>${draft.principes.length}</strong><span>Principes</span></div>
-    </div>
-  </header>
 
-  <section class="ps-pdf-section">
-    <h2>🎯 Principes & objectifs</h2>
-    <div class="ps-pdf-principles">${principesHtml}</div>
-  </section>
+  <!-- ═══════════════ PAGE 1 : Groupes + Principes ═══════════════ -->
+  <div class="ps-pdf-page">
+    <header class="ps-pdf-head">
+      <div class="ps-pdf-head-left">
+        <div class="ps-pdf-kicker">P'tits Verts · ${h(catLbl)}</div>
+        <h1>Fiche pré-séance</h1>
+        <div class="ps-pdf-date">${h(dateLabel)}</div>
+        ${draft.theme ? `<div class="ps-pdf-theme">🎨 <strong>${h(draft.theme)}</strong></div>` : ''}
+      </div>
+      <div class="ps-pdf-stats">
+        <div class="ps-pdf-stat"><strong>${draft.presentPids.length}</strong><span>Présents</span></div>
+        <div class="ps-pdf-stat"><strong>${draft.nbGroupes}</strong><span>Groupes</span></div>
+        <div class="ps-pdf-stat"><strong>${draft.principes.length}</strong><span>Principes</span></div>
+      </div>
+    </header>
 
-  <section class="ps-pdf-section">
-    <h2>👥 Groupes</h2>
-    <div class="ps-pdf-groups ps-pdf-groups-${draft.nbGroupes}">${groupesHtml}</div>
-  </section>
+    <section class="ps-pdf-section">
+      <h2>🎯 Principes de jeu & objectifs</h2>
+      <div class="ps-pdf-principles">${principesHtml}</div>
+    </section>
 
-  <section class="ps-pdf-section ps-pdf-content-section">
-    <h2>📝 Contenu de la séance</h2>
-    ${contenuHtml}
-  </section>
+    <section class="ps-pdf-section ps-pdf-section-groups">
+      <h2>👥 Composition des groupes</h2>
+      <div class="ps-pdf-groups ps-pdf-groups-${draft.nbGroupes}">${groupesHtml}</div>
+    </section>
 
-  <footer class="ps-pdf-foot">Généré le ${new Date().toLocaleString('fr-FR')} · Axel Pouteau</footer>
+    <footer class="ps-pdf-foot">Page 1/${hasRichContent ? 2 : 1} · Généré le ${new Date().toLocaleString('fr-FR')} · Axel Pouteau</footer>
+  </div>
+
+  ${hasRichContent ? `
+  <!-- ═══════════════ PAGE 2 : Contenu séance ═══════════════ -->
+  <div class="ps-pdf-page ps-pdf-page-content">
+    <header class="ps-pdf-head-compact">
+      <div>
+        <span class="ps-pdf-kicker">P'tits Verts · ${h(catLbl)}</span>
+        <span class="ps-pdf-date-inline">${h(dateLabel)}${draft.theme ? ' · ' + h(draft.theme) : ''}</span>
+      </div>
+      <div class="ps-pdf-page-num">Page 2/2</div>
+    </header>
+    <section class="ps-pdf-section ps-pdf-section-content">
+      <h2>📝 Contenu de la séance</h2>
+      ${contenuHtml}
+    </section>
+  </div>
+  ` : ''}
 
   <script>window.addEventListener('load', () => setTimeout(() => window.print(), 400));</script>
 </body></html>`;
@@ -493,69 +513,156 @@
 
   function buildPdfCss() {
     return `
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; padding: 20px 24px; }
-      @page { size: A4; margin: 12mm; }
-      h1 { font-size: 22px; margin-bottom: 4px; }
-      h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: #009640; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #009640; }
-      .ps-pdf-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 3px solid #009640; }
-      .ps-pdf-kicker { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: .1em; }
-      .ps-pdf-date { color: #475569; font-size: 13px; margin-top: 4px; }
-      .ps-pdf-stats { display: flex; gap: 12px; }
-      .ps-pdf-stats > div { text-align: center; background: #f0fdf4; padding: 6px 12px; border-radius: 8px; min-width: 60px; }
-      .ps-pdf-stats strong { display: block; font-size: 20px; color: #009640; line-height: 1; }
-      .ps-pdf-stats span { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 600; }
-      .ps-pdf-section { margin-bottom: 14px; }
+      /* ── Reset + impression ── */
+      *, *::before, *::after {
+        box-sizing: border-box; margin: 0; padding: 0;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      @page { size: A4; margin: 10mm; }
+      html, body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; background: #fff; }
+      body { font-size: 12px; line-height: 1.4; }
+
+      /* ── Page container ── */
+      .ps-pdf-page {
+        padding: 4mm 2mm;
+        page-break-after: always;
+      }
+      .ps-pdf-page:last-child { page-break-after: auto; }
+      .ps-pdf-page-content { padding-top: 2mm; }
+
+      /* ── Header page 1 ── */
+      .ps-pdf-head {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        margin-bottom: 14px; padding-bottom: 12px;
+        border-bottom: 4px solid #009640;
+        background: linear-gradient(to right, rgba(0,150,64,0.06), transparent);
+        padding: 10px 12px; border-radius: 8px 8px 0 0;
+      }
+      .ps-pdf-head-left { flex: 1; }
+      .ps-pdf-kicker {
+        font-size: 10px; text-transform: uppercase; color: #009640;
+        font-weight: 800; letter-spacing: .12em;
+      }
+      h1 { font-size: 26px; margin: 2px 0 4px; color: #0f172a; letter-spacing: -0.5px; }
+      .ps-pdf-date { color: #475569; font-size: 13px; text-transform: capitalize; }
+      .ps-pdf-theme { color: #009640; font-size: 13px; margin-top: 6px; }
+
+      /* ── Header compact page 2 ── */
+      .ps-pdf-head-compact {
+        display: flex; justify-content: space-between; align-items: center;
+        padding-bottom: 6px; margin-bottom: 8px;
+        border-bottom: 2px solid #009640;
+        font-size: 11px; color: #64748b;
+      }
+      .ps-pdf-date-inline { margin-left: 8px; font-weight: 600; color: #009640; text-transform: capitalize; }
+      .ps-pdf-page-num { color: #94a3b8; font-size: 10px; font-weight: 700; }
+
+      /* ── Stats header ── */
+      .ps-pdf-stats { display: flex; gap: 8px; }
+      .ps-pdf-stat {
+        text-align: center; padding: 8px 14px; min-width: 68px;
+        background: #f0fdf4; border-radius: 10px;
+        border: 1px solid rgba(0,150,64,0.15);
+      }
+      .ps-pdf-stat strong { display: block; font-size: 24px; color: #009640; line-height: 1; font-weight: 800; }
+      .ps-pdf-stat span { font-size: 9px; text-transform: uppercase; color: #475569; font-weight: 700; letter-spacing: .05em; }
+
+      /* ── Sections ── */
+      .ps-pdf-section { margin-bottom: 12px; }
+      h2 {
+        font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+        color: #009640; margin-bottom: 8px; padding: 4px 0 6px;
+        border-bottom: 2px solid #009640; font-weight: 800;
+      }
+
+      /* ── Principes ── */
       .ps-pdf-principles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-      .ps-pdf-principle { background: #f8fafc; border-left: 3px solid #009640; padding: 6px 10px; border-radius: 4px; font-size: 11px; }
+      .ps-pdf-principle {
+        background: #f8fafc; border-left: 4px solid #009640;
+        padding: 8px 12px; border-radius: 4px; font-size: 11px;
+      }
       .ps-pdf-principle-head { display: flex; align-items: center; gap: 6px; }
-      .ps-pdf-num { background: #009640; color: #fff; font-weight: 700; padding: 1px 6px; border-radius: 10px; font-size: 9px; }
+      .ps-pdf-num {
+        background: #009640; color: #fff !important;
+        font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 9px;
+      }
       .ps-pdf-phase { color: #64748b; font-size: 10px; margin-left: auto; }
-      .ps-pdf-objective { color: #0f172a; margin-top: 3px; font-style: italic; font-size: 11px; }
-      .ps-pdf-empty, .ps-pdf-empty-mini { color: #94a3b8; font-style: italic; text-align: center; padding: 8px; font-size: 11px; }
+      .ps-pdf-objective {
+        color: #0f172a; margin-top: 4px; font-style: italic; font-size: 11px;
+        padding-left: 4px; border-left: 2px solid #e5e7eb;
+      }
+      .ps-pdf-empty, .ps-pdf-empty-mini {
+        color: #94a3b8; font-style: italic; text-align: center; padding: 12px; font-size: 11px;
+      }
+
+      /* ── Groupes ── */
+      .ps-pdf-section-groups { flex: 1; }
       .ps-pdf-groups { display: grid; gap: 8px; }
       .ps-pdf-groups-2 { grid-template-columns: 1fr 1fr; }
       .ps-pdf-groups-3 { grid-template-columns: 1fr 1fr 1fr; }
       .ps-pdf-groups-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
-      .ps-pdf-group { border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden; }
-      .ps-pdf-group-head { background: #f1f5f9; padding: 6px 10px; font-weight: 700; font-size: 12px; }
-      .ps-pdf-group-head span { color: #64748b; font-weight: 500; font-size: 10px; }
-      .ps-pdf-group-list { padding: 6px; display: flex; flex-wrap: wrap; gap: 4px; min-height: 60px; }
-      .ps-pdf-chip { padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; white-space: nowrap; }
-      .ps-pdf-content-section { min-height: 140px; }
-      .ps-pdf-content-text { background: #fafafa; padding: 10px; border-radius: 4px; font-size: 12px; white-space: pre-wrap; }
-      .ps-pdf-content-html { font-size: 12px; }
-      .ps-pdf-content-html p { margin-bottom: 6px; }
-      .ps-pdf-content-html h1, .ps-pdf-content-html h2, .ps-pdf-content-html h3 { font-size: 13px; margin: 6px 0 4px; color: #009640; }
-      /* Contrainte cruciale pour les images du Word — sinon 1 image = 1 page en A4 */
-      .ps-pdf-content-html img {
-        max-width: 100% !important;
-        max-height: 380px !important;
-        height: auto !important;
-        width: auto !important;
-        object-fit: contain;
-        display: block;
-        margin: 6px auto;
+      .ps-pdf-group {
+        border: 2px solid #009640; border-radius: 8px; overflow: hidden;
         page-break-inside: avoid;
       }
-      .ps-pdf-content-html table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 6px 0;
-        page-break-inside: avoid;
+      .ps-pdf-group-head {
+        background: #009640; color: #fff !important;
+        padding: 6px 10px; font-weight: 800; font-size: 12px;
+        letter-spacing: .03em;
       }
-      .ps-pdf-content-html td, .ps-pdf-content-html th {
-        border: 1px solid #cbd5e1;
-        padding: 4px 6px;
+      .ps-pdf-group-head span { color: #d1fae5 !important; font-weight: 500; font-size: 11px; margin-left: 4px; }
+      .ps-pdf-group-list {
+        padding: 8px; display: flex; flex-direction: column; gap: 4px;
+        min-height: 60px; background: #fafafa;
       }
-      .ps-pdf-content-html ul, .ps-pdf-content-html ol { padding-left: 20px; margin: 4px 0; }
-      .ps-pdf-content-html figure { page-break-inside: avoid; }
+
+      /* ── Chips joueurs : couleurs bien visibles à l'impression ── */
+      .ps-pdf-chip {
+        display: block; padding: 6px 10px; border-radius: 6px;
+        font-size: 11px; font-weight: 700;
+        border: 1px solid rgba(0,0,0,0.08);
+      }
+
+      /* ── Contenu page 2 ── */
+      .ps-pdf-section-content { min-height: 260mm; }
+      .ps-pdf-section-content h2 { display: none; } /* on utilise le head compact */
+
       .ps-pdf-content-image { text-align: center; page-break-inside: avoid; }
-      .ps-pdf-content-image img { max-width: 100%; max-height: 700px; height: auto; }
-      .ps-pdf-content-lines { display: flex; flex-direction: column; gap: 12px; padding: 8px 0; }
-      .ps-pdf-line { border-bottom: 1px solid #cbd5e1; height: 14px; }
-      .ps-pdf-foot { margin-top: 20px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #94a3b8; text-align: center; }
-      @media print { .ps-pdf-content-lines { gap: 16px; } }
+      .ps-pdf-content-image img {
+        max-width: 100%;
+        max-height: 260mm;
+        width: auto; height: auto;
+        display: inline-block;
+        object-fit: contain;
+      }
+      .ps-pdf-content-text {
+        background: #fafafa; padding: 14px 18px; border-radius: 6px;
+        font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+        border-left: 4px solid #009640;
+      }
+      .ps-pdf-content-html { font-size: 12px; line-height: 1.5; }
+      .ps-pdf-content-html p { margin-bottom: 8px; }
+      .ps-pdf-content-html h1, .ps-pdf-content-html h2, .ps-pdf-content-html h3 {
+        font-size: 14px; margin: 8px 0 4px; color: #009640;
+        text-transform: none; border: none; letter-spacing: 0; padding: 0;
+      }
+      .ps-pdf-content-html img {
+        max-width: 100% !important; max-height: 200mm !important;
+        height: auto !important; width: auto !important;
+        object-fit: contain; display: block; margin: 8px auto;
+        page-break-inside: avoid;
+      }
+      .ps-pdf-content-html table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+      .ps-pdf-content-html td, .ps-pdf-content-html th { border: 1px solid #cbd5e1; padding: 4px 6px; }
+      .ps-pdf-content-html ul, .ps-pdf-content-html ol { padding-left: 20px; margin: 4px 0; }
+      .ps-pdf-content-lines { display: flex; flex-direction: column; gap: 14px; padding: 12px 0; }
+      .ps-pdf-line { border-bottom: 1px solid #cbd5e1; height: 16px; }
+      .ps-pdf-foot {
+        margin-top: 16px; padding-top: 8px;
+        border-top: 1px solid #e5e7eb; font-size: 10px;
+        color: #94a3b8; text-align: center;
+      }
     `;
   }
 
