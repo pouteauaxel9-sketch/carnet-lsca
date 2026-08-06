@@ -9110,11 +9110,26 @@ body.season-transition-active { overflow: hidden; }
    Fiche pré-séance — modal éditeur
    ══════════════════════════════════════════════════════════ */
 
+/* Container thème + bouton pré-séance en flex pour aligner sur une ligne */
+.weekly-theme {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  margin: 8px 0 12px;
+  flex-wrap: wrap;
+}
+.weekly-theme .weekly-theme-input {
+  flex: 1;
+  min-width: 220px;
+}
 .weekly-preseance-btn {
-  margin-left: 10px;
-  padding: 8px 14px !important;
+  padding: 10px 16px !important;
   font-size: 13px !important;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .weekly-preseance-btn { width: 100%; }
 }
 
 .ps-box { max-width: 960px !important; }
