@@ -312,9 +312,26 @@
 
   window.addEventListener('online', () => {
     updateStatusUI();
-    if (isConfigured()) pushNow(); // rattraper les writes en attente
+    if (isConfigured()) {
+      pushNow();       // rattraper les writes en attente
+      bootstrap();     // et récupérer les modifs distantes
+    }
   });
   window.addEventListener('offline', updateStatusUI);
+
+  // Retour au premier-plan → pull immédiat pour récupérer d'éventuelles modifs distantes
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && isConfigured()) {
+      bootstrap().catch(() => {});
+    }
+  });
+
+  // Pull auto toutes les 60s quand la page est visible (sync live entre devices)
+  setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    if (!isConfigured()) return;
+    bootstrap().catch(() => {});
+  }, 60000);
 
   // Refresh de l'indicateur toutes les 30 s (pour "il y a X min" qui bouge)
   setInterval(updateStatusUI, 30000);

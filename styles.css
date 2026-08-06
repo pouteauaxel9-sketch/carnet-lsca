@@ -9081,3 +9081,27 @@ body.season-transition-active { overflow: hidden; }
   gap: 4px;
   border: 1px solid #e5e7eb;
 }
+
+/* ── Boutons sync compacts dans le menu ⋯ ── */
+.sync-actions-row {
+  display: flex;
+  gap: 4px;
+  padding: 4px 10px 6px;
+}
+.sync-mini-btn {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all .12s;
+}
+.sync-mini-btn:hover {
+  border-color: #009640;
+  color: #009640;
+  background: #f0fdf4;
+}

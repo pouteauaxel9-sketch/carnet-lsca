@@ -56,7 +56,11 @@
         <div class="more-menu-divider"></div>
         <div class="more-menu-sync">
           <div id="sync-status-line" class="sync-status-line"><span class="sync-dot sync-dot-off"></span> Sync désactivée</div>
-          <button class="more-menu-item more-menu-item-sub" type="button" data-action="open-sync-config" role="menuitem">☁ <span>Configurer la sync</span></button>
+          <div class="sync-actions-row">
+            <button class="sync-mini-btn" type="button" data-action="sync-pull-now" title="Récupérer les modifs distantes maintenant">↓ Récupérer</button>
+            <button class="sync-mini-btn" type="button" data-action="sync-push-now" title="Envoyer les modifs locales maintenant">↑ Envoyer</button>
+            <button class="sync-mini-btn" type="button" data-action="open-sync-config" title="Config">⚙</button>
+          </div>
         </div>
         <div class="more-menu-divider"></div>
         <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">📂 <span>Importer JSON</span></button>
