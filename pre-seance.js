@@ -487,7 +487,7 @@
       <div class="ps-pdf-groups ps-pdf-groups-${draft.nbGroupes}">${groupesHtml}</div>
     </section>
 
-    <footer class="ps-pdf-foot">Page 1/${hasRichContent ? 2 : 1} · Généré le ${new Date().toLocaleString('fr-FR')} · Axel Pouteau</footer>
+    <footer class="ps-pdf-foot">Page 1/${hasRichContent ? 2 : 1} · Généré le ${new Date().toLocaleString('fr-FR')} · Axel Pouteau · <span style="color:#009640;font-weight:700">v5.7.1</span></footer>
   </div>
 
   ${hasRichContent ? `
