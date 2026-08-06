@@ -2732,9 +2732,26 @@ document.addEventListener('change', event => {
 loadAll();
 migrateRatings1to5();
 updateBackupBanner();
-// Bootstrap sync cloud si configurée (pull au démarrage)
-window.SyncModule?.bootstrap?.();
-window.SyncModule?.updateStatusUI?.();
+// La sync cloud s'auto-boot depuis sync-supabase.js (après chargement du script)
+
+// Exposé pour SyncModule.bootstrap : recharge le state depuis localStorage sans full reload
+window.reloadAppFromStorage = function reloadAppFromStorage() {
+  try {
+    const raw = localStorage.getItem(APP_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        state.data = { u13: parsed.u13 || {}, u11: parsed.u11 || {}, u9: parsed.u9 || {} };
+      }
+    }
+    ['u13','u11','u9'].forEach(cat => {
+      JDATA[cat].players.forEach(player => ensureData(cat, player.name, state.season));
+    });
+    renderAll();
+  } catch (err) {
+    console.error('[reloadAppFromStorage]', err);
+  }
+};
 
 // Migration one-shot : ancien 3 → 4, ancien 4 → 5 (échelle 1-4 vers 1-5)
 function migrateRatings1to5() {

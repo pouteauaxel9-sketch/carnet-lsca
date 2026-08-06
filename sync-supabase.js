@@ -22,6 +22,15 @@
   const ROW_ID    = 'main';
   const PUSH_DEBOUNCE_MS = 5000;
 
+  // Clés localStorage à synchroniser (données app, pas les préférences per-device)
+  const SYNC_KEYS = [
+    'cfb6_state',              // joueurs / évaluations / observations
+    'cfb6_live_sessions_v1',   // Mode Terrain : séances + bilans
+    'cfb6_weekly_focus_v1',    // Semaine + Plan saison
+    'cfb6_roster',             // Roster additions
+    'cfb6_feeds',              // Feeds manuels (au cas où)
+  ];
+
   let pushTimer = null;
   let pushInFlight = false;
   let lastPushPayload = null;
@@ -155,13 +164,39 @@
 
   /* ── Push ───────────────────────────────────────────── */
 
+  // Rassemble toutes les clés localStorage à synchroniser en un blob JSON
+  function collectAllData() {
+    const blob = {};
+    SYNC_KEYS.forEach(key => {
+      const raw = localStorage.getItem(key);
+      if (raw != null) {
+        try { blob[key] = JSON.parse(raw); }
+        catch { blob[key] = raw; }
+      }
+    });
+    return blob;
+  }
+
+  // Restaure les clés localStorage depuis un blob distant
+  function applyRemoteData(blob) {
+    if (!blob || typeof blob !== 'object') return false;
+    let changed = 0;
+    SYNC_KEYS.forEach(key => {
+      if (blob[key] === undefined) return;
+      const serialized = typeof blob[key] === 'string' ? blob[key] : JSON.stringify(blob[key]);
+      localStorage.setItem(key, serialized);
+      changed++;
+    });
+    return changed > 0;
+  }
+
   async function pushNow() {
     if (!isConfigured()) return { ok: false, reason: 'not-configured' };
     if (!navigator.onLine) return { ok: false, reason: 'offline' };
     if (pushInFlight) return { ok: false, reason: 'in-flight' };
 
-    const data = window.appState?.data;
-    if (!data) return { ok: false, reason: 'no-data' };
+    const data = collectAllData();
+    if (!Object.keys(data).length) return { ok: false, reason: 'no-data' };
 
     pushInFlight = true;
     try {
@@ -198,21 +233,43 @@
     updateStatusUI();
     const pull = await pullNow();
     if (pull.ok && pull.remote?.data) {
-      // Comparer les timestamps : si le remote est plus récent que ce qu'on a en local
-      // On n'a pas de timestamp local direct, mais si on vient de démarrer, on considère
-      // que le remote est source de vérité (sauf si absolument identique).
-      const remoteData = pull.remote.data;
-      const remoteStr = JSON.stringify(remoteData);
-      const localStr  = JSON.stringify(window.appState?.data || {});
-      if (remoteStr !== localStr) {
-        // Fusion : le remote gagne (dernière modif quelque part = source de vérité)
-        // On merge par catégorie pour ne pas perdre les cats absentes localement
-        ['u13','u11','u9'].forEach(cat => {
-          if (!window.appState.data[cat]) window.appState.data[cat] = {};
-          if (remoteData[cat]) window.appState.data[cat] = remoteData[cat];
+      const remoteBlob = pull.remote.data;
+
+      // Détection du format : nouveau (blob multi-clés) ou ancien (state.data direct)
+      const isNewFormat = SYNC_KEYS.some(k => k in remoteBlob);
+      let changed = false;
+
+      if (isNewFormat) {
+        // Format multi-clés : compare chaque clé et restaure si différente
+        SYNC_KEYS.forEach(k => {
+          if (remoteBlob[k] === undefined) return;
+          const remoteStr = JSON.stringify(remoteBlob[k]);
+          const localStr = localStorage.getItem(k) || '';
+          if (remoteStr !== localStr) {
+            localStorage.setItem(k, remoteStr);
+            changed = true;
+          }
         });
-        window.appUtils?.saveAppState?.();
-        window.appUtils?.renderAll?.();
+      } else {
+        // Ancien format (juste state.data) : fusion par catégorie dans cfb6_state
+        const remoteStr = JSON.stringify(remoteBlob);
+        const localStr = localStorage.getItem('cfb6_state') || '';
+        if (remoteStr !== localStr) {
+          localStorage.setItem('cfb6_state', remoteStr);
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        // Recharger tout le state en mémoire depuis localStorage
+        if (typeof window.reloadAppFromStorage === 'function') {
+          window.reloadAppFromStorage();
+        } else {
+          // Fallback : recharge la page (dernière ligne de défense)
+          window.appUtils?.showToast?.('☁ Données synchronisées — rechargement...');
+          setTimeout(() => location.reload(), 800);
+          return;
+        }
         window.appUtils?.showToast?.('☁ Données synchronisées depuis le cloud');
       }
     }
@@ -268,5 +325,24 @@
     configure, forgetConfig, isConfigured, getConfig,
     testConnection, pullNow, pushNow, schedulePush,
     bootstrap, getStatus, updateStatusUI,
+    SYNC_KEYS, collectAllData, applyRemoteData,
   };
+
+  /* ── Auto-bootstrap au chargement du script ─────────────
+     Fix du bug où app.js appelait SyncModule.bootstrap() avant que ce
+     script soit exécuté (undefined → silencieusement ignoré). */
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', autoBoot);
+    } else {
+      // Laisser un tick pour que app.js finisse son init
+      setTimeout(autoBoot, 50);
+    }
+  }
+  function autoBoot() {
+    updateStatusUI();
+    if (isConfigured()) {
+      bootstrap().catch(err => console.warn('[sync] bootstrap error:', err));
+    }
+  }
 })();
