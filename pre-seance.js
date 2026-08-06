@@ -197,48 +197,23 @@
     draft.contenuHtml = ''; // texte manuel prime sur HTML importé
   }
 
-  async function importWord(file) {
+  async function importImage(file) {
     if (!file || !draft) return;
+    if (!/^image\//.test(file.type) && !/\.(png|jpe?g|gif|webp)$/i.test(file.name)) {
+      toast('Format non supporté — utilise une image (PNG/JPG)');
+      return;
+    }
     draft.contenuFile = file.name;
     try {
-      // Cas 1 : image (jpg/png) → embed direct, rendu 1:1 dans le PDF
-      if (/^image\//.test(file.type) || /\.(png|jpe?g|gif|webp)$/i.test(file.name)) {
-        const dataUrl = await new Promise((resolve, reject) => {
-          const r = new FileReader();
-          r.onload = () => resolve(r.result);
-          r.onerror = reject;
-          r.readAsDataURL(file);
-        });
-        draft.contenuHtml = `<div class="ps-pdf-content-image"><img src="${dataUrl}" alt="Séance"></div>`;
-        draft.contenu = '';
-        toast('Image importée (' + file.name + ')');
-      }
-      // Cas 2 : .docx via mammoth (conserve les images internes en base64)
-      else if (window.mammoth && /\.docx$/i.test(file.name)) {
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await window.mammoth.convertToHtml(
-          { arrayBuffer },
-          {
-            styleMap: [
-              "p[style-name='Heading 1'] => h2",
-              "p[style-name='Heading 2'] => h3",
-              "p[style-name='Titre 1'] => h2",
-              "p[style-name='Titre 2'] => h3",
-              "b => strong",
-              "i => em",
-            ],
-          }
-        );
-        draft.contenuHtml = result.value || '';
-        draft.contenu = '';
-        const nbImages = (draft.contenuHtml.match(/<img/g) || []).length;
-        toast(`Fichier Word importé — ${nbImages} image${nbImages > 1 ? 's' : ''}`);
-      } else {
-        const txt = await file.text();
-        draft.contenu = txt.slice(0, 5000);
-        draft.contenuHtml = '';
-        toast('Fichier importé en texte brut');
-      }
+      const dataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      draft.contenuHtml = `<div class="ps-pdf-content-image"><img src="${dataUrl}" alt="Séance"></div>`;
+      draft.contenu = '';
+      toast('Image importée (' + file.name + ')');
       renderEditor();
     } catch (e) {
       toast('Import impossible : ' + e.message);
@@ -315,14 +290,14 @@
               <h4>Contenu de la séance</h4>
               <div class="ps-content-actions">
                 <label class="ps-file-btn">
-                  📎 Importer Word ou image
-                  <input type="file" accept=".docx,.doc,.txt,.md,image/*" hidden data-pre-action="import-word">
+                  📸 Importer une image de séance
+                  <input type="file" accept="image/*" hidden data-pre-action="import-image">
                 </label>
-                <p class="ps-hint" style="width:100%;margin-top:0">
-                  💡 Pour un rendu identique à ton Word, exporte-le en <strong>image</strong> (capture ou "Enregistrer sous → JPEG") et importe cette image ici.
-                </p>
-                ${draft.contenuFile ? `<span class="ps-file-info">📄 ${h(draft.contenuFile)}</span>` : ''}
+                ${draft.contenuFile ? `<span class="ps-file-info">🖼 ${h(draft.contenuFile)}</span>` : ''}
               </div>
+              <p class="ps-hint">
+                💡 <strong>Astuce Word → image</strong> : dans Word, sélectionne ton contenu → Ctrl+C → colle dans Paint (Ctrl+V) → sauve en PNG. Ou fais une capture d'écran directement (Outil Capture Windows / Cmd+Shift+4 Mac).
+              </p>
               ${draft.contenuHtml ? `
                 <div class="ps-content-preview" title="Contenu importé (aperçu)">
                   <div class="ps-content-preview-inner">${draft.contenuHtml}</div>
@@ -420,9 +395,9 @@
       return true;
     }
     if (a === 'set-contenu') { setContenu(el.value); return true; }
-    if (a === 'import-word') {
+    if (a === 'import-image') {
       const file = el.files?.[0];
-      if (file) importWord(file);
+      if (file) importImage(file);
       return true;
     }
     if (a === 'print') { generatePDF(); return true; }

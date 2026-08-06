@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v5.5.0-preseance-images-contraintes';
+const CACHE_VERSION = 'v5.6.0-preseance-image-only';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -54,7 +54,6 @@ const STATIC_ASSETS = [
   './sync-supabase.js',
   './pre-seance.js',
   './pdf-report.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
   './pdf-logos.js',
   './pwa.js',
   './manifest.json',
