@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v4.9.1-pdf-obs-stats';
+const CACHE_VERSION = 'v5.0.0-sync-supabase';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -51,6 +51,7 @@ const STATIC_ASSETS = [
   './live-training.js',
   './sessions-history.js',
   './season-transition.js',
+  './sync-supabase.js',
   './pdf-report.js',
   './pdf-logos.js',
   './pwa.js',

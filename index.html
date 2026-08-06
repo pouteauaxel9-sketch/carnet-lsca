@@ -54,6 +54,11 @@
         <button class="more-menu-item" type="button" id="export-xlsx-btn" role="menuitem" title="Exporter en Excel">📊 <span>Exporter Excel</span></button>
         <button class="more-menu-item install-chip" type="button" data-action="install-pwa" id="install-pwa-item" hidden role="menuitem">📱 <span>Installer l'app</span></button>
         <div class="more-menu-divider"></div>
+        <div class="more-menu-sync">
+          <div id="sync-status-line" class="sync-status-line"><span class="sync-dot sync-dot-off"></span> Sync désactivée</div>
+          <button class="more-menu-item more-menu-item-sub" type="button" data-action="open-sync-config" role="menuitem">☁ <span>Configurer la sync</span></button>
+        </div>
+        <div class="more-menu-divider"></div>
         <button class="more-menu-item" type="button" data-action="trigger-import" role="menuitem">📂 <span>Importer JSON</span></button>
         <button class="more-menu-item" type="button" data-action="trigger-export-json" role="menuitem">💾 <span>Exporter JSON</span></button>
       </div>
@@ -123,6 +128,7 @@
 <script src="season-transition.js"></script>
 <script src="pdf-logos.js"></script>
 <script src="pdf-report.js"></script>
+<script src="sync-supabase.js"></script>
 <script src="pwa.js"></script>
 </body>
 </html>

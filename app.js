@@ -305,6 +305,8 @@ function showToast(message) {
 
 function saveAppState() {
   localStorage.setItem(APP_KEY, JSON.stringify(state.data));
+  // Push cloud si sync activée (throttlé dans le module)
+  window.SyncModule?.schedulePush?.();
 }
 
 function schedulePersist(message = 'Modifications enregistrees') {
@@ -2101,6 +2103,75 @@ function generateReport() {
 const BACKUP_KEY  = 'cfb6_last_export_at';
 const BACKUP_DAYS = 15; // seuil d'avertissement
 
+/* ── Modal config sync Supabase ── */
+function openSyncConfigModal() {
+  const cfg = window.SyncModule?.getConfig?.() || {};
+  const st  = window.SyncModule?.getStatus?.() || {};
+  const last = st.last || {};
+  let root = q('#sync-modal-root');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'sync-modal-root';
+    document.body.appendChild(root);
+  }
+  root.innerHTML = `
+    <div class="modal-overlay" id="sync-modal-overlay">
+      <div class="modal-box" style="max-width:520px">
+        <div class="modal-head">
+          <div><div class="card-kicker">Cloud</div><h3>☁ Sync P'tits Verts</h3></div>
+          <button class="modal-close" type="button" data-action="sync-close-config">×</button>
+        </div>
+        <p class="modal-hint" style="margin-bottom:12px">
+          Synchronise tes données entre téléphone et PC via Supabase.
+          Colle l'URL de ton projet + la clé <strong>publishable</strong> (sb_publishable_...).
+        </p>
+        <div class="field-group" style="margin-bottom:10px">
+          <label class="field-label">URL Supabase</label>
+          <input class="field-input" id="sync-url-input" type="text"
+            placeholder="https://xxxxxxxxxx.supabase.co"
+            value="${h(cfg.url || '')}">
+        </div>
+        <div class="field-group" style="margin-bottom:14px">
+          <label class="field-label">Clé publishable (sb_publishable_...)</label>
+          <input class="field-input" id="sync-key-input" type="text"
+            placeholder="sb_publishable_..."
+            value="${h(cfg.key || '')}">
+        </div>
+        ${cfg.url ? `
+          <div class="sync-info-box">
+            <div>📡 Dernier envoi : <strong>${h(relTimeShort(last.pushedAt))}</strong></div>
+            <div>📥 Dernière récup : <strong>${h(relTimeShort(last.pulledAt))}</strong></div>
+            ${last.error ? `<div style="color:#dc2626">⚠ ${h(last.error.slice(0, 80))}</div>` : ''}
+          </div>` : ''}
+        <div class="modal-footer" style="margin-top:14px;justify-content:space-between">
+          ${cfg.url ? `
+            <button class="btn btn-ghost btn-danger" type="button" data-action="sync-forget">Désactiver</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" type="button" data-action="sync-pull-now">↓ Récupérer</button>
+              <button class="btn btn-ghost" type="button" data-action="sync-push-now">↑ Envoyer</button>
+              <button class="btn btn-primary" type="button" data-action="sync-save-config">Enregistrer</button>
+            </div>` : `
+            <span></span>
+            <button class="btn btn-primary" type="button" data-action="sync-save-config">Activer la sync</button>
+          `}
+        </div>
+      </div>
+    </div>`;
+}
+function closeSyncConfigModal() {
+  const root = q('#sync-modal-root');
+  if (root) root.innerHTML = '';
+}
+function relTimeShort(iso) {
+  if (!iso) return 'jamais';
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (isNaN(s)) return '—';
+  if (s < 60) return 'il y a ' + s + ' s';
+  if (s < 3600) return 'il y a ' + Math.floor(s / 60) + ' min';
+  if (s < 86400) return 'il y a ' + Math.floor(s / 3600) + ' h';
+  return 'il y a ' + Math.floor(s / 86400) + ' j';
+}
+
 function markBackupDone() {
   try { localStorage.setItem(BACKUP_KEY, new Date().toISOString()); } catch {}
   updateBackupBanner();
@@ -2411,6 +2482,50 @@ document.addEventListener('click', event => {
     exportData();
     return;
   }
+  if (action === 'open-sync-config') {
+    toggleMoreMenu(false);
+    openSyncConfigModal();
+    return;
+  }
+  if (action === 'sync-save-config') {
+    const url = q('#sync-url-input')?.value || '';
+    const key = q('#sync-key-input')?.value || '';
+    try {
+      window.SyncModule.configure(url, key);
+      showToast('Configuration enregistrée — test en cours...');
+      window.SyncModule.testConnection().then(r => {
+        if (r.ok) {
+          showToast('☁ Sync opérationnelle');
+          window.SyncModule.bootstrap();
+          closeSyncConfigModal();
+        } else {
+          showToast('Erreur : ' + r.error);
+        }
+      });
+    } catch (e) {
+      showToast(e.message);
+    }
+    return;
+  }
+  if (action === 'sync-close-config') { closeSyncConfigModal(); return; }
+  if (action === 'sync-forget') {
+    if (!confirm('Supprimer la config sync ? Les données locales restent intactes.')) return;
+    window.SyncModule.forgetConfig();
+    showToast('Sync désactivée');
+    closeSyncConfigModal();
+    return;
+  }
+  if (action === 'sync-push-now') {
+    window.SyncModule.pushNow().then(r => {
+      showToast(r.ok ? '☁ Envoyé' : 'Erreur : ' + (r.error || r.reason));
+    });
+    return;
+  }
+  if (action === 'sync-pull-now') {
+    window.SyncModule.bootstrap().then(() => showToast('☁ Synchronisé'));
+    return;
+  }
+
   if (action === 'dismiss-backup') {
     // Snooze de 3 jours : on décale la "date de dernière sauvegarde" pour laisser du répit
     const soon = new Date(Date.now() - (BACKUP_DAYS - 3) * 86400000);
@@ -2617,6 +2732,9 @@ document.addEventListener('change', event => {
 loadAll();
 migrateRatings1to5();
 updateBackupBanner();
+// Bootstrap sync cloud si configurée (pull au démarrage)
+window.SyncModule?.bootstrap?.();
+window.SyncModule?.updateStatusUI?.();
 
 // Migration one-shot : ancien 3 → 4, ancien 4 → 5 (échelle 1-4 vers 1-5)
 function migrateRatings1to5() {

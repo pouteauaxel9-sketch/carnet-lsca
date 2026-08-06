@@ -9033,3 +9033,51 @@ body.season-transition-active { overflow: hidden; }
   color: #006e2f !important;
   animation: popIn 0.18s ease;
 }
+
+/* ══════════════════════════════════════════════════════════
+   Sync Supabase — indicateur dans menu + modal config
+   ══════════════════════════════════════════════════════════ */
+
+.more-menu-sync {
+  padding: 4px 6px;
+}
+.sync-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+}
+.sync-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sync-dot-off { background: #cbd5e1; }
+.sync-dot-ok  { background: #16a34a; box-shadow: 0 0 6px rgba(22,163,74,.5); animation: pulseDot 2s infinite; }
+.sync-dot-err { background: #dc2626; }
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .5; }
+}
+.more-menu-item-sub {
+  font-size: 12px !important;
+  color: #64748b !important;
+}
+.more-menu-item-sub:hover {
+  color: #009640 !important;
+}
+
+.sync-info-box {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid #e5e7eb;
+}
