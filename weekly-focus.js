@@ -155,6 +155,10 @@
                 <input id="weekly-theme-input" class="weekly-theme-input" type="text"
                        placeholder="Thème de la semaine (ex: conduite + démarquage)"
                        value="${h(week.theme || '')}" data-weekly-action="set-theme">
+                <button class="btn btn-primary weekly-preseance-btn" type="button"
+                        data-action="open-pre-seance" title="Générer la fiche pré-séance">
+                  🖨 Fiche pré-séance
+                </button>
               </div>
               ${renderSeances(week)}
             </header>

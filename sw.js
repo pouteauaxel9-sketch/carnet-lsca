@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v5.3.0-sync-live-periodic';
+const CACHE_VERSION = 'v5.4.0-fiche-preseance';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -52,7 +52,9 @@ const STATIC_ASSETS = [
   './sessions-history.js',
   './season-transition.js',
   './sync-supabase.js',
+  './pre-seance.js',
   './pdf-report.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
   './pdf-logos.js',
   './pwa.js',
   './manifest.json',

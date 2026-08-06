@@ -2299,6 +2299,7 @@ const MODULE_DISPATCHERS = [
   { dataAttr: 'advstatsAction',   module: 'AdvancedStatsModule' },
   { dataAttr: 'stxAction',        module: 'SeasonTransitionModule' },
   { dataAttr: 'historyAction',    module: 'SessionsHistoryModule' },
+  { dataAttr: 'preAction',        module: 'PreSeanceModule' },
 ];
 
 // Sélecteur combiné généré automatiquement (data-xxx-action + data-obs-dim)
@@ -2482,6 +2483,11 @@ document.addEventListener('click', event => {
     exportData();
     return;
   }
+  if (action === 'open-pre-seance') {
+    window.PreSeanceModule?.open?.();
+    return;
+  }
+
   if (action === 'open-sync-config') {
     toggleMoreMenu(false);
     openSyncConfigModal();
@@ -2681,6 +2687,11 @@ document.addEventListener('change', event => {
     window.WeeklyFocusModule?.handleAction(target);
     return;
   }
+  // Fiche pré-séance : selects (assign-to/move-to) et input file (import-word)
+  if (target.dataset?.preAction) {
+    window.PreSeanceModule?.handleAction(target);
+    return;
+  }
 });
 
 /* Registre des actions transitant par l'event 'input' (text / number)
@@ -2689,6 +2700,7 @@ const INPUT_DISPATCHERS = [
   { dataAttr: 'liveAction',    module: 'LiveTrainingModule',    actions: ['search', 'save-juggle'] },
   { dataAttr: 'historyAction', module: 'SessionsHistoryModule', actions: ['edit-juggle', 'set-obj-past', 'set-bilan-note'] },
   { dataAttr: 'weeklyAction',  module: 'WeeklyFocusModule',     actions: ['set-theme', 'set-note', 'edit-item-objective'] },
+  { dataAttr: 'preAction',     module: 'PreSeanceModule',       actions: ['set-contenu'] },
 ];
 
 document.addEventListener('input', event => {
