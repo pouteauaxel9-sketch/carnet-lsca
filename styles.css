@@ -9343,3 +9343,109 @@ body.season-transition-active { overflow: hidden; }
 .ps-move-select:hover { border-color: #009640; }
 
 .ps-info { color: #64748b; font-size: 12px; font-weight: 500; }
+
+/* ══════════════════════════════════════════════════════════
+   Pré-séance v6 : éditeur drag & drop + équipes fixes
+   ══════════════════════════════════════════════════════════ */
+
+/* Pool des joueurs non affectés */
+.ps-pool-section {
+  background: #fefce8;
+  border: 2px dashed #fbbf24;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  transition: background .12s, border-color .12s;
+}
+.ps-pool-section h4 {
+  margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #92400e;
+}
+.ps-pool-count { color: #a16207; font-weight: 500; font-size: 11px; }
+.ps-pool-chips {
+  display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px;
+}
+.ps-pool-empty {
+  color: #16a34a; font-weight: 600; font-size: 12px; padding: 6px;
+}
+.ps-pool-section.drop-hover {
+  background: #fef3c7; border-color: #f59e0b;
+}
+
+/* Chip draggable */
+.ps-dnd-chip {
+  padding: 5px 10px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  font-size: 12px; font-weight: 600;
+  cursor: grab;
+  user-select: none;
+  transition: transform .1s, box-shadow .12s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+.ps-dnd-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0,150,64,.15);
+  border-color: #009640;
+}
+.ps-dnd-chip:active { cursor: grabbing; }
+.ps-dnd-chip.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+/* Grille des groupes */
+.ps-groups-section h4 {
+  margin: 0 0 10px; font-size: 13px; font-weight: 700; color: #009640;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.ps-groups-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.ps-group-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.ps-group-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 8px; padding-bottom: 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.ps-group-head strong { font-size: 13px; color: #0f172a; }
+.ps-group-count { font-size: 11px; color: #64748b; }
+
+/* 2 équipes par groupe */
+.ps-group-teams {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.ps-team-box {
+  border: 2px solid;
+  border-radius: 8px;
+  min-height: 120px;
+  display: flex; flex-direction: column;
+  transition: background .15s;
+}
+.ps-team-box.drop-hover {
+  border-style: dashed;
+  background: rgba(0,150,64,.15) !important;
+}
+.ps-team-head {
+  padding: 4px 8px;
+  border-radius: 6px 6px 0 0;
+  font-size: 11px; font-weight: 700; text-align: center;
+}
+.ps-team-count { font-weight: 500; opacity: .8; }
+.ps-team-chips {
+  padding: 6px;
+  flex: 1;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.ps-team-empty {
+  color: #94a3b8; font-style: italic; font-size: 11px;
+  text-align: center; padding: 12px 4px;
+}

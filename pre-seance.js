@@ -1,27 +1,25 @@
 /**
- * pre-seance.js — Fiche pré-séance imprimable (préparation avant terrain)
+ * pre-seance.js — Fiche pré-séance (v6.0)
  *
- * Modal "Préparer la séance" qui laisse l'éducateur :
- *   - Choisir le nombre de groupes (2 / 3 / 4)
- *   - Répartir les joueurs présents (manuel ou auto : aléatoire / par équipe)
- *   - Attribuer une couleur de chasuble à chaque joueur (vert / orange / jaune / bleu)
- *   - Saisir le contenu de la séance (texte libre + import Word .docx via mammoth)
- *   - Générer un PDF 1 page à imprimer ou consulter sur téléphone
+ * Modèle data : chaque groupe contient 2 équipes fixes
+ *   - Équipe 1 : chasuble VERTE
+ *   - Équipe 2 : chasuble BLEUE
  *
- * Stockage : draft en session (pas persisté) — le PDF est le livrable final.
- * Expose : window.PreSeanceModule.{ open, handleAction }
+ * Éditeur : drag & drop HTML5 des joueurs entre pool / équipes.
+ * PDF : layout selon la maquette user (header logo conditionnel + objectif + grille 2xN
+ *       avec 2 équipes par groupe + colonne séance rotated pour landscape).
+ *
+ * Expose : window.PreSeanceModule.{ open, close, handleAction }
  */
 (function () {
   'use strict';
 
-  const CHASUBLE_COLORS = [
-    { key: 'vert',    label: 'Vert',   bg: '#009640', text: '#fff' },
-    { key: 'orange',  label: 'Orange', bg: '#f97316', text: '#fff' },
-    { key: 'jaune',   label: 'Jaune',  bg: '#eab308', text: '#0f172a' },
-    { key: 'bleu',    label: 'Bleu',   bg: '#2563eb', text: '#fff' },
+  const TEAM_COLORS = [
+    { key: 'vert', label: 'Équipe 1', bg: '#009640', text: '#fff' },
+    { key: 'bleu', label: 'Équipe 2', bg: '#0284c7', text: '#fff' },
   ];
 
-  let draft = null; // { nbGroupes, groupes: [ [{pid, color}] ], contenu, contenuHtml }
+  let draft = null;
 
   function state() { return window.appState || {}; }
   function utils() { return window.appUtils || {}; }
@@ -48,30 +46,19 @@
 
   function playerTeam(pid, cat) {
     cat = cat || state().cat;
-    const prof = state().data?.[cat]?.[pid]?.profil;
-    return prof?.team || '';
+    return state().data?.[cat]?.[pid]?.profil?.team || '';
   }
 
-  function todayIso() {
-    return new Date().toISOString().slice(0, 10);
-  }
+  function todayIso() { return new Date().toISOString().slice(0, 10); }
 
-  function thisMondayIso() {
-    const d = new Date();
-    const day = d.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().slice(0, 10);
-  }
-
-  /* ── Ouverture / initialisation ─────────────────────── */
+  /* ── Ouverture / init ───────────────────────────────── */
 
   function open() {
     const cat = state().cat;
     const week = window.WeeklyFocusModule?.getCurrentWeek?.(cat);
-    const items = (week?.items || []);
+    const items = week?.items || [];
 
-    // Présents par défaut : ceux de la séance Mode Terrain du jour, sinon tous les joueurs
+    // Présents par défaut : ceux du Mode Terrain du jour, sinon tout l'effectif
     let presentPids = [];
     try {
       const live = JSON.parse(localStorage.getItem('cfb6_live_sessions_v1') || '{}');
@@ -80,16 +67,17 @@
     } catch {}
     if (!presentPids.length) presentPids = sortedPlayers(cat);
 
+    // Structure : chaque groupe = { teams: [ [pid,pid], [pid,pid] ] }
     draft = {
       cat,
       date: todayIso(),
       theme: week?.theme || '',
       principes: items,
+      objectif: '',
       presentPids,
       nbGroupes: 3,
-      groupes: [[], [], []],   // chaque groupe = liste de { pid, color }
-      unassigned: presentPids.slice().map(pid => ({ pid, color: 'vert' })),
-      contenu: '',
+      groupes: Array.from({ length: 3 }, () => ({ teams: [[], []] })),
+      pool: presentPids.slice(), // joueurs non affectés
       contenuHtml: '',
       contenuFile: '',
     };
@@ -103,99 +91,92 @@
     if (root) root.innerHTML = '';
   }
 
-  /* ── Répartitions automatiques ──────────────────────── */
-
-  function applyRepartition(kind) {
-    if (!draft) return;
-    const groupes = Array.from({ length: draft.nbGroupes }, () => []);
-    const pool = draft.presentPids.slice();
-
-    if (kind === 'aleatoire') {
-      // Shuffle Fisher-Yates
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
-      }
-      pool.forEach((pid, i) => {
-        const color = i % 2 === 0 ? 'vert' : 'orange';
-        groupes[i % draft.nbGroupes].push({ pid, color });
-      });
-    } else if (kind === 'equipe') {
-      // Regrouper par équipe principale
-      const byTeam = {};
-      pool.forEach(pid => {
-        const t = playerTeam(pid, draft.cat) || '—';
-        if (!byTeam[t]) byTeam[t] = [];
-        byTeam[t].push(pid);
-      });
-      const teams = Object.keys(byTeam);
-      teams.slice(0, draft.nbGroupes).forEach((t, i) => {
-        byTeam[t].forEach((pid, j) => {
-          const color = j % 2 === 0 ? 'vert' : 'orange';
-          groupes[i].push({ pid, color });
-        });
-      });
-      // Overflow : les équipes en trop sont réparties round-robin
-      teams.slice(draft.nbGroupes).forEach((t, idx) => {
-        byTeam[t].forEach((pid, j) => {
-          const groupIdx = (draft.nbGroupes - 1 + idx + j) % draft.nbGroupes;
-          groupes[groupIdx].push({ pid, color: j % 2 === 0 ? 'vert' : 'orange' });
-        });
-      });
-    }
-
-    draft.groupes = groupes;
-    // Recalcule unassigned
-    const assigned = new Set(groupes.flat().map(x => x.pid));
-    draft.unassigned = draft.presentPids.filter(pid => !assigned.has(pid)).map(pid => ({ pid, color: 'vert' }));
-    renderEditor();
-  }
+  /* ── Manipulations data ─────────────────────────────── */
 
   function setNbGroupes(n) {
     if (!draft) return;
     const old = draft.groupes || [];
-    const newGroupes = Array.from({ length: n }, (_, i) => old[i] || []);
-    // Les joueurs des anciens groupes en trop passent dans unassigned
-    const overflow = old.slice(n).flat();
+    // Récupérer tous les joueurs affectés dans les groupes en trop
+    const overflow = [];
+    for (let i = n; i < old.length; i++) {
+      old[i].teams.forEach(t => overflow.push(...t));
+    }
+    const newGroupes = Array.from({ length: n }, (_, i) => old[i] || { teams: [[], []] });
     draft.nbGroupes = n;
     draft.groupes = newGroupes;
-    draft.unassigned = (draft.unassigned || []).concat(overflow);
+    draft.pool = (draft.pool || []).concat(overflow);
     renderEditor();
   }
 
-  function movePlayer(pid, fromGroup, toGroup) {
+  function movePlayer(pid, targetGroupIdx, targetTeamIdx) {
     if (!draft) return;
-    const source = fromGroup === -1 ? draft.unassigned : draft.groupes[fromGroup];
-    const target = toGroup   === -1 ? draft.unassigned : draft.groupes[toGroup];
-    if (!source || !target) return;
-    const idx = source.findIndex(x => x.pid === pid);
-    if (idx < 0) return;
-    const [entry] = source.splice(idx, 1);
-    target.push(entry);
-    renderEditor();
-  }
-
-  function cyclePlayerColor(pid) {
-    if (!draft) return;
-    const all = [draft.unassigned, ...draft.groupes];
-    for (const list of all) {
-      const p = list.find(x => x.pid === pid);
-      if (p) {
-        const idx = CHASUBLE_COLORS.findIndex(c => c.key === p.color);
-        p.color = CHASUBLE_COLORS[(idx + 1) % CHASUBLE_COLORS.length].key;
-        renderEditor();
-        return;
+    removePlayerFromAll(pid);
+    if (targetGroupIdx === -1) {
+      if (!draft.pool.includes(pid)) draft.pool.push(pid);
+    } else {
+      const g = draft.groupes[targetGroupIdx];
+      if (g && g.teams[targetTeamIdx] && !g.teams[targetTeamIdx].includes(pid)) {
+        g.teams[targetTeamIdx].push(pid);
       }
     }
+    renderEditor();
   }
 
-  /* ── Contenu séance (texte + import Word) ───────────── */
+  function removePlayerFromAll(pid) {
+    draft.pool = draft.pool.filter(x => x !== pid);
+    draft.groupes.forEach(g => {
+      g.teams = g.teams.map(t => t.filter(x => x !== pid));
+    });
+  }
 
-  function setContenu(txt) {
+  function resetRepartition() {
     if (!draft) return;
-    draft.contenu = txt || '';
-    draft.contenuHtml = ''; // texte manuel prime sur HTML importé
+    draft.groupes = Array.from({ length: draft.nbGroupes }, () => ({ teams: [[], []] }));
+    draft.pool = draft.presentPids.slice();
+    renderEditor();
   }
+
+  function applyRandom() {
+    if (!draft) return;
+    const pool = draft.presentPids.slice();
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const groupes = Array.from({ length: draft.nbGroupes }, () => ({ teams: [[], []] }));
+    pool.forEach((pid, i) => {
+      const gIdx = i % draft.nbGroupes;
+      const tIdx = Math.floor(i / draft.nbGroupes) % 2;
+      groupes[gIdx].teams[tIdx].push(pid);
+    });
+    draft.groupes = groupes;
+    draft.pool = [];
+    renderEditor();
+  }
+
+  function applyByTeam() {
+    if (!draft) return;
+    const byTeam = {};
+    draft.presentPids.forEach(pid => {
+      const t = playerTeam(pid, draft.cat) || '—';
+      if (!byTeam[t]) byTeam[t] = [];
+      byTeam[t].push(pid);
+    });
+    const teams = Object.keys(byTeam);
+    const groupes = Array.from({ length: draft.nbGroupes }, () => ({ teams: [[], []] }));
+    teams.forEach((t, i) => {
+      byTeam[t].forEach((pid, j) => {
+        const gIdx = i % draft.nbGroupes;
+        const tIdx = j % 2;
+        groupes[gIdx].teams[tIdx].push(pid);
+      });
+    });
+    draft.groupes = groupes;
+    draft.pool = [];
+    renderEditor();
+  }
+
+  /* ── Import image séance ────────────────────────────── */
 
   async function importImage(file) {
     if (!file || !draft) return;
@@ -212,7 +193,6 @@
         r.readAsDataURL(file);
       });
       draft.contenuHtml = `<div class="ps-pdf-content-image"><img src="${dataUrl}" alt="Séance"></div>`;
-      draft.contenu = '';
       toast('Image importée (' + file.name + ')');
       renderEditor();
     } catch (e) {
@@ -220,7 +200,12 @@
     }
   }
 
-  /* ── Rendu éditeur (modal) ──────────────────────────── */
+  function setObjectif(txt) {
+    if (!draft) return;
+    draft.objectif = txt || '';
+  }
+
+  /* ── Éditeur (modal) avec drag & drop ───────────────── */
 
   function renderEditor() {
     let root = document.querySelector('#pre-seance-root');
@@ -234,22 +219,6 @@
     const cat = draft.cat;
     const catLbl = (window.CAT_LABELS?.[cat] || cat).toUpperCase();
 
-    const groupCards = draft.groupes.map((list, gi) => `
-      <article class="ps-group-card">
-        <header class="ps-group-head">
-          <strong>Groupe ${gi + 1}</strong>
-          <span class="ps-group-count">${list.length} joueur${list.length > 1 ? 's' : ''}</span>
-        </header>
-        <div class="ps-group-list">
-          ${list.map(p => renderPlayerChip(p, gi)).join('') || '<div class="ps-empty">Aucun joueur</div>'}
-        </div>
-        <select class="ps-move-select" data-pre-action="assign-to" data-group="${gi}">
-          <option value="">+ Ajouter un joueur…</option>
-          ${draft.unassigned.map(p => `<option value="${h(p.pid)}">${h(playerLabel(p.pid, cat))}</option>`).join('')}
-        </select>
-      </article>
-    `).join('');
-
     root.innerHTML = `
       <div class="modal-overlay" data-pre-action="close-if-backdrop">
         <div class="modal-box modal-box--xl ps-box">
@@ -262,66 +231,67 @@
           </div>
 
           <div class="ps-scroll">
-          <div class="ps-editor-grid">
 
-            <section class="ps-panel">
-              <h4>Configuration</h4>
-              <div class="ps-row">
-                <label class="ps-label">Nombre de groupes</label>
-                <div class="ps-btn-group">
-                  ${[2,3,4].map(n => `
-                    <button class="ps-btn ${draft.nbGroupes === n ? 'on' : ''}"
-                            type="button" data-pre-action="set-nb" data-n="${n}">${n}</button>
-                  `).join('')}
+            <div class="ps-editor-grid">
+
+              <section class="ps-panel">
+                <h4>Configuration</h4>
+                <div class="ps-row">
+                  <label class="ps-label">Nombre de groupes</label>
+                  <div class="ps-btn-group">
+                    ${[2,3,4,5,6].map(n => `
+                      <button class="ps-btn ${draft.nbGroupes === n ? 'on' : ''}"
+                              type="button" data-pre-action="set-nb" data-n="${n}">${n}</button>
+                    `).join('')}
+                  </div>
                 </div>
-              </div>
-              <div class="ps-row">
-                <label class="ps-label">Répartition de départ</label>
-                <div class="ps-btn-group">
-                  <button class="ps-btn" type="button" data-pre-action="repartition" data-kind="reset">Vider</button>
-                  <button class="ps-btn" type="button" data-pre-action="repartition" data-kind="aleatoire">🎲 Aléatoire</button>
-                  <button class="ps-btn" type="button" data-pre-action="repartition" data-kind="equipe">👥 Par équipe</button>
+                <div class="ps-row">
+                  <label class="ps-label">Répartition auto</label>
+                  <div class="ps-btn-group">
+                    <button class="ps-btn" type="button" data-pre-action="reset">Vider</button>
+                    <button class="ps-btn" type="button" data-pre-action="random">🎲 Aléatoire</button>
+                    <button class="ps-btn" type="button" data-pre-action="by-team">👥 Par équipe</button>
+                  </div>
                 </div>
+                <p class="ps-hint">💡 Glisse-dépose les joueurs du pool vers les équipes (Équipe 1 vert · Équipe 2 bleu).</p>
+              </section>
+
+              <section class="ps-panel">
+                <h4>Objectif de la séance</h4>
+                <textarea class="ps-textarea" rows="3"
+                          placeholder="Ex: Améliorer la circulation du ballon en supériorité numérique..."
+                          data-pre-action="set-objectif">${h(draft.objectif)}</textarea>
+
+                <h4 style="margin-top:12px">Contenu de la séance</h4>
+                <div class="ps-content-actions">
+                  <label class="ps-file-btn">
+                    📸 Importer une image
+                    <input type="file" accept="image/*" hidden data-pre-action="import-image">
+                  </label>
+                  ${draft.contenuFile ? `<span class="ps-file-info">🖼 ${h(draft.contenuFile)}</span>` : ''}
+                </div>
+              </section>
+
+            </div>
+
+            <!-- Pool des joueurs non affectés -->
+            <section class="ps-pool-section" data-drop-zone="pool">
+              <h4>Joueurs non affectés <span class="ps-pool-count">(${draft.pool.length}/${draft.presentPids.length})</span></h4>
+              <div class="ps-pool-chips">
+                ${draft.pool.map(pid => renderDraggableChip(pid, 'pool')).join('') ||
+                  '<div class="ps-pool-empty">✓ Tous les présents sont affectés</div>'}
               </div>
-              <p class="ps-hint">Clique le nom d'un joueur pour changer sa couleur de chasuble. Utilise les selects pour déplacer entre groupes.</p>
             </section>
 
-            <section class="ps-panel">
-              <h4>Contenu de la séance</h4>
-              <div class="ps-content-actions">
-                <label class="ps-file-btn">
-                  📸 Importer une image de séance
-                  <input type="file" accept="image/*" hidden data-pre-action="import-image">
-                </label>
-                ${draft.contenuFile ? `<span class="ps-file-info">🖼 ${h(draft.contenuFile)}</span>` : ''}
+            <!-- Grille des groupes -->
+            <section class="ps-groups-section">
+              <h4>Groupes (${draft.nbGroupes})</h4>
+              <div class="ps-groups-grid ps-groups-grid-${draft.nbGroupes}">
+                ${draft.groupes.map((g, gi) => renderGroupCard(g, gi)).join('')}
               </div>
-              <p class="ps-hint">
-                💡 <strong>Astuce Word → image</strong> : dans Word, sélectionne ton contenu → Ctrl+C → colle dans Paint (Ctrl+V) → sauve en PNG. Ou fais une capture d'écran directement (Outil Capture Windows / Cmd+Shift+4 Mac).
-              </p>
-              ${draft.contenuHtml ? `
-                <div class="ps-content-preview" title="Contenu importé (aperçu)">
-                  <div class="ps-content-preview-inner">${draft.contenuHtml}</div>
-                  <p class="ps-hint">Contenu importé du fichier. Il apparaîtra tel quel dans le PDF.</p>
-                </div>
-              ` : `
-                <textarea class="ps-textarea" rows="8"
-                          placeholder="Notes / plan de séance / consignes... (ou importe un fichier Word au-dessus)"
-                          data-pre-action="set-contenu">${h(draft.contenu)}</textarea>
-              `}
             </section>
 
           </div>
-
-          <section class="ps-groups-section">
-            <h4>Groupes (${draft.nbGroupes})</h4>
-            ${draft.unassigned.length ? `
-              <div class="ps-unassigned">
-                <strong>Non affectés (${draft.unassigned.length})</strong> :
-                ${draft.unassigned.map(p => renderPlayerChip(p, -1)).join('')}
-              </div>` : '<div class="ps-unassigned-empty">✓ Tous les présents sont affectés</div>'}
-            <div class="ps-groups-grid">${groupCards}</div>
-          </section>
-          </div><!-- /.ps-scroll -->
 
           <div class="modal-footer ps-footer" style="justify-content:space-between">
             <span class="ps-info">${draft.presentPids.length} présent${draft.presentPids.length > 1 ? 's' : ''} · ${draft.principes.length} principe${draft.principes.length > 1 ? 's' : ''} FFF</span>
@@ -330,28 +300,93 @@
               <button class="btn btn-primary" type="button" data-pre-action="print">🖨 Générer le PDF</button>
             </div>
           </div>
-
         </div>
       </div>`;
+
+    // Attacher les listeners drag & drop (une fois par render)
+    attachDnD();
   }
 
-  function renderPlayerChip(entry, groupIdx) {
-    const c = CHASUBLE_COLORS.find(x => x.key === entry.color) || CHASUBLE_COLORS[0];
-    return `<button class="ps-chip" type="button"
-              data-pre-action="cycle-color" data-pid="${h(entry.pid)}"
-              style="background:${c.bg};color:${c.text}">
-      ${h(playerLabel(entry.pid, draft.cat))}
-      <span class="ps-chip-move">
-        <select data-pre-action="move-to" data-pid="${h(entry.pid)}" data-from="${groupIdx}" onclick="event.stopPropagation()">
-          <option value="">↔</option>
-          <option value="-1" ${groupIdx === -1 ? 'disabled' : ''}>Non affecté</option>
-          ${draft.groupes.map((_, i) => `<option value="${i}" ${i === groupIdx ? 'disabled' : ''}>Groupe ${i + 1}</option>`).join('')}
-        </select>
-      </span>
-    </button>`;
+  function renderDraggableChip(pid, source) {
+    return `<div class="ps-dnd-chip" draggable="true"
+              data-pid="${h(pid)}" data-source="${h(source)}">
+      ${h(playerLabel(pid, draft.cat))}
+    </div>`;
   }
 
-  /* ── Actions ────────────────────────────────────────── */
+  function renderGroupCard(g, gi) {
+    return `
+      <article class="ps-group-card">
+        <header class="ps-group-head">
+          <strong>Groupe ${gi + 1}</strong>
+          <span class="ps-group-count">${g.teams[0].length + g.teams[1].length} joueur${(g.teams[0].length + g.teams[1].length) > 1 ? 's' : ''}</span>
+        </header>
+        <div class="ps-group-teams">
+          ${g.teams.map((team, ti) => {
+            const c = TEAM_COLORS[ti];
+            return `
+              <div class="ps-team-box ps-team-${c.key}" data-drop-zone="team" data-group="${gi}" data-team="${ti}"
+                   style="background:${c.bg}20; border-color:${c.bg}">
+                <div class="ps-team-head" style="background:${c.bg}; color:${c.text}">
+                  ${c.label} <span class="ps-team-count">(${team.length})</span>
+                </div>
+                <div class="ps-team-chips">
+                  ${team.map(pid => renderDraggableChip(pid, 'team-' + gi + '-' + ti)).join('') ||
+                    '<div class="ps-team-empty">Dépose ici</div>'}
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </article>`;
+  }
+
+  /* ── Drag & drop ────────────────────────────────────── */
+
+  let draggedPid = null;
+
+  function attachDnD() {
+    const root = document.querySelector('#pre-seance-root');
+    if (!root) return;
+
+    // Sur chaque chip draggable
+    root.querySelectorAll('.ps-dnd-chip').forEach(chip => {
+      chip.addEventListener('dragstart', e => {
+        draggedPid = chip.dataset.pid;
+        e.dataTransfer.effectAllowed = 'move';
+        chip.classList.add('dragging');
+      });
+      chip.addEventListener('dragend', () => {
+        draggedPid = null;
+        chip.classList.remove('dragging');
+        root.querySelectorAll('.drop-hover').forEach(el => el.classList.remove('drop-hover'));
+      });
+    });
+
+    // Sur chaque zone de drop
+    root.querySelectorAll('[data-drop-zone]').forEach(zone => {
+      zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        zone.classList.add('drop-hover');
+      });
+      zone.addEventListener('dragleave', () => {
+        zone.classList.remove('drop-hover');
+      });
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drop-hover');
+        if (!draggedPid) return;
+        const kind = zone.dataset.dropZone;
+        if (kind === 'pool') {
+          movePlayer(draggedPid, -1, 0);
+        } else if (kind === 'team') {
+          movePlayer(draggedPid, parseInt(zone.dataset.group, 10), parseInt(zone.dataset.team, 10));
+        }
+      });
+    });
+  }
+
+  /* ── Actions dispatcher ─────────────────────────────── */
 
   function handleAction(el, e) {
     if (!draft && el.dataset.preAction !== 'open') return false;
@@ -359,42 +394,12 @@
     if (!a) return false;
 
     if (a === 'close') { close(); return true; }
-    if (a === 'close-if-backdrop') {
-      if (e && e.target === el) close();
-      return true;
-    }
+    if (a === 'close-if-backdrop') { if (e && e.target === el) close(); return true; }
     if (a === 'set-nb') { setNbGroupes(parseInt(el.dataset.n, 10)); return true; }
-    if (a === 'repartition') {
-      const kind = el.dataset.kind;
-      if (kind === 'reset') {
-        draft.groupes = Array.from({ length: draft.nbGroupes }, () => []);
-        draft.unassigned = draft.presentPids.slice().map(pid => ({ pid, color: 'vert' }));
-        renderEditor();
-      } else {
-        applyRepartition(kind);
-      }
-      return true;
-    }
-    if (a === 'assign-to') {
-      const pid = el.value;
-      const target = parseInt(el.dataset.group, 10);
-      if (!pid) return true;
-      movePlayer(pid, -1, target);
-      return true;
-    }
-    if (a === 'move-to') {
-      const pid = el.dataset.pid;
-      const from = parseInt(el.dataset.from, 10);
-      const to = parseInt(el.value, 10);
-      if (isNaN(to) || from === to) return true;
-      movePlayer(pid, from, to);
-      return true;
-    }
-    if (a === 'cycle-color') {
-      cyclePlayerColor(el.dataset.pid);
-      return true;
-    }
-    if (a === 'set-contenu') { setContenu(el.value); return true; }
+    if (a === 'reset') { resetRepartition(); return true; }
+    if (a === 'random') { applyRandom(); return true; }
+    if (a === 'by-team') { applyByTeam(); return true; }
+    if (a === 'set-objectif') { setObjectif(el.value); return true; }
     if (a === 'import-image') {
       const file = el.files?.[0];
       if (file) importImage(file);
@@ -414,91 +419,81 @@
       weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
     });
 
-    const principesHtml = draft.principes.length
-      ? draft.principes.map(it => {
-          const phaseLbl = it.phase === 'avec' ? '🔵 Avec ballon' : it.phase === 'sans' ? '🔴 Sans ballon' : '';
-          return `<div class="ps-pdf-principle">
-            <div class="ps-pdf-principle-head">
-              ${it.principleNum ? `<span class="ps-pdf-num">#${it.principleNum}</span>` : ''}
-              <strong>${h(it.criterion || it.label || 'Principe')}</strong>
-              <span class="ps-pdf-phase">${phaseLbl}</span>
-            </div>
-            ${it.objective ? `<div class="ps-pdf-objective">🎯 ${h(it.objective)}</div>` : ''}
-          </div>`;
-        }).join('')
-      : '<div class="ps-pdf-empty">Aucun principe défini pour cette semaine.</div>';
+    // Logo conditionnel : U13 → GJ LSCA, sinon Louverné
+    const logos = window.PDF_LOGOS || {};
+    const logoSrc = cat === 'u13' ? (logos.gjLsca || logos.louverne || '') : (logos.louverne || '');
+    const logoName = cat === 'u13' ? 'GJ LSCA' : 'Louverné Sports';
 
-    const groupesHtml = draft.groupes.map((list, gi) => {
-      const chips = list.map(p => {
-        const c = CHASUBLE_COLORS.find(x => x.key === p.color) || CHASUBLE_COLORS[0];
-        // SVG inline (impression garantie) + bordure épaisse + texte coloré
-        return `<div class="ps-pdf-chip" style="border-left:6px solid ${c.bg};color:${c.bg}">
-          <svg class="ps-pdf-chip-dot" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="6" cy="6" r="5" fill="${c.bg}"/>
-          </svg>
-          <span>${h(playerLabel(p.pid, cat))}</span>
-        </div>`;
-      }).join('');
+    // Groupes → HTML avec 2 équipes chacun
+    const groupesHtml = draft.groupes.map((g, gi) => {
+      const totalJoueurs = g.teams[0].length + g.teams[1].length;
       return `<div class="ps-pdf-group">
-        <div class="ps-pdf-group-head">Groupe ${gi + 1} <span>(${list.length})</span></div>
-        <div class="ps-pdf-group-list">${chips || '<div class="ps-pdf-empty-mini">—</div>'}</div>
+        <div class="ps-pdf-group-head">Groupe ${gi + 1} <span>(${totalJoueurs})</span></div>
+        <div class="ps-pdf-group-teams">
+          ${g.teams.map((team, ti) => {
+            const c = TEAM_COLORS[ti];
+            const players = team.map(pid => `<div class="ps-pdf-player">${h(playerLabel(pid, cat))}</div>`).join('');
+            return `<div class="ps-pdf-team" style="background:${c.bg}15; border-color:${c.bg}">
+              <div class="ps-pdf-team-head" style="background:${c.bg}; color:${c.text}">${c.label}</div>
+              <div class="ps-pdf-team-list">${players || '<div class="ps-pdf-team-empty">—</div>'}</div>
+            </div>`;
+          }).join('')}
+        </div>
       </div>`;
     }).join('');
 
-    const contenuHtml = draft.contenuHtml
-      ? `<div class="ps-pdf-content-html">${draft.contenuHtml}</div>`
-      : draft.contenu
-      ? `<div class="ps-pdf-content-text">${h(draft.contenu).replace(/\n/g, '<br>')}</div>`
-      : `<div class="ps-pdf-content-lines">
-          ${Array.from({ length: 12 }, () => '<div class="ps-pdf-line"></div>').join('')}
-        </div>`;
+    const contenuHtml = draft.contenuHtml ||
+      `<div class="ps-pdf-empty-content">Aucune image de séance importée.<br>💡 Importe une capture d'écran de ta séance depuis l'éditeur.</div>`;
+
+    // Choix du nb de colonnes selon nb de groupes
+    let gridCols = 2;
+    if (draft.nbGroupes >= 5) gridCols = 3;
+    if (draft.nbGroupes >= 7) gridCols = 4;
 
     const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><title>Fiche pré-séance ${draft.date}</title>
-<style>${buildPdfCss()}</style></head>
+<style>${buildPdfCss(gridCols)}</style></head>
 <body>
 
-  <!-- ═══════════════ Feuille A4 PAYSAGE pliable verticalement ═══════════════ -->
   <div class="ps-fold-sheet">
 
-    <!-- ── COLONNE GAUCHE : infos + groupes en PORTRAIT naturel (148x210) ── -->
+    <!-- ═══ COLONNE GAUCHE : Header + Objectif + Groupes (portrait) ═══ -->
     <div class="ps-fold-half ps-fold-left">
-      <header class="ps-fold-portrait-head">
-        <div class="ps-pdf-kicker">P'tits Verts · ${h(catLbl)}</div>
-        <h1>Fiche pré-séance</h1>
-        <div class="ps-pdf-date">${h(dateLabel)}</div>
-        ${draft.theme ? `<div class="ps-pdf-theme">🎨 <strong>${h(draft.theme)}</strong></div>` : ''}
-        <div class="ps-pdf-stats">
-          <div class="ps-pdf-stat"><strong>${draft.presentPids.length}</strong><span>Présents</span></div>
-          <div class="ps-pdf-stat"><strong>${draft.nbGroupes}</strong><span>Groupes</span></div>
-          <div class="ps-pdf-stat"><strong>${draft.principes.length}</strong><span>Princ.</span></div>
+
+      <header class="ps-pdf-head">
+        ${logoSrc ? `<img src="${logoSrc}" class="ps-pdf-logo" alt="${h(logoName)}">` : `<div class="ps-pdf-logo-placeholder">${h(logoName)}</div>`}
+        <div class="ps-pdf-head-text">
+          <div class="ps-pdf-kicker">${h(catLbl)}</div>
+          <h1>Fiche pré-séance</h1>
+          <div class="ps-pdf-date">${h(dateLabel)}${draft.theme ? ' · <em>' + h(draft.theme) + '</em>' : ''}</div>
         </div>
       </header>
 
-      <section class="ps-pdf-section">
-        <h2>🎯 Principes & objectifs</h2>
-        <div class="ps-pdf-principles">${principesHtml}</div>
+      <section class="ps-pdf-objectif-block">
+        <div class="ps-pdf-objectif-label">🎯 Objectif de la séance</div>
+        <div class="ps-pdf-objectif-value">${h(draft.objectif) || '<em style="color:#94a3b8">Non défini</em>'}</div>
       </section>
 
-      <section class="ps-pdf-section ps-pdf-section-groups">
-        <h2>👥 Groupes</h2>
-        <div class="ps-pdf-groups ps-pdf-groups-${draft.nbGroupes}">${groupesHtml}</div>
+      <section class="ps-pdf-groups-section">
+        <div class="ps-pdf-groups-grid" style="grid-template-columns: repeat(${gridCols}, 1fr)">
+          ${groupesHtml}
+        </div>
       </section>
 
-      <footer class="ps-pdf-foot">v5.12.0 · Axel Pouteau</footer>
+      <footer class="ps-pdf-foot">
+        ${draft.presentPids.length} présents · ${draft.principes.length} principe${draft.principes.length > 1 ? 's' : ''} FFF · v6.0.0 · Axel Pouteau
+      </footer>
     </div>
 
-    <!-- ── Ligne de pli verticale au milieu ── -->
-    <div class="ps-fold-line" aria-hidden="true">
-      <span class="ps-fold-icon">✂ Plier ici ✂</span>
-    </div>
+    <!-- ═══ Ligne de pli verticale ═══ -->
+    <div class="ps-fold-line"><span class="ps-fold-icon">✂ Plier ici ✂</span></div>
 
-    <!-- ── COLONNE DROITE : séance en PAYSAGE (contenu roté 90° pour lire tourné) ── -->
+    <!-- ═══ COLONNE DROITE : Séance rotated pour landscape ═══ -->
     <div class="ps-fold-half ps-fold-right">
       <div class="ps-rotated-content">
         <div class="ps-fold-landscape-head">
-          <span class="ps-pdf-kicker">📝 Séance · ${h(dateLabel)}${draft.theme ? ' · ' + h(draft.theme) : ''}</span>
-          <span class="ps-fold-panel-date">Tourner la feuille pour lire ↻</span>
+          <span class="ps-pdf-kicker">📝 Séance · ${h(dateLabel)}</span>
+          <span class="ps-fold-panel-date">↻ Tourner la feuille</span>
         </div>
         <div class="ps-fold-landscape-body">
           ${contenuHtml}
@@ -518,233 +513,180 @@
     close();
   }
 
-  function buildPdfCss() {
+  function buildPdfCss(gridCols) {
     return `
-      /* ── Reset + impression ── */
       *, *::before, *::after {
         box-sizing: border-box; margin: 0; padding: 0;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
       @page { size: A4 landscape; margin: 0; }
-
       html, body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; background: #fff; }
-      body { font-size: 11px; line-height: 1.35; }
+      body { font-size: 11px; line-height: 1.4; }
 
-      /* ── Feuille A4 paysage (297x210mm) pliable verticalement ── */
+      /* Feuille A4 paysage, pli vertical au milieu */
       .ps-fold-sheet {
-        width: 297mm;
-        height: 210mm;
+        width: 297mm; height: 210mm;
         display: grid;
         grid-template-columns: 1fr 8mm 1fr;
         position: relative;
         overflow: hidden;
-        page-break-after: auto;
       }
-      /* Chaque moitié = 148mm x 210mm = format PORTRAIT physique */
-      .ps-fold-half {
-        overflow: hidden;
-        position: relative;
-      }
+      .ps-fold-half { overflow: hidden; position: relative; }
       .ps-fold-left {
         padding: 8mm 6mm;
-        display: flex;
-        flex-direction: column;
-        background: linear-gradient(180deg, #fff 0%, #f0fdf4 100%);
-      }
-      .ps-fold-right {
+        display: flex; flex-direction: column;
         background: #fff;
       }
+      .ps-fold-right { background: #fff; }
 
-      /* Ligne de pli verticale au milieu */
+      /* Pli vertical */
       .ps-fold-line {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: flex; align-items: center; justify-content: center;
         border-left: 1px dashed #94a3b8;
         border-right: 1px dashed #94a3b8;
         background: #f8fafc;
         writing-mode: vertical-rl;
-        text-orientation: mixed;
       }
       .ps-fold-icon {
-        color: #64748b;
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: .3em;
-        text-transform: uppercase;
+        color: #64748b; font-size: 9px; font-weight: 700;
+        letter-spacing: .3em; text-transform: uppercase;
       }
 
-      /* ── Header colonne gauche (portrait) ── */
-      .ps-fold-portrait-head {
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-        margin-bottom: 8px;
-        padding-bottom: 8px;
+      /* ── Header colonne gauche ── */
+      .ps-pdf-head {
+        display: flex; align-items: center; gap: 10px;
+        padding-bottom: 8px; margin-bottom: 8px;
         border-bottom: 3px solid #009640;
         flex-shrink: 0;
       }
-      .ps-fold-portrait-head .ps-pdf-stats {
-        display: flex; gap: 4px; margin-top: 6px;
+      .ps-pdf-logo {
+        width: 45px; height: 45px; object-fit: contain;
       }
-
-      /* ── Colonne droite : contenu ROTATED 90° pour être landscape ──
-         Le contenu logique fait 210x148mm (landscape naturel).
-         Il est tourné 90° puis positionné pour rentrer dans le panneau physique 148x210. */
-      .ps-rotated-content {
-        width: 210mm;
-        height: 148mm;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(90deg);
-        transform-origin: center center;
-        padding: 8mm;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
+      .ps-pdf-logo-placeholder {
+        width: 45px; height: 45px;
+        background: #009640; color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 9px; font-weight: 700; text-align: center;
+        border-radius: 4px;
       }
-      .ps-fold-landscape-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 6px;
-        margin-bottom: 8px;
-        border-bottom: 2px solid #009640;
-        flex-shrink: 0;
-      }
-      .ps-fold-landscape-body {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-      }
-      .ps-fold-panel-date { font-size: 9px; color: #64748b; font-weight: 600; }
+      .ps-pdf-head-text { flex: 1; }
       .ps-pdf-kicker {
         font-size: 9px; text-transform: uppercase; color: #009640;
         font-weight: 800; letter-spacing: .12em;
       }
-      h1 { font-size: 20px; margin: 2px 0 3px; color: #0f172a; letter-spacing: -0.5px; }
-      .ps-pdf-date { color: #475569; font-size: 11px; text-transform: capitalize; }
-      .ps-pdf-theme { color: #009640; font-size: 11px; margin-top: 4px; }
+      h1 { font-size: 18px; margin: 2px 0; color: #0f172a; letter-spacing: -0.3px; }
+      .ps-pdf-date { color: #475569; font-size: 10px; text-transform: capitalize; }
 
-      /* ── Stats header ── */
-      .ps-pdf-stats { display: flex; gap: 4px; flex-shrink: 0; }
-      .ps-pdf-stat {
-        text-align: center; padding: 4px 8px; min-width: 42px;
-        background: #f0fdf4; border-radius: 6px;
-        border: 1px solid rgba(0,150,64,0.15);
-      }
-      .ps-pdf-stat strong { display: block; font-size: 16px; color: #009640; line-height: 1; font-weight: 800; }
-      .ps-pdf-stat span { font-size: 8px; text-transform: uppercase; color: #475569; font-weight: 700; letter-spacing: .05em; }
-
-      /* ── Sections (compactes pour tenir dans 140mm) ── */
-      .ps-pdf-section { margin-bottom: 8px; min-height: 0; overflow: hidden; }
-      .ps-pdf-section-principles { display: flex; flex-direction: column; }
-      .ps-pdf-section-groups { display: flex; flex-direction: column; }
-      h2 {
-        font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
-        color: #009640; margin-bottom: 5px; padding: 3px 0 4px;
-        border-bottom: 2px solid #009640; font-weight: 800;
+      /* ── Bloc Objectif de la séance ── */
+      .ps-pdf-objectif-block {
+        background: linear-gradient(90deg, #f0fdf4 0%, #fff 100%);
+        border-left: 4px solid #009640;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 8px;
         flex-shrink: 0;
       }
-
-      /* ── Principes (compact) ── */
-      .ps-pdf-principles { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
-      .ps-pdf-principle {
-        background: #f8fafc; border-left: 3px solid #009640;
-        padding: 5px 8px; border-radius: 3px; font-size: 10px;
+      .ps-pdf-objectif-label {
+        font-size: 9px; text-transform: uppercase; color: #009640;
+        font-weight: 800; letter-spacing: .08em;
       }
-      .ps-pdf-principle-head { display: flex; align-items: center; gap: 5px; }
-      .ps-pdf-num {
-        background: #009640; color: #fff !important;
-        font-weight: 700; padding: 1px 6px; border-radius: 8px; font-size: 8px;
-      }
-      .ps-pdf-phase { color: #64748b; font-size: 9px; margin-left: auto; }
-      .ps-pdf-objective {
-        color: #0f172a; margin-top: 3px; font-style: italic; font-size: 10px;
-        padding-left: 3px; border-left: 2px solid #e5e7eb;
-      }
-      .ps-pdf-empty, .ps-pdf-empty-mini {
-        color: #94a3b8; font-style: italic; text-align: center; padding: 8px; font-size: 10px;
+      .ps-pdf-objectif-value {
+        color: #0f172a; font-size: 12px; margin-top: 3px; font-weight: 500;
       }
 
-      /* ── Groupes (compact) ── */
-      .ps-pdf-groups { display: grid; gap: 4px; flex: 1; overflow: hidden; }
-      .ps-pdf-groups-2 { grid-template-columns: 1fr 1fr; }
-      .ps-pdf-groups-3 { grid-template-columns: 1fr 1fr 1fr; }
-      .ps-pdf-groups-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+      /* ── Grille groupes ── */
+      .ps-pdf-groups-section { flex: 1; overflow: hidden; }
+      .ps-pdf-groups-grid {
+        display: grid;
+        gap: 4px;
+        height: 100%;
+        max-height: 100%;
+      }
       .ps-pdf-group {
-        border: 1.5px solid #009640; border-radius: 5px; overflow: hidden;
-        page-break-inside: avoid;
+        border: 1.5px solid #009640;
+        border-radius: 5px;
+        overflow: hidden;
         display: flex; flex-direction: column;
+        min-height: 0;
       }
       .ps-pdf-group-head {
         background: #009640; color: #fff !important;
         padding: 3px 6px; font-weight: 800; font-size: 10px;
-        letter-spacing: .03em; flex-shrink: 0;
+        flex-shrink: 0;
       }
-      .ps-pdf-group-head span { color: #d1fae5 !important; font-weight: 500; font-size: 9px; margin-left: 3px; }
-      .ps-pdf-group-list {
-        padding: 4px; display: flex; flex-direction: column; gap: 2px;
-        background: #fafafa; flex: 1;
+      .ps-pdf-group-head span {
+        color: #d1fae5 !important; font-weight: 500; font-size: 9px;
+      }
+      .ps-pdf-group-teams {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+        padding: 2px; flex: 1; min-height: 0;
+      }
+      .ps-pdf-team {
+        border-radius: 3px; padding: 2px;
+        border: 1px solid;
+        display: flex; flex-direction: column;
+        min-height: 0; overflow: hidden;
+      }
+      .ps-pdf-team-head {
+        font-size: 8px; font-weight: 800; padding: 2px 4px;
+        border-radius: 2px; text-align: center;
+        flex-shrink: 0;
+      }
+      .ps-pdf-team-list {
+        padding: 3px 2px; overflow: hidden; flex: 1;
+      }
+      .ps-pdf-player {
+        font-size: 8px; padding: 1px 2px; color: #0f172a;
+      }
+      .ps-pdf-team-empty {
+        font-size: 8px; color: #94a3b8; font-style: italic; text-align: center;
       }
 
-      /* ── Chips joueurs (impression-safe : SVG + bordure) ── */
-      .ps-pdf-chip {
-        display: flex; align-items: center; gap: 4px;
-        padding: 2px 5px; background: #fff;
-        border-radius: 3px; border-top: 1px solid #f1f5f9;
-        font-size: 9px; font-weight: 600;
+      /* Footer */
+      .ps-pdf-foot {
+        margin-top: 6px; padding-top: 4px;
+        border-top: 1px solid #e5e7eb;
+        font-size: 8px; color: #94a3b8; text-align: center;
+        flex-shrink: 0;
       }
-      .ps-pdf-chip:first-child { border-top: none; }
-      .ps-pdf-chip-dot {
-        width: 8px; height: 8px; flex-shrink: 0;
-      }
-      .ps-pdf-chip span { flex: 1; color: #0f172a; font-weight: 600; font-size: 9px; }
 
-      /* ── Contenu séance dans zone rotated (logique 210x148 landscape) ── */
+      /* ── Colonne droite : contenu ROTATED 90° ── */
+      .ps-rotated-content {
+        width: 210mm; height: 148mm;
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%) rotate(90deg);
+        transform-origin: center center;
+        padding: 8mm;
+        box-sizing: border-box;
+        display: flex; flex-direction: column;
+      }
+      .ps-fold-landscape-head {
+        display: flex; justify-content: space-between; align-items: center;
+        padding-bottom: 6px; margin-bottom: 8px;
+        border-bottom: 2px solid #009640;
+        flex-shrink: 0;
+      }
+      .ps-fold-landscape-body {
+        flex: 1; display: flex; align-items: center; justify-content: center;
+        overflow: hidden;
+      }
+      .ps-fold-panel-date { font-size: 9px; color: #64748b; font-weight: 600; }
+
+      /* Image séance dans zone landscape (210x148 logique) */
       .ps-pdf-content-image { width: 100%; text-align: center; }
       .ps-pdf-content-image img {
-        max-width: 100%;
-        max-height: 120mm;
+        max-width: 100%; max-height: 120mm;
         width: auto; height: auto;
         object-fit: contain;
-        display: inline-block;
       }
-      .ps-pdf-content-text {
-        background: #fafafa; padding: 10px 14px; border-radius: 6px;
-        font-size: 12px; line-height: 1.5; white-space: pre-wrap;
-        border-left: 4px solid #009640;
-        max-height: 120mm; overflow: hidden; width: 100%;
-      }
-      .ps-pdf-content-html { font-size: 11px; line-height: 1.4; width: 100%; max-height: 120mm; overflow: hidden; }
-      .ps-pdf-content-html p { margin-bottom: 6px; }
-      .ps-pdf-content-html h1, .ps-pdf-content-html h2, .ps-pdf-content-html h3 {
-        font-size: 12px; margin: 6px 0 3px; color: #009640;
-        text-transform: none; border: none; letter-spacing: 0; padding: 0;
-      }
-      .ps-pdf-content-html img {
-        max-width: 100% !important; max-height: 120mm !important;
-        height: auto !important; width: auto !important;
-        object-fit: contain; display: block; margin: 2px auto;
-      }
-      .ps-pdf-content-lines {
-        display: flex; flex-direction: column; gap: 10px;
-        padding: 8px 0; width: 100%;
-      }
-      .ps-pdf-line { border-bottom: 1px solid #cbd5e1; height: 14px; }
-      .ps-pdf-foot {
-        margin-top: auto; padding-top: 6px;
-        border-top: 1px solid #e5e7eb; font-size: 8px;
-        color: #94a3b8; text-align: center;
+      .ps-pdf-empty-content {
+        color: #94a3b8; font-style: italic; text-align: center;
+        padding: 40px 20px; font-size: 12px;
       }
     `;
   }
-
-  /* ── Exports ────────────────────────────────────────── */
 
   window.PreSeanceModule = { open, close, handleAction };
 })();
