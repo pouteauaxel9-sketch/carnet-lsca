@@ -431,7 +431,13 @@
     const groupesHtml = draft.groupes.map((list, gi) => {
       const chips = list.map(p => {
         const c = CHASUBLE_COLORS.find(x => x.key === p.color) || CHASUBLE_COLORS[0];
-        return `<div class="ps-pdf-chip" style="background:${c.bg};color:${c.text}">${h(playerLabel(p.pid, cat))}</div>`;
+        // SVG inline (impression garantie) + bordure épaisse + texte coloré
+        return `<div class="ps-pdf-chip" style="border-left:6px solid ${c.bg};color:${c.bg}">
+          <svg class="ps-pdf-chip-dot" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="6" cy="6" r="5" fill="${c.bg}"/>
+          </svg>
+          <span>${h(playerLabel(p.pid, cat))}</span>
+        </div>`;
       }).join('');
       return `<div class="ps-pdf-group">
         <div class="ps-pdf-group-head">Groupe ${gi + 1} <span>(${list.length})</span></div>
@@ -485,6 +491,9 @@
   </div>
 
   ${hasRichContent ? `
+  <!-- ═══════════════ Force page break robuste ═══════════════ -->
+  <div class="page-break-forcer"></div>
+
   <!-- ═══════════════ PAGE 2 : Contenu séance ═══════════════ -->
   <div class="ps-pdf-page ps-pdf-page-content">
     <header class="ps-pdf-head-compact">
@@ -495,7 +504,6 @@
       <div class="ps-pdf-page-num">Page 2/2</div>
     </header>
     <section class="ps-pdf-section ps-pdf-section-content">
-      <h2>📝 Contenu de la séance</h2>
       ${contenuHtml}
     </section>
   </div>
@@ -523,13 +531,19 @@
       html, body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; background: #fff; }
       body { font-size: 12px; line-height: 1.4; }
 
-      /* ── Page container ── */
+      /* ── Page container + forceur de saut de page ── */
       .ps-pdf-page {
         padding: 4mm 2mm;
+        break-after: page;
         page-break-after: always;
       }
-      .ps-pdf-page:last-child { page-break-after: auto; }
+      .ps-pdf-page:last-child { break-after: auto; page-break-after: auto; }
       .ps-pdf-page-content { padding-top: 2mm; }
+      .page-break-forcer {
+        page-break-before: always;
+        break-before: page;
+        height: 0;
+      }
 
       /* ── Header page 1 ── */
       .ps-pdf-head {
@@ -617,12 +631,18 @@
         min-height: 60px; background: #fafafa;
       }
 
-      /* ── Chips joueurs : couleurs bien visibles à l'impression ── */
+      /* ── Chips joueurs (impression-safe : SVG + texte coloré + bordure) ── */
       .ps-pdf-chip {
-        display: block; padding: 6px 10px; border-radius: 6px;
+        display: flex; align-items: center; gap: 6px;
+        padding: 5px 8px; background: #fff;
+        border-radius: 4px; border-top: 1px solid #e5e7eb;
         font-size: 11px; font-weight: 700;
-        border: 1px solid rgba(0,0,0,0.08);
       }
+      .ps-pdf-chip:first-child { border-top: none; }
+      .ps-pdf-chip-dot {
+        width: 12px; height: 12px; flex-shrink: 0;
+      }
+      .ps-pdf-chip span { flex: 1; color: #0f172a; font-weight: 600; }
 
       /* ── Contenu page 2 ── */
       .ps-pdf-section-content { min-height: 260mm; }
