@@ -328,6 +328,35 @@
     SYNC_KEYS, collectAllData, applyRemoteData,
   };
 
+  /* ── Auto-hook sur localStorage.setItem ─────────────────
+     Les modules live-training / sessions-history / weekly-focus / roster
+     écrivent directement dans localStorage sans passer par saveAppState.
+     On intercepte donc setItem pour détecter toute écriture sur une clé
+     surveillée et déclencher un push automatique. */
+  const nativeSetItem = Storage.prototype.setItem;
+  Storage.prototype.setItem = function (key, value) {
+    nativeSetItem.call(this, key, value);
+    if (this === window.localStorage && SYNC_KEYS.includes(key)) {
+      schedulePush();
+    }
+  };
+
+  /* ── Push forcé avant fermeture / passage en arrière-plan ─────
+     Le push est débouncé à 5s : si l'utilisateur ferme l'app avant,
+     la dernière modif est perdue. On force un push immédiat sur
+     visibilitychange et beforeunload. */
+  function flushPush() {
+    if (!isConfigured() || !navigator.onLine) return;
+    if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+    // fire-and-forget (le browser peut couper l'onglet à tout moment)
+    pushNow();
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPush();
+  });
+  window.addEventListener('pagehide', flushPush);
+  window.addEventListener('beforeunload', flushPush);
+
   /* ── Auto-bootstrap au chargement du script ─────────────
      Fix du bug où app.js appelait SyncModule.bootstrap() avant que ce
      script soit exécuté (undefined → silencieusement ignoré). */
