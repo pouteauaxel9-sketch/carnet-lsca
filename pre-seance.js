@@ -201,14 +201,39 @@
     if (!file || !draft) return;
     draft.contenuFile = file.name;
     try {
-      if (window.mammoth && /\.docx$/i.test(file.name)) {
+      // Cas 1 : image (jpg/png) → embed direct, rendu 1:1 dans le PDF
+      if (/^image\//.test(file.type) || /\.(png|jpe?g|gif|webp)$/i.test(file.name)) {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsDataURL(file);
+        });
+        draft.contenuHtml = `<div class="ps-pdf-content-image"><img src="${dataUrl}" alt="Séance"></div>`;
+        draft.contenu = '';
+        toast('Image importée (' + file.name + ')');
+      }
+      // Cas 2 : .docx via mammoth (conserve les images internes en base64)
+      else if (window.mammoth && /\.docx$/i.test(file.name)) {
         const arrayBuffer = await file.arrayBuffer();
-        const result = await window.mammoth.convertToHtml({ arrayBuffer });
+        const result = await window.mammoth.convertToHtml(
+          { arrayBuffer },
+          {
+            styleMap: [
+              "p[style-name='Heading 1'] => h2",
+              "p[style-name='Heading 2'] => h3",
+              "p[style-name='Titre 1'] => h2",
+              "p[style-name='Titre 2'] => h3",
+              "b => strong",
+              "i => em",
+            ],
+          }
+        );
         draft.contenuHtml = result.value || '';
         draft.contenu = '';
-        toast('Fichier Word importé (' + file.name + ')');
+        const nbImages = (draft.contenuHtml.match(/<img/g) || []).length;
+        toast(`Fichier Word importé — ${nbImages} image${nbImages > 1 ? 's' : ''}`);
       } else {
-        // Fallback : lecture texte brut (peut donner du charabia sur un .docx binaire)
         const txt = await file.text();
         draft.contenu = txt.slice(0, 5000);
         draft.contenuHtml = '';
@@ -290,9 +315,12 @@
               <h4>Contenu de la séance</h4>
               <div class="ps-content-actions">
                 <label class="ps-file-btn">
-                  📎 Importer Word
-                  <input type="file" accept=".docx,.doc,.txt,.md" hidden data-pre-action="import-word">
+                  📎 Importer Word ou image
+                  <input type="file" accept=".docx,.doc,.txt,.md,image/*" hidden data-pre-action="import-word">
                 </label>
+                <p class="ps-hint" style="width:100%;margin-top:0">
+                  💡 Pour un rendu identique à ton Word, exporte-le en <strong>image</strong> (capture ou "Enregistrer sous → JPEG") et importe cette image ici.
+                </p>
                 ${draft.contenuFile ? `<span class="ps-file-info">📄 ${h(draft.contenuFile)}</span>` : ''}
               </div>
               ${draft.contenuHtml ? `
@@ -524,6 +552,31 @@
       .ps-pdf-content-html { font-size: 12px; }
       .ps-pdf-content-html p { margin-bottom: 6px; }
       .ps-pdf-content-html h1, .ps-pdf-content-html h2, .ps-pdf-content-html h3 { font-size: 13px; margin: 6px 0 4px; color: #009640; }
+      /* Contrainte cruciale pour les images du Word — sinon 1 image = 1 page en A4 */
+      .ps-pdf-content-html img {
+        max-width: 100% !important;
+        max-height: 380px !important;
+        height: auto !important;
+        width: auto !important;
+        object-fit: contain;
+        display: block;
+        margin: 6px auto;
+        page-break-inside: avoid;
+      }
+      .ps-pdf-content-html table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 6px 0;
+        page-break-inside: avoid;
+      }
+      .ps-pdf-content-html td, .ps-pdf-content-html th {
+        border: 1px solid #cbd5e1;
+        padding: 4px 6px;
+      }
+      .ps-pdf-content-html ul, .ps-pdf-content-html ol { padding-left: 20px; margin: 4px 0; }
+      .ps-pdf-content-html figure { page-break-inside: avoid; }
+      .ps-pdf-content-image { text-align: center; page-break-inside: avoid; }
+      .ps-pdf-content-image img { max-width: 100%; max-height: 700px; height: auto; }
       .ps-pdf-content-lines { display: flex; flex-direction: column; gap: 12px; padding: 8px 0; }
       .ps-pdf-line { border-bottom: 1px solid #cbd5e1; height: 14px; }
       .ps-pdf-foot { margin-top: 20px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #94a3b8; text-align: center; }
