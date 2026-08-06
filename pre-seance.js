@@ -458,50 +458,51 @@
 <style>${buildPdfCss()}</style></head>
 <body>
 
-  <!-- ═══════════════ Feuille A4 PORTRAIT pliable horizontalement ═══════════════ -->
+  <!-- ═══════════════ Feuille A4 PAYSAGE pliable verticalement ═══════════════ -->
   <div class="ps-fold-sheet">
 
-    <!-- ── MOITIÉ HAUTE : infos + groupes (landscape shape) ── -->
-    <div class="ps-fold-half ps-fold-top">
-      <header class="ps-fold-top-head">
-        <div class="ps-fold-head-title">
-          <div class="ps-pdf-kicker">P'tits Verts · ${h(catLbl)}</div>
-          <h1>Fiche pré-séance</h1>
-          <div class="ps-pdf-date">${h(dateLabel)}${draft.theme ? ` · <span style="color:#009640">🎨 ${h(draft.theme)}</span>` : ''}</div>
-        </div>
+    <!-- ── COLONNE GAUCHE : infos + groupes en PORTRAIT naturel (148x210) ── -->
+    <div class="ps-fold-half ps-fold-left">
+      <header class="ps-fold-portrait-head">
+        <div class="ps-pdf-kicker">P'tits Verts · ${h(catLbl)}</div>
+        <h1>Fiche pré-séance</h1>
+        <div class="ps-pdf-date">${h(dateLabel)}</div>
+        ${draft.theme ? `<div class="ps-pdf-theme">🎨 <strong>${h(draft.theme)}</strong></div>` : ''}
         <div class="ps-pdf-stats">
           <div class="ps-pdf-stat"><strong>${draft.presentPids.length}</strong><span>Présents</span></div>
           <div class="ps-pdf-stat"><strong>${draft.nbGroupes}</strong><span>Groupes</span></div>
-          <div class="ps-pdf-stat"><strong>${draft.principes.length}</strong><span>Principes</span></div>
+          <div class="ps-pdf-stat"><strong>${draft.principes.length}</strong><span>Princ.</span></div>
         </div>
       </header>
 
-      <div class="ps-fold-top-body">
-        <section class="ps-pdf-section ps-pdf-section-principles">
-          <h2>🎯 Principes & objectifs</h2>
-          <div class="ps-pdf-principles">${principesHtml}</div>
-        </section>
+      <section class="ps-pdf-section">
+        <h2>🎯 Principes & objectifs</h2>
+        <div class="ps-pdf-principles">${principesHtml}</div>
+      </section>
 
-        <section class="ps-pdf-section ps-pdf-section-groups">
-          <h2>👥 Groupes</h2>
-          <div class="ps-pdf-groups ps-pdf-groups-${draft.nbGroupes}">${groupesHtml}</div>
-        </section>
-      </div>
+      <section class="ps-pdf-section ps-pdf-section-groups">
+        <h2>👥 Groupes</h2>
+        <div class="ps-pdf-groups ps-pdf-groups-${draft.nbGroupes}">${groupesHtml}</div>
+      </section>
+
+      <footer class="ps-pdf-foot">v5.12.0 · Axel Pouteau</footer>
     </div>
 
-    <!-- ── Ligne de pli horizontale au milieu ── -->
+    <!-- ── Ligne de pli verticale au milieu ── -->
     <div class="ps-fold-line" aria-hidden="true">
-      <span class="ps-fold-icon">✂ — — — — — Plier ici — — — — — ✂</span>
+      <span class="ps-fold-icon">✂ Plier ici ✂</span>
     </div>
 
-    <!-- ── MOITIÉ BASSE : image de séance en landscape ── -->
-    <div class="ps-fold-half ps-fold-bottom">
-      <div class="ps-fold-bottom-head">
-        <span class="ps-pdf-kicker">📝 Séance · ${h(dateLabel)}</span>
-        <span class="ps-fold-panel-date">v5.11.0 · Axel Pouteau</span>
-      </div>
-      <div class="ps-fold-bottom-content">
-        ${contenuHtml}
+    <!-- ── COLONNE DROITE : séance en PAYSAGE (contenu roté 90° pour lire tourné) ── -->
+    <div class="ps-fold-half ps-fold-right">
+      <div class="ps-rotated-content">
+        <div class="ps-fold-landscape-head">
+          <span class="ps-pdf-kicker">📝 Séance · ${h(dateLabel)}${draft.theme ? ' · ' + h(draft.theme) : ''}</span>
+          <span class="ps-fold-panel-date">Tourner la feuille pour lire ↻</span>
+        </div>
+        <div class="ps-fold-landscape-body">
+          ${contenuHtml}
+        </div>
       </div>
     </div>
 
@@ -525,42 +526,46 @@
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      @page { size: A4 portrait; margin: 0; }
+      @page { size: A4 landscape; margin: 0; }
 
       html, body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; background: #fff; }
       body { font-size: 11px; line-height: 1.35; }
 
-      /* ── Feuille A4 portrait (210x297mm) pliable en 2 horizontalement ── */
+      /* ── Feuille A4 paysage (297x210mm) pliable verticalement ── */
       .ps-fold-sheet {
-        width: 210mm;
-        height: 297mm;
+        width: 297mm;
+        height: 210mm;
         display: grid;
-        grid-template-rows: 1fr 8mm 1fr;
+        grid-template-columns: 1fr 8mm 1fr;
         position: relative;
         overflow: hidden;
         page-break-after: auto;
       }
-      /* Chaque moitié = 210mm x ~140mm = landscape naturel */
+      /* Chaque moitié = 148mm x 210mm = format PORTRAIT physique */
       .ps-fold-half {
-        padding: 6mm 8mm;
+        overflow: hidden;
+        position: relative;
+      }
+      .ps-fold-left {
+        padding: 8mm 6mm;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
-      }
-      .ps-fold-top {
         background: linear-gradient(180deg, #fff 0%, #f0fdf4 100%);
       }
-      .ps-fold-bottom {
+      .ps-fold-right {
         background: #fff;
       }
-      /* Ligne de pli horizontale au milieu */
+
+      /* Ligne de pli verticale au milieu */
       .ps-fold-line {
         display: flex;
         align-items: center;
         justify-content: center;
-        border-top: 1px dashed #94a3b8;
-        border-bottom: 1px dashed #94a3b8;
+        border-left: 1px dashed #94a3b8;
+        border-right: 1px dashed #94a3b8;
         background: #f8fafc;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
       }
       .ps-fold-icon {
         color: #64748b;
@@ -570,41 +575,53 @@
         text-transform: uppercase;
       }
 
-      /* ── Header moitié haute ── */
-      .ps-fold-top-head {
-        display: flex; justify-content: space-between; align-items: flex-start;
-        margin-bottom: 6px; padding-bottom: 6px;
+      /* ── Header colonne gauche (portrait) ── */
+      .ps-fold-portrait-head {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        margin-bottom: 8px;
+        padding-bottom: 8px;
         border-bottom: 3px solid #009640;
-        gap: 10px;
         flex-shrink: 0;
       }
-      .ps-fold-head-title { flex: 1; }
-
-      /* Corps moitié haute = 2 colonnes (principes | groupes) */
-      .ps-fold-top-body {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 1fr 1.3fr;
-        gap: 10px;
-        min-height: 0;
-        overflow: hidden;
+      .ps-fold-portrait-head .ps-pdf-stats {
+        display: flex; gap: 4px; margin-top: 6px;
       }
 
-      /* ── Header moitié basse ── */
-      .ps-fold-bottom-head {
-        display: flex; justify-content: space-between; align-items: center;
-        padding-bottom: 4px; margin-bottom: 6px;
+      /* ── Colonne droite : contenu ROTATED 90° pour être landscape ──
+         Le contenu logique fait 210x148mm (landscape naturel).
+         Il est tourné 90° puis positionné pour rentrer dans le panneau physique 148x210. */
+      .ps-rotated-content {
+        width: 210mm;
+        height: 148mm;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(90deg);
+        transform-origin: center center;
+        padding: 8mm;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+      }
+      .ps-fold-landscape-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 6px;
+        margin-bottom: 8px;
         border-bottom: 2px solid #009640;
         flex-shrink: 0;
       }
-      .ps-fold-panel-date { font-size: 9px; color: #64748b; font-weight: 600; text-transform: capitalize; }
-      .ps-fold-bottom-content {
+      .ps-fold-landscape-body {
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
       }
+      .ps-fold-panel-date { font-size: 9px; color: #64748b; font-weight: 600; }
       .ps-pdf-kicker {
         font-size: 9px; text-transform: uppercase; color: #009640;
         font-weight: 800; letter-spacing: .12em;
@@ -688,29 +705,29 @@
       }
       .ps-pdf-chip span { flex: 1; color: #0f172a; font-weight: 600; font-size: 9px; }
 
-      /* ── Contenu moitié basse (image séance en landscape 210x125mm max) ── */
+      /* ── Contenu séance dans zone rotated (logique 210x148 landscape) ── */
       .ps-pdf-content-image { width: 100%; text-align: center; }
       .ps-pdf-content-image img {
         max-width: 100%;
-        max-height: 125mm;
+        max-height: 120mm;
         width: auto; height: auto;
         object-fit: contain;
         display: inline-block;
       }
       .ps-pdf-content-text {
-        background: #fafafa; padding: 8px 12px; border-radius: 6px;
-        font-size: 11px; line-height: 1.5; white-space: pre-wrap;
+        background: #fafafa; padding: 10px 14px; border-radius: 6px;
+        font-size: 12px; line-height: 1.5; white-space: pre-wrap;
         border-left: 4px solid #009640;
-        max-height: 125mm; overflow: hidden; width: 100%;
+        max-height: 120mm; overflow: hidden; width: 100%;
       }
-      .ps-pdf-content-html { font-size: 10px; line-height: 1.4; width: 100%; max-height: 125mm; overflow: hidden; }
+      .ps-pdf-content-html { font-size: 11px; line-height: 1.4; width: 100%; max-height: 120mm; overflow: hidden; }
       .ps-pdf-content-html p { margin-bottom: 6px; }
       .ps-pdf-content-html h1, .ps-pdf-content-html h2, .ps-pdf-content-html h3 {
         font-size: 12px; margin: 6px 0 3px; color: #009640;
         text-transform: none; border: none; letter-spacing: 0; padding: 0;
       }
       .ps-pdf-content-html img {
-        max-width: 100% !important; max-height: 125mm !important;
+        max-width: 100% !important; max-height: 120mm !important;
         height: auto !important; width: auto !important;
         object-fit: contain; display: block; margin: 2px auto;
       }
