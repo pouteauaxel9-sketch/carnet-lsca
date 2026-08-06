@@ -453,59 +453,58 @@
           ${Array.from({ length: 12 }, () => '<div class="ps-pdf-line"></div>').join('')}
         </div>`;
 
+    // Le contenu séance existe-t-il ?
+    const hasContent = !!(draft.contenuHtml || (draft.contenu && draft.contenu.length > 20));
+
     const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><title>Fiche pré-séance ${draft.date}</title>
 <style>${buildPdfCss()}</style></head>
 <body>
 
-  <!-- ═══════════════ FORMAT : A4 PAYSAGE bi-fold (plié en 2) ═══════════════ -->
-  <div class="ps-fold-sheet">
-
-    <!-- ── PANNEAU HAUT : infos séance (layout horizontal) ── -->
-    <div class="ps-fold-panel ps-fold-panel-left">
-      <header class="ps-fold-head">
-        <div class="ps-fold-head-title">
-          <div class="ps-pdf-kicker">P'tits Verts · ${h(catLbl)}</div>
-          <h1>Fiche pré-séance</h1>
-          <div class="ps-pdf-date">${h(dateLabel)}${draft.theme ? ` · <span style="color:#009640">🎨 ${h(draft.theme)}</span>` : ''}</div>
-        </div>
-        <div class="ps-pdf-stats">
-          <div class="ps-pdf-stat"><strong>${draft.presentPids.length}</strong><span>Présents</span></div>
-          <div class="ps-pdf-stat"><strong>${draft.nbGroupes}</strong><span>Groupes</span></div>
-          <div class="ps-pdf-stat"><strong>${draft.principes.length}</strong><span>Principes</span></div>
-        </div>
-      </header>
-
-      <div class="ps-fold-top-body">
-        <section class="ps-pdf-section ps-pdf-section-principles">
-          <h2>🎯 Principes & objectifs</h2>
-          <div class="ps-pdf-principles">${principesHtml}</div>
-        </section>
-
-        <section class="ps-pdf-section ps-pdf-section-groups">
-          <h2>👥 Groupes</h2>
-          <div class="ps-pdf-groups ps-pdf-groups-${draft.nbGroupes}">${groupesHtml}</div>
-        </section>
+  <!-- ═══════════════ PAGE 1 : PORTRAIT (infos + groupes) ═══════════════ -->
+  <div class="ps-page ps-page-portrait">
+    <header class="ps-pdf-head">
+      <div class="ps-pdf-head-left">
+        <div class="ps-pdf-kicker">P'tits Verts · ${h(catLbl)}</div>
+        <h1>Fiche pré-séance</h1>
+        <div class="ps-pdf-date">${h(dateLabel)}</div>
+        ${draft.theme ? `<div class="ps-pdf-theme">🎨 <strong>${h(draft.theme)}</strong></div>` : ''}
       </div>
-    </div>
-
-    <!-- ── Ligne de pli horizontale au milieu ── -->
-    <div class="ps-fold-line" aria-hidden="true">
-      <span class="ps-fold-icon">✂ — — — — — — Plier ici — — — — — — ✂</span>
-    </div>
-
-    <!-- ── PANNEAU BAS : image de séance en landscape ── -->
-    <div class="ps-fold-panel ps-fold-panel-right">
-      <div class="ps-fold-panel-head">
-        <span class="ps-pdf-kicker">📝 Séance · ${h(dateLabel)}</span>
-        <span class="ps-fold-panel-date">v5.9.0 · Axel Pouteau</span>
+      <div class="ps-pdf-stats">
+        <div class="ps-pdf-stat"><strong>${draft.presentPids.length}</strong><span>Présents</span></div>
+        <div class="ps-pdf-stat"><strong>${draft.nbGroupes}</strong><span>Groupes</span></div>
+        <div class="ps-pdf-stat"><strong>${draft.principes.length}</strong><span>Principes</span></div>
       </div>
-      <div class="ps-fold-content">
-        ${contenuHtml}
-      </div>
-    </div>
+    </header>
 
+    <section class="ps-pdf-section">
+      <h2>🎯 Principes de jeu & objectifs</h2>
+      <div class="ps-pdf-principles">${principesHtml}</div>
+    </section>
+
+    <section class="ps-pdf-section ps-pdf-section-groups">
+      <h2>👥 Composition des groupes</h2>
+      <div class="ps-pdf-groups ps-pdf-groups-${draft.nbGroupes}">${groupesHtml}</div>
+    </section>
+
+    <footer class="ps-pdf-foot">Page 1/${hasContent ? 2 : 1} · Généré le ${new Date().toLocaleString('fr-FR')} · Axel Pouteau · <span style="color:#009640;font-weight:700">v5.10.0</span></footer>
   </div>
+
+  ${hasContent ? `
+  <!-- ═══════════════ PAGE 2 : LANDSCAPE (séance en grand) ═══════════════ -->
+  <div class="ps-page ps-page-landscape">
+    <header class="ps-pdf-head-compact">
+      <div>
+        <span class="ps-pdf-kicker">P'tits Verts · ${h(catLbl)}</span>
+        <span class="ps-pdf-date-inline">📝 Séance · ${h(dateLabel)}${draft.theme ? ' · ' + h(draft.theme) : ''}</span>
+      </div>
+      <div class="ps-pdf-page-num">Page 2/2</div>
+    </header>
+    <div class="ps-landscape-content">
+      ${contenuHtml}
+    </div>
+  </div>
+  ` : ''}
 
   <script>window.addEventListener('load', () => setTimeout(() => window.print(), 400));</script>
 </body></html>`;
@@ -525,189 +524,163 @@
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      @page { size: A4 landscape; margin: 0; }
-      html, body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; background: #fff; }
-      body { font-size: 11px; line-height: 1.35; }
+      /* ── Deux formats de page : portrait par défaut, landscape sur demande ── */
+      @page portrait { size: A4 portrait; margin: 10mm; }
+      @page landscape { size: A4 landscape; margin: 10mm; }
+      @page { size: A4 portrait; margin: 10mm; }
 
-      /* ── Feuille A4 paysage plié HORIZONTALEMENT (top infos / bottom séance) ── */
-      .ps-fold-sheet {
-        width: 297mm;
-        height: 210mm;
-        display: grid;
-        grid-template-rows: 1fr 8mm 1fr;
-        page-break-after: auto;
-        position: relative;
-        overflow: hidden;
+      html, body { font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; background: #fff; }
+      body { font-size: 12px; line-height: 1.4; }
+
+      /* Page portrait (infos + groupes) */
+      .ps-page-portrait {
+        page: portrait;
+        page-break-after: always;
+        break-after: page;
+        padding: 4mm 2mm;
       }
-      .ps-fold-panel {
-        padding: 6mm 12mm;
+      /* Page landscape (image séance en grand) */
+      .ps-page-landscape {
+        page: landscape;
+        page-break-before: always;
+        break-before: page;
+        padding: 4mm 2mm;
+        min-height: 190mm;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
       }
-      .ps-fold-panel-left { /* En fait le panneau HAUT */
-        background: linear-gradient(90deg, #fff 0%, #f0fdf4 100%);
-      }
-      .ps-fold-panel-right { /* En fait le panneau BAS */
-        background: #fff;
-      }
-      /* Ligne de pli horizontale (visuelle uniquement) */
-      .ps-fold-line {
+      .ps-landscape-content {
+        flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-top: 1px dashed #94a3b8;
-        border-bottom: 1px dashed #94a3b8;
-        background: #f8fafc;
-      }
-      .ps-fold-icon {
-        color: #64748b;
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: .3em;
-        text-transform: uppercase;
+        margin-top: 4mm;
       }
 
-      /* ── Header panneau haut ── */
-      .ps-fold-head {
+      /* Header panneau portrait */
+      .ps-pdf-head {
         display: flex; justify-content: space-between; align-items: flex-start;
-        margin-bottom: 6px; padding-bottom: 6px;
-        border-bottom: 3px solid #009640;
-        gap: 12px;
+        margin-bottom: 14px; padding-bottom: 12px;
+        border-bottom: 4px solid #009640;
+        background: linear-gradient(to right, rgba(0,150,64,0.06), transparent);
+        padding: 10px 12px; border-radius: 8px 8px 0 0;
       }
-      .ps-fold-head-title { flex: 1; }
-      /* Corps du panneau haut = 2 colonnes (principes | groupes) */
-      .ps-fold-top-body {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 1fr 1.4fr;
-        gap: 12px;
-        min-height: 0;
-        overflow: hidden;
-      }
-      .ps-pdf-section-principles { min-height: 0; overflow: hidden; }
-      .ps-pdf-section-groups { min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
-      .ps-pdf-kicker {
-        font-size: 9px; text-transform: uppercase; color: #009640;
-        font-weight: 800; letter-spacing: .12em;
-      }
-      h1 { font-size: 20px; margin: 2px 0 3px; color: #0f172a; letter-spacing: -0.5px; }
-      .ps-pdf-date { color: #475569; font-size: 11px; text-transform: capitalize; }
-      .ps-pdf-theme { color: #009640; font-size: 11px; margin-top: 4px; }
+      .ps-pdf-head-left { flex: 1; }
 
-      /* ── Header panneau droit ── */
-      .ps-fold-panel-head {
+      /* Header compact page landscape */
+      .ps-pdf-head-compact {
         display: flex; justify-content: space-between; align-items: center;
         padding-bottom: 6px; margin-bottom: 8px;
-        border-bottom: 3px solid #009640;
+        border-bottom: 2px solid #009640;
+        font-size: 11px; color: #64748b;
       }
-      .ps-fold-panel-date { font-size: 10px; color: #64748b; font-weight: 600; text-transform: capitalize; }
-      .ps-fold-content {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
+      .ps-pdf-date-inline { margin-left: 8px; font-weight: 600; color: #009640; text-transform: capitalize; }
+      .ps-pdf-page-num { color: #94a3b8; font-size: 10px; font-weight: 700; }
+      .ps-pdf-kicker {
+        font-size: 10px; text-transform: uppercase; color: #009640;
+        font-weight: 800; letter-spacing: .12em;
       }
+      h1 { font-size: 26px; margin: 2px 0 4px; color: #0f172a; letter-spacing: -0.5px; }
+      .ps-pdf-date { color: #475569; font-size: 13px; text-transform: capitalize; }
+      .ps-pdf-theme { color: #009640; font-size: 13px; margin-top: 6px; }
 
-      /* ── Stats header (compact pour bi-fold) ── */
-      .ps-pdf-stats { display: flex; gap: 4px; flex-shrink: 0; }
+      /* ── Stats header ── */
+      .ps-pdf-stats { display: flex; gap: 8px; flex-shrink: 0; }
       .ps-pdf-stat {
-        text-align: center; padding: 4px 8px; min-width: 40px;
-        background: #f0fdf4; border-radius: 6px;
+        text-align: center; padding: 8px 14px; min-width: 68px;
+        background: #f0fdf4; border-radius: 10px;
         border: 1px solid rgba(0,150,64,0.15);
       }
-      .ps-pdf-stat strong { display: block; font-size: 16px; color: #009640; line-height: 1; font-weight: 800; }
-      .ps-pdf-stat span { font-size: 8px; text-transform: uppercase; color: #475569; font-weight: 700; letter-spacing: .05em; }
+      .ps-pdf-stat strong { display: block; font-size: 24px; color: #009640; line-height: 1; font-weight: 800; }
+      .ps-pdf-stat span { font-size: 9px; text-transform: uppercase; color: #475569; font-weight: 700; letter-spacing: .05em; }
 
-      /* ── Sections ── */
-      .ps-pdf-section { margin-bottom: 10px; }
+      /* ── Sections (portrait pleine page) ── */
+      .ps-pdf-section { margin-bottom: 14px; }
       h2 {
-        font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
-        color: #009640; margin-bottom: 6px; padding: 3px 0 4px;
+        font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+        color: #009640; margin-bottom: 8px; padding: 4px 0 6px;
         border-bottom: 2px solid #009640; font-weight: 800;
       }
 
-      /* ── Principes (compact bi-fold) ── */
-      .ps-pdf-principles { display: flex; flex-direction: column; gap: 4px; }
+      /* ── Principes ── */
+      .ps-pdf-principles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
       .ps-pdf-principle {
-        background: #f8fafc; border-left: 3px solid #009640;
-        padding: 5px 8px; border-radius: 3px; font-size: 10px;
+        background: #f8fafc; border-left: 4px solid #009640;
+        padding: 8px 12px; border-radius: 4px; font-size: 11px;
       }
-      .ps-pdf-principle-head { display: flex; align-items: center; gap: 5px; }
+      .ps-pdf-principle-head { display: flex; align-items: center; gap: 6px; }
       .ps-pdf-num {
         background: #009640; color: #fff !important;
-        font-weight: 700; padding: 1px 6px; border-radius: 8px; font-size: 8px;
+        font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 9px;
       }
-      .ps-pdf-phase { color: #64748b; font-size: 9px; margin-left: auto; }
+      .ps-pdf-phase { color: #64748b; font-size: 10px; margin-left: auto; }
       .ps-pdf-objective {
-        color: #0f172a; margin-top: 3px; font-style: italic; font-size: 10px;
-        padding-left: 3px; border-left: 2px solid #e5e7eb;
+        color: #0f172a; margin-top: 4px; font-style: italic; font-size: 11px;
+        padding-left: 4px; border-left: 2px solid #e5e7eb;
       }
       .ps-pdf-empty, .ps-pdf-empty-mini {
-        color: #94a3b8; font-style: italic; text-align: center; padding: 8px; font-size: 10px;
+        color: #94a3b8; font-style: italic; text-align: center; padding: 12px; font-size: 11px;
       }
 
-      /* ── Groupes (compact bi-fold) ── */
-      .ps-pdf-section-groups { flex: 1; display: flex; flex-direction: column; }
-      .ps-pdf-groups { display: grid; gap: 4px; flex: 1; }
+      /* ── Groupes ── */
+      .ps-pdf-section-groups { flex: 1; }
+      .ps-pdf-groups { display: grid; gap: 8px; }
       .ps-pdf-groups-2 { grid-template-columns: 1fr 1fr; }
       .ps-pdf-groups-3 { grid-template-columns: 1fr 1fr 1fr; }
-      .ps-pdf-groups-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+      .ps-pdf-groups-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
       .ps-pdf-group {
-        border: 1.5px solid #009640; border-radius: 5px; overflow: hidden;
+        border: 2px solid #009640; border-radius: 8px; overflow: hidden;
         page-break-inside: avoid;
-        display: flex; flex-direction: column;
       }
       .ps-pdf-group-head {
         background: #009640; color: #fff !important;
-        padding: 3px 6px; font-weight: 800; font-size: 10px;
-        letter-spacing: .03em; flex-shrink: 0;
+        padding: 6px 10px; font-weight: 800; font-size: 12px;
+        letter-spacing: .03em;
       }
-      .ps-pdf-group-head span { color: #d1fae5 !important; font-weight: 500; font-size: 9px; margin-left: 3px; }
+      .ps-pdf-group-head span { color: #d1fae5 !important; font-weight: 500; font-size: 11px; margin-left: 4px; }
       .ps-pdf-group-list {
-        padding: 4px; display: flex; flex-direction: column; gap: 2px;
-        background: #fafafa; flex: 1;
+        padding: 8px; display: flex; flex-direction: column; gap: 4px;
+        min-height: 60px; background: #fafafa;
       }
 
-      /* ── Chips joueurs (impression-safe : SVG + bordure + fond selon couleur) ── */
+      /* ── Chips joueurs (impression-safe : SVG + bordure) ── */
       .ps-pdf-chip {
-        display: flex; align-items: center; gap: 4px;
-        padding: 2px 5px; background: #fff;
-        border-radius: 3px; border-top: 1px solid #f1f5f9;
-        font-size: 9px; font-weight: 600;
+        display: flex; align-items: center; gap: 6px;
+        padding: 5px 8px; background: #fff;
+        border-radius: 4px; border-top: 1px solid #e5e7eb;
+        font-size: 11px; font-weight: 700;
       }
       .ps-pdf-chip:first-child { border-top: none; }
       .ps-pdf-chip-dot {
-        width: 8px; height: 8px; flex-shrink: 0;
+        width: 12px; height: 12px; flex-shrink: 0;
       }
-      .ps-pdf-chip span { flex: 1; color: #0f172a; font-weight: 600; font-size: 9px; }
+      .ps-pdf-chip span { flex: 1; color: #0f172a; font-weight: 600; }
 
-      /* ── Contenu panneau bas (image de séance en LANDSCAPE) ── */
-      .ps-pdf-content-image { width: 100%; height: 100%; text-align: center; display: flex; align-items: center; justify-content: center; }
+      /* ── Contenu page landscape (image séance pleine page) ── */
+      .ps-pdf-content-image { width: 100%; text-align: center; }
       .ps-pdf-content-image img {
         max-width: 100%;
-        max-height: 88mm;   /* Le panneau bas fait ~100mm de haut, on garde une marge */
+        max-height: 175mm;   /* Presque la totalité de la hauteur d'une A4 landscape (210mm - marges - header) */
         width: auto; height: auto;
         object-fit: contain;
         display: inline-block;
       }
       .ps-pdf-content-text {
-        background: #fafafa; padding: 8px 12px; border-radius: 6px;
-        font-size: 11px; line-height: 1.5; white-space: pre-wrap;
+        background: #fafafa; padding: 14px 20px; border-radius: 6px;
+        font-size: 13px; line-height: 1.6; white-space: pre-wrap;
         border-left: 4px solid #009640;
-        max-height: 90mm; overflow: hidden; width: 100%;
+        max-height: 175mm; overflow: hidden; width: 100%;
       }
-      .ps-pdf-content-html { font-size: 10px; line-height: 1.4; width: 100%; max-height: 90mm; overflow: hidden; }
-      .ps-pdf-content-html p { margin-bottom: 6px; }
+      .ps-pdf-content-html { font-size: 12px; line-height: 1.5; width: 100%; max-height: 175mm; overflow: hidden; }
+      .ps-pdf-content-html p { margin-bottom: 8px; }
       .ps-pdf-content-html h1, .ps-pdf-content-html h2, .ps-pdf-content-html h3 {
-        font-size: 12px; margin: 6px 0 3px; color: #009640;
+        font-size: 14px; margin: 8px 0 4px; color: #009640;
         text-transform: none; border: none; letter-spacing: 0; padding: 0;
       }
       .ps-pdf-content-html img {
-        max-width: 100% !important; max-height: 88mm !important;
+        max-width: 100% !important; max-height: 175mm !important;
         height: auto !important; width: auto !important;
-        object-fit: contain; display: block; margin: 2px auto;
+        object-fit: contain; display: block; margin: 4px auto;
       }
       .ps-pdf-content-lines {
         display: flex; flex-direction: column; gap: 10px;
