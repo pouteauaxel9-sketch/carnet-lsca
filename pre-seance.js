@@ -261,6 +261,7 @@
             <button class="modal-close" type="button" data-pre-action="close">×</button>
           </div>
 
+          <div class="ps-scroll">
           <div class="ps-editor-grid">
 
             <section class="ps-panel">
@@ -317,8 +318,9 @@
               </div>` : '<div class="ps-unassigned-empty">✓ Tous les présents sont affectés</div>'}
             <div class="ps-groups-grid">${groupCards}</div>
           </section>
+          </div><!-- /.ps-scroll -->
 
-          <div class="modal-footer" style="justify-content:space-between">
+          <div class="modal-footer ps-footer" style="justify-content:space-between">
             <span class="ps-info">${draft.presentPids.length} présent${draft.presentPids.length > 1 ? 's' : ''} · ${draft.principes.length} principe${draft.principes.length > 1 ? 's' : ''} FFF</span>
             <div style="display:flex;gap:8px">
               <button class="btn btn-ghost" type="button" data-pre-action="close">Annuler</button>

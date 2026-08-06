@@ -9137,23 +9137,23 @@ body.season-transition-active { overflow: hidden; }
   max-height: 92vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 0 !important;
+  padding: 20px 20px 0 !important;
+  overflow: hidden;
 }
-.ps-box .modal-head { flex-shrink: 0; }
-.ps-box > .ps-editor-grid,
-.ps-box > .ps-groups-section {
+.ps-box > .modal-head { flex-shrink: 0; }
+.ps-box > .ps-scroll {
+  flex: 1 1 auto;
   overflow-y: auto;
-  /* Autorise le scroll interne pour ne pas dépasser la fenêtre */
+  min-height: 0;
+  padding-right: 4px;
+  margin-right: -4px;
 }
-.ps-box > .modal-footer {
-  position: sticky;
-  bottom: 0;
+.ps-box > .ps-footer {
+  flex-shrink: 0;
   background: #fff;
   border-top: 1px solid #e5e7eb;
-  margin: 0 -18px;
-  padding: 12px 18px;
-  z-index: 2;
-  flex-shrink: 0;
+  margin: 0 -20px 0;
+  padding: 14px 20px;
 }
 
 .ps-editor-grid {
