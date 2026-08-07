@@ -69,7 +69,12 @@
     cat = cat || state().cat;
     const players = state().data?.[cat] || {};
     return Object.keys(players)
-      .filter(pid => players[pid]?.profil || players[pid]?.juggleLog)
+      .filter(pid => {
+        const p = players[pid];
+        if (!p) return false;
+        if (p.profil?.left) return false;   // Exclure joueurs partis / montés
+        return p.profil || p.juggleLog;
+      })
       .sort((a, b) => playerLabel(a, cat).localeCompare(playerLabel(b, cat), 'fr'));
   }
 
@@ -326,6 +331,9 @@
     }
     if (!draft) { root.innerHTML = ''; return; }
 
+    // Sauvegarder position de scroll avant re-render (sinon retour tout en haut à chaque clic)
+    const prevScroll = root.querySelector('.ps-scroll')?.scrollTop || 0;
+
     const cat = draft.cat;
     const catLbl = (window.CAT_LABELS?.[cat] || cat).toUpperCase();
 
@@ -460,6 +468,10 @@
 
     // Attacher les listeners drag & drop (une fois par render)
     attachDnD();
+
+    // Restaurer la position de scroll (évite le retour en haut à chaque clic)
+    const scrollEl = root.querySelector('.ps-scroll');
+    if (scrollEl && prevScroll > 0) scrollEl.scrollTop = prevScroll;
   }
 
   function renderDraggableChip(pid, source) {

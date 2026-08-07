@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v6.8.0-fix-modeterrain-presents-preseance';
+const CACHE_VERSION = 'v6.8.1-fix-scroll-joueurs-partis';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
