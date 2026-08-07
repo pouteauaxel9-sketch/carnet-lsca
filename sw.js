@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v6.6.0-preseance-layout-4-blocs';
+const CACHE_VERSION = 'v6.7.0-preseance-logo-XL-modal-compact';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

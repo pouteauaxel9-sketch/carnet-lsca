@@ -9655,3 +9655,74 @@ body.season-transition-active { overflow: hidden; }
   max-height: 300px;
   border-radius: 4px;
 }
+
+/* ══════════════════════════════════════════════════════════
+   Pré-séance v6.7 : barre config + grille 2x2 champs
+   ══════════════════════════════════════════════════════════ */
+
+/* Barre config compacte en haut */
+.ps-config-bar {
+  background: linear-gradient(90deg, #f0fdf4 0%, #fff 100%);
+  border: 1px solid #d1fae5;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.ps-config-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ps-config-row .ps-label {
+  min-width: auto !important;
+  font-size: 11px !important;
+}
+.ps-config-sep {
+  color: #cbd5e1;
+  font-weight: 700;
+  font-size: 16px;
+  margin: 0 2px;
+}
+.ps-file-btn-inline {
+  padding: 5px 10px;
+  font-size: 11px;
+}
+
+/* Grille 2x2 des 4 champs */
+.ps-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+@media (max-width: 780px) {
+  .ps-fields-grid { grid-template-columns: 1fr; }
+}
+.ps-field-panel {
+  display: flex;
+  flex-direction: column;
+}
+.ps-field-panel h4 small {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+.ps-field-panel .ps-textarea {
+  flex: 1;
+  min-height: 90px;
+}
+.ps-field-panel .ps-principes-preview-list {
+  flex: 1;
+  overflow: auto;
+  max-height: 130px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

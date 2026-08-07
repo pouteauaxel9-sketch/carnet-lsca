@@ -308,75 +308,71 @@
 
           <div class="ps-scroll">
 
-            <div class="ps-editor-grid">
-
-              <section class="ps-panel">
-                <h4>Configuration</h4>
-                <div class="ps-row">
-                  <label class="ps-label">Nombre de groupes</label>
-                  <div class="ps-btn-group">
-                    ${[2,3,4,5,6].map(n => `
-                      <button class="ps-btn ${draft.nbGroupes === n ? 'on' : ''}"
-                              type="button" data-pre-action="set-nb" data-n="${n}">${n}</button>
-                    `).join('')}
-                  </div>
+            <!-- Barre de config compacte en haut -->
+            <section class="ps-config-bar">
+              <div class="ps-config-row">
+                <label class="ps-label">Groupes</label>
+                <div class="ps-btn-group">
+                  ${[2,3,4,5,6].map(n => `
+                    <button class="ps-btn ${draft.nbGroupes === n ? 'on' : ''}"
+                            type="button" data-pre-action="set-nb" data-n="${n}">${n}</button>
+                  `).join('')}
                 </div>
-                <div class="ps-row">
-                  <label class="ps-label">Répartition auto</label>
-                  <div class="ps-btn-group">
-                    <button class="ps-btn" type="button" data-pre-action="reset">Vider</button>
-                    <button class="ps-btn" type="button" data-pre-action="random">🎲 Aléatoire</button>
-                    <button class="ps-btn" type="button" data-pre-action="by-team">👥 Par équipe</button>
-                  </div>
+                <span class="ps-config-sep">·</span>
+                <label class="ps-label">Répartition</label>
+                <div class="ps-btn-group">
+                  <button class="ps-btn" type="button" data-pre-action="reset">Vider</button>
+                  <button class="ps-btn" type="button" data-pre-action="random">🎲 Aléatoire</button>
+                  <button class="ps-btn" type="button" data-pre-action="by-team">👥 Par équipe</button>
                 </div>
-                <p class="ps-hint">💡 Glisse-dépose les joueurs du pool vers les équipes (Équipe 1 vert · Équipe 2 bleu).</p>
-              </section>
+                <span class="ps-config-sep">·</span>
+                <label class="ps-file-btn ps-file-btn-inline">
+                  📸 Image de séance
+                  <input type="file" accept="image/*" hidden data-pre-action="import-image">
+                </label>
+                ${draft.contenuFile ? `<span class="ps-file-info">🖼 ${h(draft.contenuFile)}</span>` : ''}
+              </div>
+              <p class="ps-hint">💡 Glisse-dépose les joueurs du pool vers les équipes (Équipe 1 vert · Équipe 2 bleu).</p>
+            </section>
 
-              <section class="ps-panel">
-                <h4>Objectif spécifique de la séance</h4>
-                <textarea class="ps-textarea" rows="3"
+            <!-- Grille 4 champs 2x2 -->
+            <div class="ps-fields-grid">
+              <section class="ps-panel ps-field-panel">
+                <h4>🎯 Objectif spécifique</h4>
+                <textarea class="ps-textarea" rows="4"
                           placeholder="Ex: Améliorer la circulation du ballon en supériorité numérique..."
                           data-pre-action="set-objectif">${h(draft.objectif)}</textarea>
+              </section>
 
+              <section class="ps-panel ps-field-panel">
+                <h4>📋 Principes FFF de la semaine <small>(auto)</small></h4>
                 ${draft.principes.length ? `
-                  <div class="ps-principes-preview">
-                    <div class="ps-principes-preview-label">📋 Principes FFF de la semaine (repris auto dans le PDF)</div>
-                    <ul class="ps-principes-preview-list">
-                      ${draft.principes.map(it => `
-                        <li>
-                          <strong>#${it.principleNum || '?'}</strong> ${h(it.criterion || it.label || '')}
-                          ${it.objective ? `<div class="ps-principe-obj">🎯 ${h(it.objective)}</div>` : ''}
-                        </li>
-                      `).join('')}
-                    </ul>
-                  </div>
+                  <ul class="ps-principes-preview-list">
+                    ${draft.principes.map(it => `
+                      <li>
+                        <strong>#${it.principleNum || '?'}</strong> ${h(it.criterion || it.label || '')}
+                        ${it.objective ? `<div class="ps-principe-obj">🎯 ${h(it.objective)}</div>` : ''}
+                      </li>
+                    `).join('')}
+                  </ul>
                 ` : `
-                  <p class="ps-hint" style="margin-top:8px">
-                    💡 Aucun principe FFF défini cette semaine.
-                    <a href="#" onclick="return false" style="color:#009640;text-decoration:underline">Retour vue Semaine</a> pour en ajouter.
-                  </p>
+                  <p class="ps-hint">Aucun principe défini cette semaine. Ajoute-les depuis la vue Semaine.</p>
                 `}
+              </section>
 
-                <h4 style="margin-top:12px">⏱ Timing de la séance</h4>
+              <section class="ps-panel ps-field-panel">
+                <h4>⏱ Timing de la séance</h4>
                 <textarea class="ps-textarea" rows="5"
                           placeholder="Une phase par ligne, ex: Échauffement · 10 min"
                           data-pre-action="set-timing">${h(draft.timing)}</textarea>
-
-                <h4 style="margin-top:12px">⚠ Rappels du jour</h4>
-                <textarea class="ps-textarea" rows="3"
-                          placeholder="Ex: Rendre les nouveaux maillots, penser au retour de blessure de X..."
-                          data-pre-action="set-rappels">${h(draft.rappels)}</textarea>
-
-                <h4 style="margin-top:12px">Contenu de la séance</h4>
-                <div class="ps-content-actions">
-                  <label class="ps-file-btn">
-                    📸 Importer une image
-                    <input type="file" accept="image/*" hidden data-pre-action="import-image">
-                  </label>
-                  ${draft.contenuFile ? `<span class="ps-file-info">🖼 ${h(draft.contenuFile)}</span>` : ''}
-                </div>
               </section>
 
+              <section class="ps-panel ps-field-panel">
+                <h4>⚠ Rappels du jour</h4>
+                <textarea class="ps-textarea" rows="5"
+                          placeholder="Ex: Rendre les nouveaux maillots, penser au retour de blessure de X..."
+                          data-pre-action="set-rappels">${h(draft.rappels)}</textarea>
+              </section>
             </div>
 
             <!-- Pool des joueurs non affectés -->
@@ -567,11 +563,12 @@
     <!-- ═══ COLONNE GAUCHE : 4 blocs empilés (logo / header+objectif / groupes / timing+rappels) ═══ -->
     <div class="ps-fold-half ps-fold-left">
 
-      <!-- Bloc 1 : LOGO seul, isolé en haut -->
+      <!-- Bloc 1 : LOGO en bandeau, plus grand -->
       <div class="ps-block ps-block-logo">
         ${logoSrc
           ? `<img src="${logoSrc}" class="ps-block-logo-img" alt="${h(logoName)}">`
           : `<div class="ps-block-logo-placeholder">${h(logoName)}</div>`}
+        <div class="ps-block-logo-name">${h(logoName)}</div>
       </div>
 
       <!-- Bloc 2 : ENTÊTE + OBJECTIF + PRINCIPES FFF -->
@@ -732,21 +729,32 @@
         overflow: hidden;
       }
 
-      /* Bloc 1 : LOGO centré, compact */
+      /* Bloc 1 : LOGO + nom club, en bandeau stylé */
       .ps-block-logo {
         display: flex; align-items: center; justify-content: center;
-        padding: 2px 0 4px;
+        gap: 14px;
+        padding: 6px 12px;
+        background: linear-gradient(90deg, #fff 0%, #f0fdf4 50%, #fff 100%);
+        border-radius: 8px;
+        border: 1px solid #d1fae5;
+        box-shadow: 0 1px 3px rgba(0,150,64,0.08);
       }
       .ps-block-logo-img {
-        max-height: 42px;
+        max-height: 75px;
         width: auto;
         object-fit: contain;
+        filter: drop-shadow(0 2px 4px rgba(0,150,64,0.15));
       }
       .ps-block-logo-placeholder {
-        padding: 6px 14px;
+        padding: 10px 18px;
         background: #009640; color: #fff;
-        font-size: 11px; font-weight: 800;
-        border-radius: 6px;
+        font-size: 14px; font-weight: 800;
+        border-radius: 8px;
+      }
+      .ps-block-logo-name {
+        font-size: 18px; font-weight: 800; color: #009640;
+        letter-spacing: -0.2px;
+        text-transform: uppercase;
       }
 
       /* Bloc 2 : entête + objectif */
