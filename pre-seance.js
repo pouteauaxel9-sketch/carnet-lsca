@@ -564,81 +564,93 @@
 
   <div class="ps-fold-sheet">
 
-    <!-- ═══ COLONNE GAUCHE : Header + Objectif + Groupes (portrait) ═══ -->
+    <!-- ═══ COLONNE GAUCHE : 4 blocs empilés (logo / header+objectif / groupes / timing+rappels) ═══ -->
     <div class="ps-fold-half ps-fold-left">
 
-      <header class="ps-pdf-head">
-        <div class="ps-pdf-head-logo-wrap">
-          ${logoSrc ? `<img src="${logoSrc}" class="ps-pdf-logo" alt="${h(logoName)}">` : `<div class="ps-pdf-logo-placeholder">${h(logoName)}</div>`}
-        </div>
-        <div class="ps-pdf-head-text">
-          <div class="ps-pdf-kicker">${h(logoName)} · ${h(catLbl)}</div>
-          <h1>Fiche pré-séance</h1>
-          <div class="ps-pdf-date">${h(dateLabel)}${draft.theme ? ' · <strong style="color:#009640">' + h(draft.theme) + '</strong>' : ''}</div>
-        </div>
-        <div class="ps-pdf-stats">
-          <div class="ps-pdf-stat"><strong>${draft.presentPids.length}</strong><span>Prés.</span></div>
-          <div class="ps-pdf-stat"><strong>${draft.nbGroupes}</strong><span>Grp.</span></div>
-          <div class="ps-pdf-stat"><strong>${draft.principes.length}</strong><span>Prin.</span></div>
-        </div>
-      </header>
+      <!-- Bloc 1 : LOGO seul, isolé en haut -->
+      <div class="ps-block ps-block-logo">
+        ${logoSrc
+          ? `<img src="${logoSrc}" class="ps-block-logo-img" alt="${h(logoName)}">`
+          : `<div class="ps-block-logo-placeholder">${h(logoName)}</div>`}
+      </div>
 
-      <section class="ps-pdf-objectif-block">
-        <div class="ps-pdf-objectif-icon">🎯</div>
-        <div class="ps-pdf-objectif-body">
-          <div class="ps-pdf-objectif-label">Objectif spécifique de la séance</div>
-          <div class="ps-pdf-objectif-value">${h(draft.objectif) || '<em style="color:#94a3b8">Non défini</em>'}</div>
+      <!-- Bloc 2 : ENTÊTE + OBJECTIF + PRINCIPES FFF -->
+      <div class="ps-block ps-block-head">
+        <div class="ps-block-head-top">
+          <div class="ps-block-head-title">
+            <div class="ps-pdf-kicker">${h(logoName)} · ${h(catLbl)}</div>
+            <h1>Fiche pré-séance</h1>
+            <div class="ps-pdf-date">${h(dateLabel)}${draft.theme ? ' · <strong style="color:#009640">' + h(draft.theme) + '</strong>' : ''}</div>
+          </div>
+          <div class="ps-pdf-stats">
+            <div class="ps-pdf-stat"><strong>${draft.presentPids.length}</strong><span>Prés.</span></div>
+            <div class="ps-pdf-stat"><strong>${draft.nbGroupes}</strong><span>Grp.</span></div>
+            <div class="ps-pdf-stat"><strong>${draft.principes.length}</strong><span>Prin.</span></div>
+          </div>
         </div>
-      </section>
 
-      ${draft.principes.length ? `
-        <section class="ps-pdf-principes-block">
-          <div class="ps-pdf-principes-label">📋 Principes FFF de la semaine</div>
-          <ul class="ps-pdf-principes-list">
-            ${draft.principes.map(it => `
-              <li>
-                <span class="ps-pdf-principe-num">#${it.principleNum || '?'}</span>
-                <span class="ps-pdf-principe-crit">${h(it.criterion || it.label || '')}</span>
-                ${it.objective ? `<div class="ps-pdf-principe-obj">→ ${h(it.objective)}</div>` : ''}
-              </li>
-            `).join('')}
-          </ul>
-        </section>
-      ` : ''}
+        <div class="ps-pdf-objectif-block">
+          <div class="ps-pdf-objectif-icon">🎯</div>
+          <div class="ps-pdf-objectif-body">
+            <div class="ps-pdf-objectif-label">Objectif spécifique de la séance</div>
+            <div class="ps-pdf-objectif-value">${h(draft.objectif) || '<em style="color:#d1fae5">Non défini</em>'}</div>
+          </div>
+        </div>
 
-      <section class="ps-pdf-groups-section">
+        ${draft.principes.length ? `
+          <div class="ps-pdf-principes-block">
+            <div class="ps-pdf-principes-label">📋 Principes FFF de la semaine</div>
+            <ul class="ps-pdf-principes-list">
+              ${draft.principes.map(it => `
+                <li>
+                  <span class="ps-pdf-principe-num">#${it.principleNum || '?'}</span>
+                  <span class="ps-pdf-principe-crit">${h(it.criterion || it.label || '')}</span>
+                  ${it.objective ? `<div class="ps-pdf-principe-obj">→ ${h(it.objective)}</div>` : ''}
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Bloc 3 : GROUPES -->
+      <div class="ps-block ps-block-groups">
+        <div class="ps-block-label">👥 Composition des groupes</div>
         <div class="ps-pdf-groups-grid" style="grid-template-columns: repeat(${gridCols}, 1fr)">
           ${groupesHtml}
         </div>
-      </section>
+      </div>
 
+      <!-- Bloc 4 : TIMING + RAPPELS -->
       ${(draft.timing || draft.rappels) ? `
-        <section class="ps-pdf-extras">
-          ${draft.timing ? `
-            <div class="ps-pdf-extra-block ps-pdf-timing">
-              <div class="ps-pdf-extra-label">⏱ Timing de la séance</div>
-              <ul class="ps-pdf-timing-list">
-                ${draft.timing.split('\n').filter(Boolean).map(line => {
-                  const m = line.match(/^(.+?)\s*·\s*(.+)$/);
-                  if (m) return `<li><span class="ps-pdf-timing-phase">${h(m[1].trim())}</span><span class="ps-pdf-timing-dur">${h(m[2].trim())}</span></li>`;
-                  return `<li><span class="ps-pdf-timing-phase">${h(line.trim())}</span></li>`;
-                }).join('')}
-              </ul>
-            </div>
-          ` : ''}
-          ${draft.rappels ? `
-            <div class="ps-pdf-extra-block ps-pdf-rappels">
-              <div class="ps-pdf-extra-label">⚠ Rappels du jour</div>
-              <ul class="ps-pdf-rappels-list">
-                ${draft.rappels.split('\n').filter(Boolean).map(line => `<li>${h(line.trim())}</li>`).join('')}
-              </ul>
-            </div>
-          ` : ''}
-        </section>
+        <div class="ps-block ps-block-extras">
+          <div class="ps-pdf-extras">
+            ${draft.timing ? `
+              <div class="ps-pdf-extra-block ps-pdf-timing">
+                <div class="ps-pdf-extra-label">⏱ Timing de la séance</div>
+                <ul class="ps-pdf-timing-list">
+                  ${draft.timing.split('\n').filter(Boolean).map(line => {
+                    const m = line.match(/^(.+?)\s*·\s*(.+)$/);
+                    if (m) return `<li><span class="ps-pdf-timing-phase">${h(m[1].trim())}</span><span class="ps-pdf-timing-dur">${h(m[2].trim())}</span></li>`;
+                    return `<li><span class="ps-pdf-timing-phase">${h(line.trim())}</span></li>`;
+                  }).join('')}
+                </ul>
+              </div>
+            ` : ''}
+            ${draft.rappels ? `
+              <div class="ps-pdf-extra-block ps-pdf-rappels">
+                <div class="ps-pdf-extra-label">⚠ Rappels du jour</div>
+                <ul class="ps-pdf-rappels-list">
+                  ${draft.rappels.split('\n').filter(Boolean).map(line => `<li>${h(line.trim())}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        </div>
       ` : ''}
 
       <footer class="ps-pdf-foot">
-        ${draft.presentPids.length} présents · ${draft.principes.length} principe${draft.principes.length > 1 ? 's' : ''} FFF · v6.0.0 · Axel Pouteau
+        v6.5.0 · Axel Pouteau
       </footer>
     </div>
 
@@ -710,64 +722,90 @@
         letter-spacing: .3em; text-transform: uppercase;
       }
 
-      /* ── Header colonne gauche : logo grand + titre + stats ── */
-      .ps-pdf-head {
-        display: flex; align-items: center; gap: 12px;
-        padding: 10px 14px;
-        margin: -8mm -6mm 8px -6mm;
-        border-bottom: 4px solid #009640;
-        background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #fff 100%);
-        flex-shrink: 0;
+      /* ── Layout 4 blocs empilés (vertical) ── */
+      .ps-fold-left {
+        display: flex; flex-direction: column;
+        gap: 5px;
       }
-      .ps-pdf-head-logo-wrap {
-        width: 70px; height: 70px;
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 2px 6px rgba(0,150,64,0.15);
+      .ps-block {
+        border-radius: 6px;
+        overflow: hidden;
+      }
+
+      /* Bloc 1 : LOGO centré, compact */
+      .ps-block-logo {
         display: flex; align-items: center; justify-content: center;
-        padding: 4px;
-        flex-shrink: 0;
+        padding: 2px 0 4px;
       }
-      .ps-pdf-logo {
-        width: 100%; height: 100%; object-fit: contain;
+      .ps-block-logo-img {
+        max-height: 42px;
+        width: auto;
+        object-fit: contain;
       }
-      .ps-pdf-logo-placeholder {
-        width: 100%; height: 100%;
+      .ps-block-logo-placeholder {
+        padding: 6px 14px;
         background: #009640; color: #fff;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 9px; font-weight: 700; text-align: center;
-        border-radius: 8px;
+        font-size: 11px; font-weight: 800;
+        border-radius: 6px;
       }
-      .ps-pdf-head-text { flex: 1; min-width: 0; }
+
+      /* Bloc 2 : entête + objectif */
+      .ps-block-head {
+        border: 1.5px solid #009640;
+        background: #fff;
+        padding: 8px 10px;
+      }
+      .ps-block-head-top {
+        display: flex; align-items: center; gap: 10px;
+        padding-bottom: 6px; margin-bottom: 6px;
+        border-bottom: 2px solid #f0fdf4;
+      }
+      .ps-block-head-title { flex: 1; min-width: 0; }
       .ps-pdf-kicker {
         font-size: 9px; text-transform: uppercase; color: #009640;
         font-weight: 800; letter-spacing: .1em;
       }
       h1 {
-        font-size: 22px; margin: 2px 0 3px;
+        font-size: 20px; margin: 2px 0 2px;
         color: #0f172a; letter-spacing: -0.4px;
         font-weight: 800;
       }
       .ps-pdf-date {
-        color: #475569; font-size: 11px;
+        color: #475569; font-size: 10px;
         text-transform: capitalize;
       }
 
-      /* Stats en cartes plus lisibles */
-      .ps-pdf-stats { display: flex; gap: 4px; flex-shrink: 0; }
+      /* Stats en mini-cartes */
+      .ps-pdf-stats { display: flex; gap: 3px; flex-shrink: 0; }
       .ps-pdf-stat {
-        text-align: center; padding: 6px 10px; min-width: 42px;
-        background: #fff; border-radius: 8px;
-        border: 2px solid #009640;
-        box-shadow: 0 1px 3px rgba(0,150,64,0.1);
+        text-align: center; padding: 4px 8px; min-width: 38px;
+        background: #f0fdf4; border-radius: 6px;
+        border: 1.5px solid #009640;
       }
       .ps-pdf-stat strong {
-        display: block; font-size: 20px; color: #009640;
+        display: block; font-size: 16px; color: #009640;
         line-height: 1; font-weight: 800;
       }
       .ps-pdf-stat span {
         font-size: 7px; text-transform: uppercase; color: #475569;
         font-weight: 700; letter-spacing: .05em;
+      }
+
+      /* Bloc 3 : groupes */
+      .ps-block-groups {
+        border: 1.5px solid #e5e7eb;
+        background: #fafafa;
+        padding: 6px 8px;
+      }
+      .ps-block-label {
+        font-size: 9px; text-transform: uppercase; color: #009640;
+        font-weight: 800; letter-spacing: .08em;
+        margin-bottom: 4px;
+      }
+
+      /* Bloc 4 : extras */
+      .ps-block-extras {
+        /* pas de border, laisse les blocs internes se styler */
       }
 
       /* ── Bloc Objectif (icône + texte) ── */
@@ -777,8 +815,6 @@
         color: #fff !important;
         padding: 8px 12px;
         border-radius: 6px;
-        margin-bottom: 6px;
-        flex-shrink: 0;
         box-shadow: 0 2px 4px rgba(0,150,64,0.2);
       }
       .ps-pdf-objectif-icon {
@@ -802,8 +838,7 @@
         border: 1px solid #e5e7eb;
         border-radius: 4px;
         padding: 5px 10px;
-        margin-bottom: 6px;
-        flex-shrink: 0;
+        margin-top: 6px;
       }
       .ps-pdf-principes-label {
         font-size: 9px; text-transform: uppercase; color: #009640;
@@ -828,13 +863,7 @@
         color: #475569; font-style: italic; font-size: 9px;
       }
 
-      /* ── Grille groupes (auto-fit avec content) ── */
-      .ps-pdf-groups-section {
-        flex: 0 1 auto;   /* Prend seulement l'espace nécessaire, pas plus */
-        overflow: hidden;
-        display: flex; flex-direction: column;
-        margin-bottom: 6px;
-      }
+      /* ── Grille groupes ── */
       .ps-pdf-groups-grid {
         display: grid;
         gap: 4px;
@@ -882,11 +911,9 @@
         padding: 2px;
       }
 
-      /* ── Extras bas de page (timing + rappels côte à côte) ── */
+      /* ── Extras (timing + rappels côte à côte) ── */
       .ps-pdf-extras {
         display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
-        margin-top: auto;  /* Pousse en bas pour combler l'espace */
-        flex-shrink: 0;
       }
       .ps-pdf-extra-block {
         border-radius: 4px; padding: 5px 8px;
@@ -929,10 +956,8 @@
 
       /* Footer */
       .ps-pdf-foot {
-        margin-top: 6px; padding-top: 4px;
-        border-top: 1px solid #e5e7eb;
-        font-size: 8px; color: #94a3b8; text-align: center;
-        flex-shrink: 0;
+        padding-top: 3px;
+        font-size: 7px; color: #cbd5e1; text-align: center;
       }
 
       /* ── Colonne droite : contenu ROTATED 90° pour affichage landscape ── */
