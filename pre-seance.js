@@ -486,6 +486,11 @@
           <h1>Fiche pré-séance</h1>
           <div class="ps-pdf-date">${h(dateLabel)}${draft.theme ? ' · <em>' + h(draft.theme) + '</em>' : ''}</div>
         </div>
+        <div class="ps-pdf-stats">
+          <div class="ps-pdf-stat"><strong>${draft.presentPids.length}</strong><span>Prés.</span></div>
+          <div class="ps-pdf-stat"><strong>${draft.nbGroupes}</strong><span>Grp.</span></div>
+          <div class="ps-pdf-stat"><strong>${draft.principes.length}</strong><span>Prin.</span></div>
+        </div>
       </header>
 
       <section class="ps-pdf-objectif-block">
@@ -587,55 +592,73 @@
         letter-spacing: .3em; text-transform: uppercase;
       }
 
-      /* ── Header colonne gauche ── */
+      /* ── Header colonne gauche (avec stats à droite) ── */
       .ps-pdf-head {
-        display: flex; align-items: center; gap: 10px;
-        padding-bottom: 8px; margin-bottom: 8px;
+        display: flex; align-items: center; gap: 8px;
+        padding-bottom: 6px; margin-bottom: 6px;
         border-bottom: 3px solid #009640;
         flex-shrink: 0;
       }
       .ps-pdf-logo {
-        width: 45px; height: 45px; object-fit: contain;
+        width: 40px; height: 40px; object-fit: contain;
+        flex-shrink: 0;
       }
       .ps-pdf-logo-placeholder {
-        width: 45px; height: 45px;
+        width: 40px; height: 40px;
         background: #009640; color: #fff;
         display: flex; align-items: center; justify-content: center;
-        font-size: 9px; font-weight: 700; text-align: center;
+        font-size: 8px; font-weight: 700; text-align: center;
         border-radius: 4px;
+        flex-shrink: 0;
       }
-      .ps-pdf-head-text { flex: 1; }
+      .ps-pdf-head-text { flex: 1; min-width: 0; }
       .ps-pdf-kicker {
         font-size: 9px; text-transform: uppercase; color: #009640;
         font-weight: 800; letter-spacing: .12em;
       }
-      h1 { font-size: 18px; margin: 2px 0; color: #0f172a; letter-spacing: -0.3px; }
-      .ps-pdf-date { color: #475569; font-size: 10px; text-transform: capitalize; }
+      h1 { font-size: 17px; margin: 1px 0; color: #0f172a; letter-spacing: -0.3px; }
+      .ps-pdf-date { color: #475569; font-size: 9px; text-transform: capitalize; }
 
-      /* ── Bloc Objectif de la séance ── */
+      /* Stats compact dans header */
+      .ps-pdf-stats { display: flex; gap: 3px; flex-shrink: 0; }
+      .ps-pdf-stat {
+        text-align: center; padding: 3px 6px; min-width: 36px;
+        background: #f0fdf4; border-radius: 4px;
+        border: 1px solid rgba(0,150,64,0.2);
+      }
+      .ps-pdf-stat strong {
+        display: block; font-size: 14px; color: #009640;
+        line-height: 1; font-weight: 800;
+      }
+      .ps-pdf-stat span {
+        font-size: 7px; text-transform: uppercase; color: #475569;
+        font-weight: 700; letter-spacing: .04em;
+      }
+
+      /* ── Bloc Objectif de la séance (compact) ── */
       .ps-pdf-objectif-block {
         background: linear-gradient(90deg, #f0fdf4 0%, #fff 100%);
         border-left: 4px solid #009640;
-        padding: 8px 12px;
+        padding: 5px 10px;
         border-radius: 4px;
-        margin-bottom: 8px;
+        margin-bottom: 5px;
         flex-shrink: 0;
       }
       .ps-pdf-objectif-label {
-        font-size: 9px; text-transform: uppercase; color: #009640;
+        font-size: 8px; text-transform: uppercase; color: #009640;
         font-weight: 800; letter-spacing: .08em;
       }
       .ps-pdf-objectif-value {
-        color: #0f172a; font-size: 12px; margin-top: 3px; font-weight: 500;
+        color: #0f172a; font-size: 11px; margin-top: 2px; font-weight: 500;
       }
 
-      /* ── Bloc Principes FFF ── */
+      /* ── Bloc Principes FFF (compact) ── */
       .ps-pdf-principes-block {
         background: #f8fafc;
         border: 1px solid #e5e7eb;
         border-radius: 4px;
-        padding: 6px 10px;
-        margin-bottom: 8px;
+        padding: 5px 10px;
+        margin-bottom: 6px;
         flex-shrink: 0;
       }
       .ps-pdf-principes-label {
@@ -661,24 +684,23 @@
         color: #475569; font-style: italic; font-size: 9px;
       }
 
-      /* ── Grille groupes ── */
-      .ps-pdf-groups-section { flex: 1; overflow: hidden; }
+      /* ── Grille groupes (auto-fit avec content) ── */
+      .ps-pdf-groups-section { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
       .ps-pdf-groups-grid {
         display: grid;
         gap: 4px;
-        height: 100%;
-        max-height: 100%;
+        align-content: start;
       }
       .ps-pdf-group {
         border: 1.5px solid #009640;
         border-radius: 5px;
         overflow: hidden;
         display: flex; flex-direction: column;
-        min-height: 0;
+        page-break-inside: avoid;
       }
       .ps-pdf-group-head {
         background: #009640; color: #fff !important;
-        padding: 3px 6px; font-weight: 800; font-size: 10px;
+        padding: 3px 8px; font-weight: 800; font-size: 10px;
         flex-shrink: 0;
       }
       .ps-pdf-group-head span {
@@ -686,27 +708,29 @@
       }
       .ps-pdf-group-teams {
         display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
-        padding: 2px; flex: 1; min-height: 0;
+        padding: 2px;
       }
       .ps-pdf-team {
-        border-radius: 3px; padding: 2px;
+        border-radius: 3px;
         border: 1px solid;
         display: flex; flex-direction: column;
-        min-height: 0; overflow: hidden;
+        overflow: hidden;
       }
       .ps-pdf-team-head {
         font-size: 8px; font-weight: 800; padding: 2px 4px;
-        border-radius: 2px; text-align: center;
+        text-align: center;
         flex-shrink: 0;
       }
       .ps-pdf-team-list {
-        padding: 3px 2px; overflow: hidden; flex: 1;
+        padding: 2px 4px;
       }
       .ps-pdf-player {
-        font-size: 8px; padding: 1px 2px; color: #0f172a;
+        font-size: 8px; padding: 0 2px; color: #0f172a;
+        line-height: 1.4;
       }
       .ps-pdf-team-empty {
-        font-size: 8px; color: #94a3b8; font-style: italic; text-align: center;
+        font-size: 7px; color: #94a3b8; font-style: italic; text-align: center;
+        padding: 2px;
       }
 
       /* Footer */
@@ -717,16 +741,17 @@
         flex-shrink: 0;
       }
 
-      /* ── Colonne droite : contenu ROTATED 90° ── */
+      /* ── Colonne droite : contenu ROTATED 90° pour affichage landscape ── */
       .ps-rotated-content {
         width: 210mm; height: 148mm;
         position: absolute;
         top: 50%; left: 50%;
         transform: translate(-50%, -50%) rotate(90deg);
         transform-origin: center center;
-        padding: 8mm;
+        padding: 6mm;
         box-sizing: border-box;
         display: flex; flex-direction: column;
+        justify-content: flex-start;
       }
       .ps-fold-landscape-head {
         display: flex; justify-content: space-between; align-items: center;
@@ -741,9 +766,12 @@
       .ps-fold-panel-date { font-size: 9px; color: #64748b; font-weight: 600; }
 
       /* Image séance dans zone landscape (210x148 logique) */
-      .ps-pdf-content-image { width: 100%; text-align: center; }
+      .ps-pdf-content-image {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+      }
       .ps-pdf-content-image img {
-        max-width: 100%; max-height: 120mm;
+        max-width: 100%; max-height: 130mm;
         width: auto; height: auto;
         object-fit: contain;
       }
