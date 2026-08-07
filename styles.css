@@ -1,4 +1,188 @@
-*{box-sizing:border-box;margin:0;padding:0}
+/* ══════════════════════════════════════════════════════════════
+   ✨ P'TITS VERTS — DESIGN SYSTEM (v7.0.0)
+   Palette Louverné, tokens uniformes, composants standardisés.
+   Toute règle qui apparaît ensuite DOIT hériter de ces variables.
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  /* ── PALETTE ── */
+  --brand:            #009640;   /* Vert Louverné officiel */
+  --brand-dark:       #007a34;
+  --brand-darker:     #006e2f;
+  --brand-soft:       #f0fdf4;   /* Fond très clair */
+  --brand-soft-2:     #dcfce7;   /* Fond mise en avant */
+  --brand-glow:       rgba(0, 150, 64, 0.14);
+
+  /* Accents secondaires (usage parcimonieux) */
+  --accent-info:      #0284c7;   /* Bleu ciel pour info neutre */
+  --accent-warn:      #f59e0b;   /* Orange pour alerte modérée */
+  --accent-danger:    #dc2626;   /* Rouge pour erreur/danger */
+  --accent-success:   #16a34a;   /* Vert secondaire (nuance) */
+
+  /* Neutres (texte, fonds, bordures) */
+  --neutral-900:      #0f172a;   /* Texte principal */
+  --neutral-700:      #475569;   /* Texte secondaire */
+  --neutral-500:      #64748b;   /* Texte tertiaire / labels */
+  --neutral-400:      #94a3b8;   /* Placeholder / muted */
+  --neutral-300:      #cbd5e1;   /* Bordure marquée */
+  --neutral-200:      #e5e7eb;   /* Bordure standard */
+  --neutral-100:      #f1f5f9;   /* Fond léger */
+  --neutral-50:       #f8fafc;   /* Fond très léger */
+  --white:            #ffffff;
+
+  /* ── TYPOGRAPHIE ── */
+  --font-sans: 'Outfit', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, monospace;
+
+  --text-xs:   10px;
+  --text-sm:   12px;
+  --text-base: 14px;
+  --text-lg:   16px;
+  --text-xl:   20px;
+  --text-2xl:  26px;
+  --text-3xl:  32px;
+
+  /* ── ESPACES ── (multiples de 4px) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* ── RAYONS (3 tailles seulement, plus de chaos) ── */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-full: 999px;
+
+  /* ── OMBRES (3 niveaux discrets) ── */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 2px 8px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --shadow-brand: 0 4px 12px rgba(0, 150, 64, 0.18);
+
+  /* ── TRANSITIONS ── */
+  --transition-fast: .12s ease;
+  --transition-base: .18s ease;
+
+  /* ── LEGACY (pour compat, on redirige vers la nouvelle palette) ── */
+  --blue: var(--brand);
+  --blue-dark: var(--brand-dark);
+  --blue-light: var(--brand-soft);
+  --green: var(--brand);
+  --green-light: var(--brand-soft);
+  --green-dark: var(--brand-darker);
+  --text1: var(--neutral-900);
+  --text2: var(--neutral-700);
+  --text3: var(--neutral-500);
+  --panel: var(--white);
+  --border: var(--neutral-200);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COMPOSANTS STANDARDISÉS (override propre des règles legacy)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Reset universel */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Boutons standardisés ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--r-md);
+  background: var(--white);
+  color: var(--neutral-700);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-soft); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--brand); border-color: var(--brand); color: var(--white);
+  box-shadow: var(--shadow-brand);
+}
+.btn-primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); color: var(--white); }
+
+.btn-ghost {
+  background: transparent; border-color: transparent; color: var(--neutral-700);
+  box-shadow: none;
+}
+.btn-ghost:hover { background: var(--brand-soft); color: var(--brand); }
+
+.btn-danger {
+  border-color: var(--accent-danger); color: var(--accent-danger);
+}
+.btn-danger:hover { background: #fee2e2; color: var(--accent-danger); border-color: var(--accent-danger); }
+
+/* ── Cards standardisées ── */
+.card, .detail-card, .dashboard-card {
+  background: var(--white);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Inputs standardisés ── */
+.field-input, input[type="text"], input[type="number"], input[type="date"],
+input[type="email"], input[type="password"], input[type="search"], select, textarea {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--neutral-900);
+  background: var(--white);
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--r-md);
+  padding: var(--sp-2) var(--sp-3);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+}
+.field-input:focus, input:focus, select:focus, textarea:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-glow);
+}
+
+/* ── Modals standardisées ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--sp-4);
+  animation: modalFadeIn var(--transition-base);
+}
+@keyframes modalFadeIn { from { opacity: 0 } to { opacity: 1 } }
+.modal-box {
+  background: var(--white);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6);
+  width: 100%;
+  max-width: 560px;
+  box-shadow: var(--shadow-lg);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+/* ── Focus ring globale ── */
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* ══════════════════════════════════════════════════════════════
+   Legacy CSS ci-dessous — hérite désormais des variables ci-dessus
+   ══════════════════════════════════════════════════════════════ */
 :root{
   --bg:#fcfaf6;
   --bg2:#f4efe7;
@@ -10,9 +194,9 @@
   --text1:#181814;
   --text2:#5e5b54;
   --text3:#8d897f;
-  --blue:#185fa5;
-  --blue-dark:#0c447c;
-  --blue-light:#e6f1fb;
+  --blue:#009640;
+  --blue-dark:#006e2f;
+  --blue-light:#f0fdf4;
   --green:#639922;
   --green-light:#eaf3de;
   --green-dark:#27500a;
@@ -205,7 +389,7 @@ textarea:focus-visible{
 .category-shell{display:grid;gap:16px}
 .dashboard-hero,
 .category-hero{
-  background:linear-gradient(135deg,#0f365f 0%,#185fa5 58%,#4d9be0 100%);
+  background:linear-gradient(135deg,#0f365f 0%,#009640 58%,#4d9be0 100%);
   color:#fff;
   border-radius:18px;
   padding:24px;
@@ -447,7 +631,7 @@ textarea:focus-visible{
   align-items:center;
   gap:8px;
   padding:8px 12px;
-  border-left:3px solid var(--comp-border,#2E7D32);
+  border-left:3px solid var(--comp-border,#007a34);
   background:var(--comp-bg,#E8F5E9);
   cursor:pointer;
   list-style:none;
@@ -455,7 +639,7 @@ textarea:focus-visible{
 }
 .standings-comp-header::-webkit-details-marker{display:none}
 .standings-comp-header[data-level="district"]{
-  --comp-bg:#E8F5E9;--comp-border:#2E7D32;--comp-text:#1B5E20;--comp-badge-bg:#2E7D32
+  --comp-bg:#E8F5E9;--comp-border:#007a34;--comp-text:#006e2f;--comp-badge-bg:#007a34
 }
 .standings-comp-header[data-level="ligue"]{
   --comp-bg:#E3F2FD;--comp-border:#1565C0;--comp-text:#0D47A1;--comp-badge-bg:#1565C0
@@ -469,7 +653,7 @@ textarea:focus-visible{
   text-transform:uppercase;
   letter-spacing:0.6px;
   color:#fff;
-  background:var(--comp-badge-bg,#2E7D32);
+  background:var(--comp-badge-bg,#007a34);
   padding:2px 7px;
   border-radius:999px;
   white-space:nowrap;
@@ -478,7 +662,7 @@ textarea:focus-visible{
 .standings-comp-name{
   font-size:11px;
   font-weight:600;
-  color:var(--comp-text,#1B5E20);
+  color:var(--comp-text,#006e2f);
   flex:1;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -486,7 +670,7 @@ textarea:focus-visible{
 }
 .standings-comp-chevron{
   font-size:12px;
-  color:var(--comp-text,#1B5E20);
+  color:var(--comp-text,#006e2f);
   transition:transform 0.2s ease;
   flex-shrink:0
 }
@@ -567,7 +751,7 @@ textarea:focus-visible{
   flex-direction:column;
   gap:6px
 }
-.fixture-item.fixture-win{border-left:3px solid #2E7D32}
+.fixture-item.fixture-win{border-left:3px solid #007a34}
 .fixture-item.fixture-draw{border-left:3px solid #888}
 .fixture-item.fixture-loss{border-left:3px solid #C62828}
 .fixture-meta{
@@ -588,7 +772,7 @@ textarea:focus-visible{
   padding:2px 6px;
   border-radius:999px
 }
-.fixture-loc--home{background:#E8F5E9;color:#1B5E20}
+.fixture-loc--home{background:#E8F5E9;color:#006e2f}
 .fixture-loc--away{background:#E3F2FD;color:#0D47A1}
 .fixture-team-badge{
   font-size:9px;
@@ -607,7 +791,7 @@ textarea:focus-visible{
   padding:2px 7px;
   border-radius:999px
 }
-.fixture-result-win{background:#E8F5E9;color:#1B5E20}
+.fixture-result-win{background:#E8F5E9;color:#006e2f}
 .fixture-result-draw{background:#F5F5F5;color:#555}
 .fixture-result-loss{background:#FFEBEE;color:#C62828}
 .fixture-teams{
@@ -638,7 +822,7 @@ textarea:focus-visible{
   border:1px solid var(--border1);
   flex-shrink:0
 }
-.fixture-item.fixture-win .fixture-score{background:#E8F5E9;color:#1B5E20;border-color:#A5D6A7}
+.fixture-item.fixture-win .fixture-score{background:#E8F5E9;color:#006e2f;border-color:#A5D6A7}
 .fixture-item.fixture-draw .fixture-score{background:#F5F5F5;color:#555;border-color:#ddd}
 .fixture-item.fixture-loss .fixture-score{background:#FFEBEE;color:#C62828;border-color:#FFCDD2}
 .fixture-comp{
@@ -703,7 +887,7 @@ textarea:focus-visible{
   padding:26px 24px 20px;
   background:
     radial-gradient(circle at top right, rgba(255,255,255,0.16), transparent 35%),
-    linear-gradient(135deg,#0a3a6e 0%,#185fa5 55%,#2e80d4 100%);
+    linear-gradient(135deg,#0a3a6e 0%,#009640 55%,#2e80d4 100%);
   color:#fff;
   display:grid;
   grid-template-columns:auto 1fr auto;
@@ -1165,7 +1349,7 @@ textarea:focus-visible{
 .dot.on-1{background:#faece7;border-color:#d85a30;color:#712b13;animation:popIn 0.18s ease}
 .dot.on-2{background:#faeeda;border-color:#ba7517;color:#633806;animation:popIn 0.18s ease}
 .dot.on-3{background:#eaf3de;border-color:#639922;color:#27500a;animation:popIn 0.18s ease}
-.dot.on-4{background:#e6f1fb;border-color:#185fa5;color:#0c447c;animation:popIn 0.18s ease}
+.dot.on-4{background:#f0fdf4;border-color:#009640;color:#006e2f;animation:popIn 0.18s ease}
 .crit-note{font-size:10px;color:var(--text3);margin-top:4px;font-style:italic}
 .crit-comment,.fc-block textarea{
   width:100%;
@@ -2381,7 +2565,7 @@ textarea:focus-visible{
 }
 .team-toolbar .toolbar-right{ display:flex; gap:8px; flex-wrap:wrap }
 .team-listing-hero{
-  background:linear-gradient(135deg,#0f365f 0%,#185fa5 58%,#4d9be0 100%);
+  background:linear-gradient(135deg,#0f365f 0%,#009640 58%,#4d9be0 100%);
   color:#fff;
   border-radius:18px;
   padding:24px;
@@ -2572,7 +2756,7 @@ textarea:focus-visible{
 }
 .minutes-bar-fill{
   height:100%;
-  background:linear-gradient(90deg, #185fa5, #4d9be0);
+  background:linear-gradient(90deg, #009640, #4d9be0);
   border-radius:6px;
   transition:width 0.3s
 }
@@ -2895,7 +3079,7 @@ textarea:focus-visible{
 
 /* PWA — encart "Installer l'app" */
 #install-pwa-item {
-  background: linear-gradient(135deg, #185fa5, #4d9be0);
+  background: linear-gradient(135deg, #009640, #4d9be0);
   color: #fff;
   font-weight: 700;
   border-radius: 8px;
@@ -2905,7 +3089,7 @@ textarea:focus-visible{
 }
 #install-pwa-item:hover {
   filter: brightness(1.08);
-  background: linear-gradient(135deg, #185fa5, #4d9be0);
+  background: linear-gradient(135deg, #009640, #4d9be0);
 }
 
 /* Indispo / blessure */
@@ -3035,7 +3219,7 @@ textarea:focus-visible{
 /* Dashboard responsable technique */
 .directeur-shell { display: flex; flex-direction: column; gap: 16px }
 .directeur-hero {
-  background: linear-gradient(135deg, #0c447c 0%, #185fa5 60%, #4d9be0 100%);
+  background: linear-gradient(135deg, #006e2f 0%, #009640 60%, #4d9be0 100%);
   color: #fff;
   border-radius: 18px;
   padding: 24px;
@@ -3152,7 +3336,7 @@ textarea:focus-visible{
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border1);
-  background: linear-gradient(135deg, #e6f1fb 0%, #fff 100%);
+  background: linear-gradient(135deg, #f0fdf4 0%, #fff 100%);
   cursor: pointer;
   text-align: left;
   transition: all 0.12s ease;
@@ -3322,7 +3506,7 @@ textarea:focus-visible{
 }
 .career-juggle-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #185fa5, #4d9be0);
+  background: linear-gradient(90deg, #009640, #4d9be0);
   border-radius: 6px;
   transition: width 0.4s;
 }
@@ -3540,7 +3724,7 @@ textarea:focus-visible{
   transition: all 0.15s;
   padding: 0;
 }
-.weekly-rate:hover { transform: scale(1.08); border-color: #185fa5; }
+.weekly-rate:hover { transform: scale(1.08); border-color: #009640; }
 .weekly-rate.is-set { color: #fff; border-color: transparent; }
 .weekly-rate.rate-excellent { background: #16a34a; }
 .weekly-rate.rate-good      { background: #65a30d; }
@@ -3636,7 +3820,7 @@ textarea:focus-visible{
 .player-weekly-theme { font-size: 12px; opacity: 0.75; font-style: italic; }
 .player-weekly-avg {
   padding: 4px 12px;
-  background: #185fa5;
+  background: #009640;
   color: #fff;
   border-radius: 999px;
   font-weight: 700;
@@ -3745,7 +3929,7 @@ body.live-training-active { overflow: hidden; }
   position: sticky;
   top: 0;
   z-index: 10;
-  background: linear-gradient(135deg, #185fa5 0%, #2d7dd2 100%);
+  background: linear-gradient(135deg, #009640 0%, #009640 100%);
   color: #fff;
   padding: 12px 16px;
   padding-top: max(12px, env(safe-area-inset-top));
@@ -4058,7 +4242,7 @@ body.live-training-active { overflow: hidden; }
 .plan-stat-lbl { font-size: 11px; color: var(--text2, #6b7280); text-transform: uppercase; margin-top: 4px; }
 .plan-stat-good .plan-stat-val { color: #16a34a; }
 .plan-stat-warn .plan-stat-val { color: #d97706; }
-.plan-stat-info .plan-stat-val { color: #185fa5; }
+.plan-stat-info .plan-stat-val { color: #009640; }
 
 .plan-filters {
   display: flex;
@@ -4076,9 +4260,9 @@ body.live-training-active { overflow: hidden; }
   font-size: 13px;
 }
 .plan-filter.on {
-  background: #185fa5;
+  background: #009640;
   color: #fff;
-  border-color: #185fa5;
+  border-color: #009640;
 }
 
 .plan-list { display: flex; flex-direction: column; gap: 10px; }
@@ -4101,7 +4285,7 @@ body.live-training-active { overflow: hidden; }
 .plan-row-num {
   font-size: 22px;
   font-weight: 700;
-  color: #185fa5;
+  color: #009640;
   min-width: 38px;
 }
 .plan-row-info { flex: 1; min-width: 0; }
@@ -4200,8 +4384,8 @@ body.live-training-active { overflow: hidden; }
   margin-bottom: -1px;
 }
 .advstats-tab.on {
-  color: #185fa5;
-  border-bottom-color: #185fa5;
+  color: #009640;
+  border-bottom-color: #009640;
 }
 
 /* Vue Phase */
@@ -4370,7 +4554,7 @@ body.live-training-active { overflow: hidden; }
 .fab:active { transform: scale(0.95); }
 
 .fab-live {
-  background: linear-gradient(135deg, #185fa5 0%, #2d7dd2 100%);
+  background: linear-gradient(135deg, #009640 0%, #009640 100%);
   color: #fff;
 }
 
@@ -4499,8 +4683,8 @@ body.weekly-fullscreen .fab { display: none; }
 }
 .quick-player-btn:hover {
   background: #f0f9ff;
-  border-color: #185fa5;
-  color: #185fa5;
+  border-color: #009640;
+  color: #009640;
 }
 .quick-player-initials {
   display: inline-flex;
@@ -4509,7 +4693,7 @@ body.weekly-fullscreen .fab { display: none; }
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #185fa5 0%, #2d7dd2 100%);
+  background: linear-gradient(135deg, #009640 0%, #009640 100%);
   color: #fff;
   font-weight: 700;
   font-size: 11px;
@@ -4555,7 +4739,7 @@ body.weekly-fullscreen .fab { display: none; }
 
 /* Logo plus subtil */
 .nav-logo {
-  background: linear-gradient(135deg, #0c447c 0%, #185fa5 100%);
+  background: linear-gradient(135deg, #006e2f 0%, #009640 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent !important;
@@ -4575,11 +4759,11 @@ body.weekly-fullscreen .fab { display: none; }
 
 .nav-cat:hover {
   background: rgba(24, 95, 165, 0.08) !important;
-  color: #185fa5 !important;
+  color: #009640 !important;
 }
 
 .nav-cat.on {
-  background: linear-gradient(135deg, #185fa5 0%, #2d7dd2 100%) !important;
+  background: linear-gradient(135deg, #009640 0%, #009640 100%) !important;
   color: #fff !important;
   box-shadow: 0 2px 8px rgba(24, 95, 165, 0.25), 0 1px 0 rgba(255,255,255,0.2) inset !important;
 }
@@ -4606,7 +4790,7 @@ body.weekly-fullscreen .fab { display: none; }
 
 /* Boutons primary plus modernes */
 .btn-primary {
-  background: linear-gradient(135deg, #185fa5 0%, #2d7dd2 100%) !important;
+  background: linear-gradient(135deg, #009640 0%, #009640 100%) !important;
   box-shadow: 0 2px 6px rgba(24, 95, 165, 0.22), 0 1px 0 rgba(255,255,255,0.2) inset !important;
 }
 .btn-primary:hover {
@@ -4627,7 +4811,7 @@ body.weekly-fullscreen .fab { display: none; }
 }
 .educator-badge:hover {
   background: #fff;
-  border-color: #185fa5;
+  border-color: #009640;
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(24,95,165,0.12);
 }
@@ -4635,12 +4819,12 @@ body.weekly-fullscreen .fab { display: none; }
 
 /* Dash stat avec accent custom (utilisé sur la vue Catégorie pour Score moyen) */
 .dash-stat-accent {
-  border: 1px solid var(--accent, #185fa5) !important;
+  border: 1px solid var(--accent, #009640) !important;
   background: linear-gradient(135deg,
-    color-mix(in srgb, var(--accent, #185fa5) 5%, transparent),
-    color-mix(in srgb, var(--accent, #185fa5) 12%, transparent)) !important;
+    color-mix(in srgb, var(--accent, #009640) 5%, transparent),
+    color-mix(in srgb, var(--accent, #009640) 12%, transparent)) !important;
 }
-.dash-stat-accent strong { color: var(--accent, #185fa5) !important; }
+.dash-stat-accent strong { color: var(--accent, #009640) !important; }
 
 /* Équipes cliquables sur vue Catégorie */
 .team-item-clickable {
@@ -4696,7 +4880,7 @@ body.weekly-fullscreen .fab { display: none; }
 }
 .category-hero h1 {
   margin: 4px 0;
-  background: linear-gradient(135deg, #0c447c 0%, #185fa5 100%);
+  background: linear-gradient(135deg, #006e2f 0%, #009640 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -4707,7 +4891,7 @@ body.weekly-fullscreen .fab { display: none; }
 .ptab.on,
 .advstats-tab.on,
 .plan-filter.on {
-  background: linear-gradient(135deg, #185fa5 0%, #2d7dd2 100%) !important;
+  background: linear-gradient(135deg, #009640 0%, #009640 100%) !important;
   color: #fff !important;
 }
 
@@ -4920,7 +5104,7 @@ body.weekly-fullscreen .fab { display: none; }
 .seances-count {
   display: inline-block;
   background: rgba(24, 95, 165, 0.12);
-  color: #185fa5;
+  color: #009640;
   padding: 1px 8px;
   border-radius: 999px;
   font-size: 12px;
@@ -4970,7 +5154,7 @@ body.weekly-fullscreen .fab { display: none; }
 }
 .seance-date {
   font-weight: 600;
-  color: var(--blue, #185fa5);
+  color: var(--blue, #009640);
   text-transform: capitalize;
 }
 .seance-actions {
@@ -4988,7 +5172,7 @@ body.weekly-fullscreen .fab { display: none; }
   background: #fff;
   border-radius: 10px;
   padding: 12px 14px;
-  border: 1px dashed var(--blue, #185fa5);
+  border: 1px dashed var(--blue, #009640);
 }
 .seance-form-row {
   display: flex;
@@ -5039,7 +5223,7 @@ body.weekly-fullscreen .fab { display: none; }
 .bilans-title {
   margin: 0;
   font-size: 26px;
-  background: linear-gradient(135deg, #0c447c 0%, #185fa5 100%);
+  background: linear-gradient(135deg, #006e2f 0%, #009640 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -5079,12 +5263,12 @@ body.weekly-fullscreen .fab { display: none; }
   transition: all 0.15s;
 }
 .bilans-subtab:hover {
-  color: #185fa5;
+  color: #009640;
   background: rgba(24, 95, 165, 0.05);
 }
 .bilans-subtab.on {
-  color: #185fa5;
-  border-bottom-color: #185fa5;
+  color: #009640;
+  border-bottom-color: #009640;
   font-weight: 600;
 }
 
@@ -5992,8 +6176,8 @@ body {
 }
 
 /* Tout gradient bleu → gradient vert */
-[style*="linear-gradient(135deg, #185fa5"],
-[style*="linear-gradient(135deg,#185fa5"] {
+[style*="linear-gradient(135deg, #009640"],
+[style*="linear-gradient(135deg,#009640"] {
   background: linear-gradient(135deg, #009640 0%, #007a34 100%) !important;
 }
 
@@ -6083,8 +6267,8 @@ body {
 
 /* Cellules chart nombres bleus */
 .stat-value.blue,
-[style*="color:#185fa5"],
-[style*="color: #185fa5"] {
+[style*="color:#009640"],
+[style*="color: #009640"] {
   color: var(--lsp-green-dark) !important;
 }
 
@@ -6456,12 +6640,12 @@ select#compare-select {
 }
 
 /* Tous les containers qui ont un gradient bleu direct (fallback inline) */
-[style*="linear-gradient(135deg, #185fa5"],
-[style*="linear-gradient(135deg,#185fa5"],
-[style*="background: #185fa5"],
-[style*="background:#185fa5"],
-[style*="background-color:#185fa5"],
-[style*="background-color: #185fa5"] {
+[style*="linear-gradient(135deg, #009640"],
+[style*="linear-gradient(135deg,#009640"],
+[style*="background: #009640"],
+[style*="background:#009640"],
+[style*="background-color:#009640"],
+[style*="background-color: #009640"] {
   background: var(--rd-surface) !important;
   color: var(--rd-text) !important;
 }
