@@ -257,10 +257,29 @@
               </section>
 
               <section class="ps-panel">
-                <h4>Objectif de la séance</h4>
+                <h4>Objectif spécifique de la séance</h4>
                 <textarea class="ps-textarea" rows="3"
                           placeholder="Ex: Améliorer la circulation du ballon en supériorité numérique..."
                           data-pre-action="set-objectif">${h(draft.objectif)}</textarea>
+
+                ${draft.principes.length ? `
+                  <div class="ps-principes-preview">
+                    <div class="ps-principes-preview-label">📋 Principes FFF de la semaine (repris auto dans le PDF)</div>
+                    <ul class="ps-principes-preview-list">
+                      ${draft.principes.map(it => `
+                        <li>
+                          <strong>#${it.principleNum || '?'}</strong> ${h(it.criterion || it.label || '')}
+                          ${it.objective ? `<div class="ps-principe-obj">🎯 ${h(it.objective)}</div>` : ''}
+                        </li>
+                      `).join('')}
+                    </ul>
+                  </div>
+                ` : `
+                  <p class="ps-hint" style="margin-top:8px">
+                    💡 Aucun principe FFF défini cette semaine.
+                    <a href="#" onclick="return false" style="color:#009640;text-decoration:underline">Retour vue Semaine</a> pour en ajouter.
+                  </p>
+                `}
 
                 <h4 style="margin-top:12px">Contenu de la séance</h4>
                 <div class="ps-content-actions">
@@ -470,9 +489,24 @@
       </header>
 
       <section class="ps-pdf-objectif-block">
-        <div class="ps-pdf-objectif-label">🎯 Objectif de la séance</div>
+        <div class="ps-pdf-objectif-label">🎯 Objectif spécifique de la séance</div>
         <div class="ps-pdf-objectif-value">${h(draft.objectif) || '<em style="color:#94a3b8">Non défini</em>'}</div>
       </section>
+
+      ${draft.principes.length ? `
+        <section class="ps-pdf-principes-block">
+          <div class="ps-pdf-principes-label">📋 Principes FFF de la semaine</div>
+          <ul class="ps-pdf-principes-list">
+            ${draft.principes.map(it => `
+              <li>
+                <span class="ps-pdf-principe-num">#${it.principleNum || '?'}</span>
+                <span class="ps-pdf-principe-crit">${h(it.criterion || it.label || '')}</span>
+                ${it.objective ? `<div class="ps-pdf-principe-obj">→ ${h(it.objective)}</div>` : ''}
+              </li>
+            `).join('')}
+          </ul>
+        </section>
+      ` : ''}
 
       <section class="ps-pdf-groups-section">
         <div class="ps-pdf-groups-grid" style="grid-template-columns: repeat(${gridCols}, 1fr)">
@@ -593,6 +627,38 @@
       }
       .ps-pdf-objectif-value {
         color: #0f172a; font-size: 12px; margin-top: 3px; font-weight: 500;
+      }
+
+      /* ── Bloc Principes FFF ── */
+      .ps-pdf-principes-block {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        padding: 6px 10px;
+        margin-bottom: 8px;
+        flex-shrink: 0;
+      }
+      .ps-pdf-principes-label {
+        font-size: 9px; text-transform: uppercase; color: #009640;
+        font-weight: 800; letter-spacing: .08em; margin-bottom: 4px;
+      }
+      .ps-pdf-principes-list {
+        list-style: none; padding: 0; margin: 0;
+        display: flex; flex-direction: column; gap: 3px;
+      }
+      .ps-pdf-principes-list li {
+        display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px;
+        font-size: 10px;
+      }
+      .ps-pdf-principe-num {
+        background: #009640; color: #fff !important;
+        font-weight: 700; padding: 1px 6px; border-radius: 8px; font-size: 8px;
+        flex-shrink: 0;
+      }
+      .ps-pdf-principe-crit { color: #0f172a; font-weight: 600; }
+      .ps-pdf-principe-obj {
+        width: 100%; padding-left: 22px;
+        color: #475569; font-style: italic; font-size: 9px;
       }
 
       /* ── Grille groupes ── */

@@ -9449,3 +9449,48 @@ body.season-transition-active { overflow: hidden; }
   color: #94a3b8; font-style: italic; font-size: 11px;
   text-align: center; padding: 12px 4px;
 }
+
+/* ── Preview des principes FFF dans la modal pré-séance ── */
+.ps-principes-preview {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border-left: 3px solid #009640;
+  border-radius: 6px;
+}
+.ps-principes-preview-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #009640;
+  font-weight: 700;
+  letter-spacing: .04em;
+  margin-bottom: 6px;
+}
+.ps-principes-preview-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ps-principes-preview-list li {
+  font-size: 11px;
+  color: #0f172a;
+  padding-left: 4px;
+}
+.ps-principes-preview-list strong {
+  background: #009640;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 9px;
+  margin-right: 4px;
+}
+.ps-principe-obj {
+  color: #64748b;
+  font-style: italic;
+  font-size: 10px;
+  margin-top: 2px;
+  padding-left: 12px;
+}
