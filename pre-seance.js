@@ -108,19 +108,29 @@
     const existing = store[cat]?.[date]?.preparation;
     const livePresentPids = store[cat]?.[date]?.presentPids || [];
 
+    // Whitelist des joueurs actuellement valides (exclut ceux marqués "left")
+    const validPids = new Set(sortedPlayers(cat));
+    const cleanArray = arr => Array.isArray(arr) ? arr.filter(pid => validPids.has(pid)) : [];
+
     if (existing) {
       // Recharger le draft existant (édition permanente)
+      // On nettoie tous les tableaux de joueurs pour exclure les IDs "partis"
+      const cleanedGroupes = (existing.groupes || []).map(g => ({
+        teams: (g.teams || [[], []]).map(t => cleanArray(t))
+      }));
       draft = {
         cat, date,
         theme: existing.theme || week?.theme || '',
         principes: existing.principes || items,
         objectif: existing.objectif || '',
         presentPids: (existing.presentPids && existing.presentPids.length)
-          ? existing.presentPids
-          : (livePresentPids.length ? livePresentPids : sortedPlayers(cat)),
+          ? cleanArray(existing.presentPids)
+          : (livePresentPids.length ? cleanArray(livePresentPids) : sortedPlayers(cat)),
         nbGroupes: existing.nbGroupes || 3,
-        groupes: existing.groupes || Array.from({ length: existing.nbGroupes || 3 }, () => ({ teams: [[], []] })),
-        pool: existing.pool || [],
+        groupes: cleanedGroupes.length
+          ? cleanedGroupes
+          : Array.from({ length: existing.nbGroupes || 3 }, () => ({ teams: [[], []] })),
+        pool: cleanArray(existing.pool),
         contenuHtml: existing.contenuHtml || '',
         contenuFile: existing.contenuFile || '',
         timing: existing.timing || 'Échauffement · 10 min\nAtelier 1 · 20 min\nAtelier 2 · 20 min\nJeu final · 15 min\nDébrief · 5 min',
@@ -132,7 +142,7 @@
       toast('📝 Préparation existante rechargée');
     } else {
       // Nouvelle préparation : présents par défaut = Mode Terrain du jour, sinon tout l'effectif
-      let presentPids = livePresentPids.length ? livePresentPids.slice() : sortedPlayers(cat);
+      let presentPids = livePresentPids.length ? cleanArray(livePresentPids) : sortedPlayers(cat);
       draft = {
         cat, date,
         theme: week?.theme || '',
