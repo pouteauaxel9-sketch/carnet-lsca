@@ -110,7 +110,9 @@
         theme: existing.theme || week?.theme || '',
         principes: existing.principes || items,
         objectif: existing.objectif || '',
-        presentPids: existing.presentPids || livePresentPids.length ? livePresentPids : sortedPlayers(cat),
+        presentPids: (existing.presentPids && existing.presentPids.length)
+          ? existing.presentPids
+          : (livePresentPids.length ? livePresentPids : sortedPlayers(cat)),
         nbGroupes: existing.nbGroupes || 3,
         groupes: existing.groupes || Array.from({ length: existing.nbGroupes || 3 }, () => ({ teams: [[], []] })),
         pool: existing.pool || [],
@@ -566,11 +568,13 @@
     <div class="ps-fold-half ps-fold-left">
 
       <header class="ps-pdf-head">
-        ${logoSrc ? `<img src="${logoSrc}" class="ps-pdf-logo" alt="${h(logoName)}">` : `<div class="ps-pdf-logo-placeholder">${h(logoName)}</div>`}
+        <div class="ps-pdf-head-logo-wrap">
+          ${logoSrc ? `<img src="${logoSrc}" class="ps-pdf-logo" alt="${h(logoName)}">` : `<div class="ps-pdf-logo-placeholder">${h(logoName)}</div>`}
+        </div>
         <div class="ps-pdf-head-text">
-          <div class="ps-pdf-kicker">${h(catLbl)}</div>
+          <div class="ps-pdf-kicker">${h(logoName)} · ${h(catLbl)}</div>
           <h1>Fiche pré-séance</h1>
-          <div class="ps-pdf-date">${h(dateLabel)}${draft.theme ? ' · <em>' + h(draft.theme) + '</em>' : ''}</div>
+          <div class="ps-pdf-date">${h(dateLabel)}${draft.theme ? ' · <strong style="color:#009640">' + h(draft.theme) + '</strong>' : ''}</div>
         </div>
         <div class="ps-pdf-stats">
           <div class="ps-pdf-stat"><strong>${draft.presentPids.length}</strong><span>Prés.</span></div>
@@ -580,8 +584,11 @@
       </header>
 
       <section class="ps-pdf-objectif-block">
-        <div class="ps-pdf-objectif-label">🎯 Objectif spécifique de la séance</div>
-        <div class="ps-pdf-objectif-value">${h(draft.objectif) || '<em style="color:#94a3b8">Non défini</em>'}</div>
+        <div class="ps-pdf-objectif-icon">🎯</div>
+        <div class="ps-pdf-objectif-body">
+          <div class="ps-pdf-objectif-label">Objectif spécifique de la séance</div>
+          <div class="ps-pdf-objectif-value">${h(draft.objectif) || '<em style="color:#94a3b8">Non défini</em>'}</div>
+        </div>
       </section>
 
       ${draft.principes.length ? `
@@ -703,65 +710,91 @@
         letter-spacing: .3em; text-transform: uppercase;
       }
 
-      /* ── Header colonne gauche (avec stats à droite) ── */
+      /* ── Header colonne gauche : logo grand + titre + stats ── */
       .ps-pdf-head {
-        display: flex; align-items: center; gap: 8px;
-        padding-bottom: 6px; margin-bottom: 6px;
-        border-bottom: 3px solid #009640;
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 14px;
+        margin: -8mm -6mm 8px -6mm;
+        border-bottom: 4px solid #009640;
+        background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #fff 100%);
+        flex-shrink: 0;
+      }
+      .ps-pdf-head-logo-wrap {
+        width: 70px; height: 70px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0,150,64,0.15);
+        display: flex; align-items: center; justify-content: center;
+        padding: 4px;
         flex-shrink: 0;
       }
       .ps-pdf-logo {
-        width: 40px; height: 40px; object-fit: contain;
-        flex-shrink: 0;
+        width: 100%; height: 100%; object-fit: contain;
       }
       .ps-pdf-logo-placeholder {
-        width: 40px; height: 40px;
+        width: 100%; height: 100%;
         background: #009640; color: #fff;
         display: flex; align-items: center; justify-content: center;
-        font-size: 8px; font-weight: 700; text-align: center;
-        border-radius: 4px;
-        flex-shrink: 0;
+        font-size: 9px; font-weight: 700; text-align: center;
+        border-radius: 8px;
       }
       .ps-pdf-head-text { flex: 1; min-width: 0; }
       .ps-pdf-kicker {
         font-size: 9px; text-transform: uppercase; color: #009640;
-        font-weight: 800; letter-spacing: .12em;
+        font-weight: 800; letter-spacing: .1em;
       }
-      h1 { font-size: 17px; margin: 1px 0; color: #0f172a; letter-spacing: -0.3px; }
-      .ps-pdf-date { color: #475569; font-size: 9px; text-transform: capitalize; }
+      h1 {
+        font-size: 22px; margin: 2px 0 3px;
+        color: #0f172a; letter-spacing: -0.4px;
+        font-weight: 800;
+      }
+      .ps-pdf-date {
+        color: #475569; font-size: 11px;
+        text-transform: capitalize;
+      }
 
-      /* Stats compact dans header */
-      .ps-pdf-stats { display: flex; gap: 3px; flex-shrink: 0; }
+      /* Stats en cartes plus lisibles */
+      .ps-pdf-stats { display: flex; gap: 4px; flex-shrink: 0; }
       .ps-pdf-stat {
-        text-align: center; padding: 3px 6px; min-width: 36px;
-        background: #f0fdf4; border-radius: 4px;
-        border: 1px solid rgba(0,150,64,0.2);
+        text-align: center; padding: 6px 10px; min-width: 42px;
+        background: #fff; border-radius: 8px;
+        border: 2px solid #009640;
+        box-shadow: 0 1px 3px rgba(0,150,64,0.1);
       }
       .ps-pdf-stat strong {
-        display: block; font-size: 14px; color: #009640;
+        display: block; font-size: 20px; color: #009640;
         line-height: 1; font-weight: 800;
       }
       .ps-pdf-stat span {
         font-size: 7px; text-transform: uppercase; color: #475569;
-        font-weight: 700; letter-spacing: .04em;
+        font-weight: 700; letter-spacing: .05em;
       }
 
-      /* ── Bloc Objectif de la séance (compact) ── */
+      /* ── Bloc Objectif (icône + texte) ── */
       .ps-pdf-objectif-block {
-        background: linear-gradient(90deg, #f0fdf4 0%, #fff 100%);
-        border-left: 4px solid #009640;
-        padding: 5px 10px;
-        border-radius: 4px;
-        margin-bottom: 5px;
+        display: flex; align-items: center; gap: 10px;
+        background: linear-gradient(90deg, #009640 0%, #16a34a 100%);
+        color: #fff !important;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0,150,64,0.2);
+      }
+      .ps-pdf-objectif-icon {
+        font-size: 22px;
         flex-shrink: 0;
       }
+      .ps-pdf-objectif-body { flex: 1; }
       .ps-pdf-objectif-label {
-        font-size: 8px; text-transform: uppercase; color: #009640;
+        font-size: 8px; text-transform: uppercase; color: #d1fae5 !important;
         font-weight: 800; letter-spacing: .08em;
       }
       .ps-pdf-objectif-value {
-        color: #0f172a; font-size: 11px; margin-top: 2px; font-weight: 500;
+        color: #fff !important; font-size: 13px; margin-top: 2px;
+        font-weight: 600; line-height: 1.3;
       }
+      .ps-pdf-objectif-value em { color: #d1fae5 !important; }
 
       /* ── Bloc Principes FFF (compact) ── */
       .ps-pdf-principes-block {
@@ -796,7 +829,12 @@
       }
 
       /* ── Grille groupes (auto-fit avec content) ── */
-      .ps-pdf-groups-section { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+      .ps-pdf-groups-section {
+        flex: 0 1 auto;   /* Prend seulement l'espace nécessaire, pas plus */
+        overflow: hidden;
+        display: flex; flex-direction: column;
+        margin-bottom: 6px;
+      }
       .ps-pdf-groups-grid {
         display: grid;
         gap: 4px;
@@ -847,7 +885,8 @@
       /* ── Extras bas de page (timing + rappels côte à côte) ── */
       .ps-pdf-extras {
         display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
-        margin-top: 6px; flex-shrink: 0;
+        margin-top: auto;  /* Pousse en bas pour combler l'espace */
+        flex-shrink: 0;
       }
       .ps-pdf-extra-block {
         border-radius: 4px; padding: 5px 8px;
