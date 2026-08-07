@@ -184,6 +184,40 @@
     renderEditor();
   }
 
+  /* ── Gestion des présents (dans la préparation) ── */
+
+  function togglePresent(pid) {
+    if (!draft) return;
+    const idx = draft.presentPids.indexOf(pid);
+    if (idx >= 0) {
+      // Retirer des présents : nettoyer aussi du pool et des groupes
+      draft.presentPids.splice(idx, 1);
+      removePlayerFromAll(pid);
+    } else {
+      // Ajouter aux présents : mettre dans le pool
+      draft.presentPids.push(pid);
+      if (!draft.pool.includes(pid)) draft.pool.push(pid);
+    }
+    renderEditor();
+  }
+
+  function setAllPresents(present) {
+    if (!draft) return;
+    const all = sortedPlayers(draft.cat);
+    if (present) {
+      draft.presentPids = all.slice();
+      // Ajouter au pool ceux qui n'y sont pas déjà ET pas dans un groupe
+      const assigned = new Set();
+      draft.groupes.forEach(g => g.teams.forEach(t => t.forEach(pid => assigned.add(pid))));
+      draft.pool = all.filter(pid => !assigned.has(pid));
+    } else {
+      draft.presentPids = [];
+      draft.pool = [];
+      draft.groupes = draft.groupes.map(() => ({ teams: [[], []] }));
+    }
+    renderEditor();
+  }
+
   function removePlayerFromAll(pid) {
     draft.pool = draft.pool.filter(x => x !== pid);
     draft.groupes.forEach(g => {
@@ -375,9 +409,29 @@
               </section>
             </div>
 
-            <!-- Pool des joueurs non affectés -->
+            <!-- Sélection des présents (tous les joueurs de la catégorie, toggle) -->
+            <section class="ps-presents-section">
+              <div class="ps-presents-head">
+                <h4>👥 Joueurs présents à la séance <span class="ps-presents-count">${draft.presentPids.length}/${sortedPlayers(draft.cat).length}</span></h4>
+                <div class="ps-presents-actions">
+                  <button class="ps-btn" type="button" data-pre-action="all-presents">Tout cocher</button>
+                  <button class="ps-btn" type="button" data-pre-action="none-presents">Tout décocher</button>
+                </div>
+              </div>
+              <div class="ps-presents-chips">
+                ${sortedPlayers(draft.cat).map(pid => {
+                  const present = draft.presentPids.includes(pid);
+                  return `<button class="ps-present-chip ${present ? 'on' : ''}" type="button"
+                          data-pre-action="toggle-present" data-pid="${h(pid)}">
+                    ${present ? '✓' : '☐'} ${h(playerLabel(pid, draft.cat))}
+                  </button>`;
+                }).join('')}
+              </div>
+            </section>
+
+            <!-- Pool des joueurs présents non affectés -->
             <section class="ps-pool-section" data-drop-zone="pool">
-              <h4>Joueurs non affectés <span class="ps-pool-count">(${draft.pool.length}/${draft.presentPids.length})</span></h4>
+              <h4>Non affectés à un groupe <span class="ps-pool-count">(${draft.pool.length}/${draft.presentPids.length})</span></h4>
               <div class="ps-pool-chips">
                 ${draft.pool.map(pid => renderDraggableChip(pid, 'pool')).join('') ||
                   '<div class="ps-pool-empty">✓ Tous les présents sont affectés</div>'}
@@ -500,6 +554,9 @@
     if (a === 'reset') { resetRepartition(); return true; }
     if (a === 'random') { applyRandom(); return true; }
     if (a === 'by-team') { applyByTeam(); return true; }
+    if (a === 'toggle-present') { togglePresent(el.dataset.pid); return true; }
+    if (a === 'all-presents') { setAllPresents(true); return true; }
+    if (a === 'none-presents') { setAllPresents(false); return true; }
     if (a === 'set-objectif') { setObjectif(el.value); return true; }
     if (a === 'set-timing') { setTiming(el.value); return true; }
     if (a === 'set-rappels') { setRappels(el.value); return true; }

@@ -9726,3 +9726,66 @@ body.season-transition-active { overflow: hidden; }
   flex-direction: column;
   gap: 4px;
 }
+
+/* ── Sélection des joueurs présents (dans la pré-séance) ── */
+.ps-presents-section {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.ps-presents-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ps-presents-head h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.ps-presents-count {
+  color: #009640;
+  font-weight: 800;
+  font-size: 14px;
+  margin-left: 6px;
+}
+.ps-presents-actions {
+  display: flex;
+  gap: 4px;
+}
+.ps-presents-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.ps-present-chip {
+  padding: 5px 10px;
+  background: #fff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all .12s;
+  user-select: none;
+}
+.ps-present-chip:hover {
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+.ps-present-chip.on {
+  background: #dcfce7;
+  border-color: #009640;
+  color: #009640;
+  font-weight: 700;
+}
+.ps-present-chip.on:hover {
+  background: #bbf7d0;
+}

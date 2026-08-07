@@ -92,16 +92,29 @@
     const iso = todayIso();
     const store = loadSessions();
     if (!store[cat]) store[cat] = {};
-    if (!store[cat][iso]) {
-      store[cat][iso] = {
-        startedAt: new Date().toISOString(),
-        endedAt: null,
-        presentPids: [],
-        objectives: [],
-      };
-      saveSessions(store);
+    if (!store[cat][iso]) store[cat][iso] = {};
+    const s = store[cat][iso];
+    // Init défensive des champs Mode Terrain (au cas où seule la préparation ait été
+    // sauvée avant l'ouverture du Mode Terrain — évite les crash)
+    if (!s.startedAt) s.startedAt = new Date().toISOString();
+    if (s.endedAt === undefined) s.endedAt = null;
+    if (!Array.isArray(s.presentPids)) {
+      // Reprise auto : si la préparation a défini des joueurs (via groupes ou présents),
+      // on pré-remplit avec ceux-là
+      const prep = s.preparation;
+      if (prep?.presentPids?.length) {
+        s.presentPids = prep.presentPids.slice();
+      } else if (prep?.groupes) {
+        const fromGroupes = [];
+        prep.groupes.forEach(g => (g.teams || []).forEach(t => (t || []).forEach(pid => fromGroupes.push(pid))));
+        s.presentPids = fromGroupes;
+      } else {
+        s.presentPids = [];
+      }
     }
-    return store[cat][iso];
+    if (!Array.isArray(s.objectives)) s.objectives = [];
+    saveSessions(store);
+    return s;
   }
   function setSession(mutator) {
     const cat = state().cat;
