@@ -19,12 +19,51 @@
     { key: 'bleu', label: 'Équipe 2', bg: '#0284c7', text: '#fff' },
   ];
 
+  const SESSIONS_KEY = 'cfb6_live_sessions_v1';
+
   let draft = null;
+  let saveTimer = null;
 
   function state() { return window.appState || {}; }
   function utils() { return window.appUtils || {}; }
   function h(s) { return utils().h ? utils().h(s) : String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
   function toast(m) { utils().showToast?.(m); }
+
+  /* ── Store : lire/écrire dans cfb6_live_sessions_v1[cat][date] ── */
+
+  function loadSessions() {
+    try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '{}') || {}; }
+    catch { return {}; }
+  }
+  function saveSessions(store) {
+    try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(store)); } catch {}
+  }
+
+  // Sauvegarde le draft courant dans store[cat][date].preparation (débounce 400ms)
+  function persistDraft() {
+    if (!draft) return;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      const store = loadSessions();
+      if (!store[draft.cat]) store[draft.cat] = {};
+      if (!store[draft.cat][draft.date]) store[draft.cat][draft.date] = {};
+      store[draft.cat][draft.date].preparation = {
+        objectif: draft.objectif,
+        timing: draft.timing,
+        rappels: draft.rappels,
+        theme: draft.theme,
+        principes: draft.principes,
+        nbGroupes: draft.nbGroupes,
+        groupes: draft.groupes,
+        pool: draft.pool,
+        presentPids: draft.presentPids,
+        contenuHtml: draft.contenuHtml,
+        contenuFile: draft.contenuFile,
+        updatedAt: new Date().toISOString(),
+      };
+      saveSessions(store);
+    }, 400);
+  }
 
   function sortedPlayers(cat) {
     cat = cat || state().cat;
@@ -55,34 +94,53 @@
 
   function open() {
     const cat = state().cat;
+    const date = todayIso();
     const week = window.WeeklyFocusModule?.getCurrentWeek?.(cat);
     const items = week?.items || [];
 
-    // Présents par défaut : ceux du Mode Terrain du jour, sinon tout l'effectif
-    let presentPids = [];
-    try {
-      const live = JSON.parse(localStorage.getItem('cfb6_live_sessions_v1') || '{}');
-      const s = live[cat]?.[todayIso()];
-      if (s?.presentPids?.length) presentPids = s.presentPids.slice();
-    } catch {}
-    if (!presentPids.length) presentPids = sortedPlayers(cat);
+    // Existe-t-il déjà une préparation sauvegardée pour cette date ?
+    const store = loadSessions();
+    const existing = store[cat]?.[date]?.preparation;
+    const livePresentPids = store[cat]?.[date]?.presentPids || [];
 
-    // Structure : chaque groupe = { teams: [ [pid,pid], [pid,pid] ] }
-    draft = {
-      cat,
-      date: todayIso(),
-      theme: week?.theme || '',
-      principes: items,
-      objectif: '',
-      presentPids,
-      nbGroupes: 3,
-      groupes: Array.from({ length: 3 }, () => ({ teams: [[], []] })),
-      pool: presentPids.slice(), // joueurs non affectés
-      contenuHtml: '',
-      contenuFile: '',
-      timing: 'Échauffement · 10 min\nAtelier 1 · 20 min\nAtelier 2 · 20 min\nJeu final · 15 min\nDébrief · 5 min',
-      rappels: '',
-    };
+    if (existing) {
+      // Recharger le draft existant (édition permanente)
+      draft = {
+        cat, date,
+        theme: existing.theme || week?.theme || '',
+        principes: existing.principes || items,
+        objectif: existing.objectif || '',
+        presentPids: existing.presentPids || livePresentPids.length ? livePresentPids : sortedPlayers(cat),
+        nbGroupes: existing.nbGroupes || 3,
+        groupes: existing.groupes || Array.from({ length: existing.nbGroupes || 3 }, () => ({ teams: [[], []] })),
+        pool: existing.pool || [],
+        contenuHtml: existing.contenuHtml || '',
+        contenuFile: existing.contenuFile || '',
+        timing: existing.timing || 'Échauffement · 10 min\nAtelier 1 · 20 min\nAtelier 2 · 20 min\nJeu final · 15 min\nDébrief · 5 min',
+        rappels: existing.rappels || '',
+      };
+      // Si l'utilisateur a modifié les principes de la semaine depuis, resynchroniser
+      draft.principes = items;
+      draft.theme = week?.theme || draft.theme;
+      toast('📝 Préparation existante rechargée');
+    } else {
+      // Nouvelle préparation : présents par défaut = Mode Terrain du jour, sinon tout l'effectif
+      let presentPids = livePresentPids.length ? livePresentPids.slice() : sortedPlayers(cat);
+      draft = {
+        cat, date,
+        theme: week?.theme || '',
+        principes: items,
+        objectif: '',
+        presentPids,
+        nbGroupes: 3,
+        groupes: Array.from({ length: 3 }, () => ({ teams: [[], []] })),
+        pool: presentPids.slice(),
+        contenuHtml: '',
+        contenuFile: '',
+        timing: 'Échauffement · 10 min\nAtelier 1 · 20 min\nAtelier 2 · 20 min\nJeu final · 15 min\nDébrief · 5 min',
+        rappels: '',
+      };
+    }
 
     renderEditor();
   }
@@ -205,19 +263,25 @@
   function setObjectif(txt) {
     if (!draft) return;
     draft.objectif = txt || '';
+    persistDraft();
   }
   function setTiming(txt) {
     if (!draft) return;
     draft.timing = txt || '';
+    persistDraft();
   }
   function setRappels(txt) {
     if (!draft) return;
     draft.rappels = txt || '';
+    persistDraft();
   }
 
   /* ── Éditeur (modal) avec drag & drop ───────────────── */
 
   function renderEditor() {
+    // Auto-save à chaque render (donc à chaque modification)
+    persistDraft();
+
     let root = document.querySelector('#pre-seance-root');
     if (!root) {
       root = document.createElement('div');

@@ -312,6 +312,90 @@
     return `<div class="sh-stars">${stars}${value != null ? `<span class="sh-star-val">${value}/5</span>` : ''}</div>`;
   }
 
+  /* ── Bloc Préparation (issu de la Fiche pré-séance) ── */
+
+  function renderPreparationSection(cat, date, s) {
+    const prep = s?.preparation;
+    if (!prep) return '';
+    const hasContent = prep.objectif || prep.timing || prep.rappels || (prep.groupes && prep.groupes.some(g => g.teams && (g.teams[0].length || g.teams[1].length)));
+    if (!hasContent) return '';
+
+    const teamColors = [
+      { key: 'vert', label: 'Équipe 1', bg: '#009640' },
+      { key: 'bleu', label: 'Équipe 2', bg: '#0284c7' },
+    ];
+
+    const groupesHtml = (prep.groupes || []).map((g, gi) => {
+      const total = (g.teams?.[0]?.length || 0) + (g.teams?.[1]?.length || 0);
+      if (total === 0) return '';
+      return `
+        <div class="sh-prep-group">
+          <div class="sh-prep-group-head">Groupe ${gi + 1} <span>(${total})</span></div>
+          <div class="sh-prep-teams">
+            ${(g.teams || []).map((team, ti) => {
+              const c = teamColors[ti];
+              return `<div class="sh-prep-team" style="border-color:${c.bg}; background:${c.bg}15">
+                <div class="sh-prep-team-head" style="background:${c.bg}">${c.label}</div>
+                <div class="sh-prep-team-list">
+                  ${(team || []).map(pid => `<div class="sh-prep-player">${h(playerLabel(pid, cat))}</div>`).join('') || '<em class="sh-muted">—</em>'}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    }).filter(Boolean).join('');
+
+    return `
+      <section class="sh-section sh-prep-section">
+        <div class="sh-section-title-row">
+          <h3>🎯 Préparation de la séance</h3>
+          <button class="btn btn-ghost sh-edit-btn" type="button" data-action="open-pre-seance">
+            ✎ Éditer / Regénérer PDF
+          </button>
+        </div>
+
+        ${prep.objectif ? `
+          <div class="sh-prep-block sh-prep-objectif">
+            <div class="sh-prep-label">🎯 Objectif spécifique</div>
+            <div class="sh-prep-value">${h(prep.objectif)}</div>
+          </div>` : ''}
+
+        <div class="sh-prep-grid">
+          ${prep.timing ? `
+            <div class="sh-prep-block sh-prep-timing-block">
+              <div class="sh-prep-label">⏱ Timing</div>
+              <ul class="sh-prep-timing-list">
+                ${prep.timing.split('\n').filter(Boolean).map(line => {
+                  const m = line.match(/^(.+?)\s*·\s*(.+)$/);
+                  if (m) return `<li><span>${h(m[1].trim())}</span><strong>${h(m[2].trim())}</strong></li>`;
+                  return `<li><span>${h(line.trim())}</span></li>`;
+                }).join('')}
+              </ul>
+            </div>` : ''}
+
+          ${prep.rappels ? `
+            <div class="sh-prep-block sh-prep-rappels-block">
+              <div class="sh-prep-label">⚠ Rappels du jour</div>
+              <ul class="sh-prep-rappels-list">
+                ${prep.rappels.split('\n').filter(Boolean).map(l => `<li>${h(l.trim())}</li>`).join('')}
+              </ul>
+            </div>` : ''}
+        </div>
+
+        ${groupesHtml ? `
+          <div class="sh-prep-block">
+            <div class="sh-prep-label">👥 Composition des groupes</div>
+            <div class="sh-prep-groups">${groupesHtml}</div>
+          </div>` : ''}
+
+        ${prep.contenuHtml ? `
+          <details class="sh-prep-image">
+            <summary>📸 Image de séance (${h(prep.contenuFile || 'image')})</summary>
+            <div class="sh-prep-image-wrap">${prep.contenuHtml}</div>
+          </details>` : ''}
+      </section>`;
+  }
+
   function renderBilanSection(cat, date, s) {
     const b = s.bilan || {};
     const filled = isBilanFilled(s);
@@ -594,6 +678,8 @@
           </div>
           <p class="sh-detail-help">✎ Tout est éditable — les modifications sont sauvegardées automatiquement.</p>
         </header>
+
+        ${renderPreparationSection(cat, date, s)}
 
         ${renderBilanSection(cat, date, s)}
 

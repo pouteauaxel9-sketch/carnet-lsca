@@ -9494,3 +9494,164 @@ body.season-transition-active { overflow: hidden; }
   margin-top: 2px;
   padding-left: 12px;
 }
+
+/* ══════════════════════════════════════════════════════════
+   Bloc "Préparation" dans le détail d'une séance (Bilans → Séances)
+   ══════════════════════════════════════════════════════════ */
+
+.sh-prep-section {
+  background: linear-gradient(180deg, #f0fdf4 0%, #fff 60%);
+  border: 1px solid #86efac;
+  border-left: 4px solid #009640;
+}
+.sh-prep-block {
+  margin-bottom: 10px;
+}
+.sh-prep-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #009640;
+  font-weight: 800;
+  letter-spacing: .04em;
+  margin-bottom: 4px;
+}
+.sh-prep-value {
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 500;
+  background: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #009640;
+}
+.sh-prep-objectif .sh-prep-value {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sh-prep-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+@media (max-width: 640px) {
+  .sh-prep-grid { grid-template-columns: 1fr; }
+}
+.sh-prep-timing-block {
+  background: #f0f9ff;
+  border-left: 3px solid #0284c7;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+.sh-prep-timing-block .sh-prep-label { color: #0284c7; }
+.sh-prep-timing-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.sh-prep-timing-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 12px;
+  border-bottom: 1px dotted rgba(2,132,199,.2);
+}
+.sh-prep-timing-list li:last-child { border: none; }
+.sh-prep-timing-list li strong {
+  color: #0284c7;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.sh-prep-rappels-block {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+.sh-prep-rappels-block .sh-prep-label { color: #b45309; }
+.sh-prep-rappels-list {
+  list-style: disc;
+  padding-left: 18px;
+  margin: 0;
+}
+.sh-prep-rappels-list li {
+  font-size: 12px;
+  color: #0f172a;
+  padding: 1px 0;
+}
+
+.sh-prep-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+.sh-prep-group {
+  border: 1.5px solid #009640;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+.sh-prep-group-head {
+  background: #009640;
+  color: #fff;
+  padding: 4px 8px;
+  font-weight: 800;
+  font-size: 12px;
+}
+.sh-prep-group-head span {
+  color: #d1fae5;
+  font-weight: 500;
+  font-size: 10px;
+  margin-left: 4px;
+}
+.sh-prep-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  padding: 3px;
+}
+.sh-prep-team {
+  border: 1px solid;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.sh-prep-team-head {
+  color: #fff;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+.sh-prep-team-list {
+  padding: 3px 5px;
+}
+.sh-prep-player {
+  font-size: 10px;
+  color: #0f172a;
+  line-height: 1.4;
+}
+
+.sh-prep-image {
+  margin-top: 10px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.sh-prep-image summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: #009640;
+  font-weight: 600;
+}
+.sh-prep-image-wrap {
+  margin-top: 8px;
+  text-align: center;
+}
+.sh-prep-image-wrap img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 4px;
+}

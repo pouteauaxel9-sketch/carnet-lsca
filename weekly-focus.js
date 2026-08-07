@@ -160,7 +160,6 @@
                   🖨 Fiche pré-séance
                 </button>
               </div>
-              ${renderSeances(week)}
             </header>
             ${renderItemsEditor(cat, week)}
             ${week.items.length === 0
