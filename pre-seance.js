@@ -53,6 +53,7 @@
         rappels: draft.rappels,
         theme: draft.theme,
         principes: draft.principes,
+        selectedPrincipleNums: draft.selectedPrincipleNums || [],
         nbGroupes: draft.nbGroupes,
         groupes: draft.groupes,
         pool: draft.pool,
@@ -122,6 +123,7 @@
         cat, date,
         theme: existing.theme || week?.theme || '',
         principes: existing.principes || items,
+        selectedPrincipleNums: Array.isArray(existing.selectedPrincipleNums) ? existing.selectedPrincipleNums : [],
         objectif: existing.objectif || '',
         presentPids: (existing.presentPids && existing.presentPids.length)
           ? cleanArray(existing.presentPids)
@@ -147,6 +149,7 @@
         cat, date,
         theme: week?.theme || '',
         principes: items,
+        selectedPrincipleNums: [], // rien coché par défaut → sélection consciente à faire
         objectif: '',
         presentPids,
         nbGroupes: 3,
@@ -213,6 +216,22 @@
       draft.presentPids.push(pid);
       if (!draft.pool.includes(pid)) draft.pool.push(pid);
     }
+    renderEditor();
+  }
+
+  function togglePrincipe(num) {
+    if (!draft) return;
+    if (!Array.isArray(draft.selectedPrincipleNums)) draft.selectedPrincipleNums = [];
+    const idx = draft.selectedPrincipleNums.indexOf(num);
+    if (idx >= 0) draft.selectedPrincipleNums.splice(idx, 1);
+    else draft.selectedPrincipleNums.push(num);
+    renderEditor();
+  }
+  function setAllPrincipes(all) {
+    if (!draft) return;
+    draft.selectedPrincipleNums = all
+      ? draft.principes.map(p => p.principleNum).filter(Boolean)
+      : [];
     renderEditor();
   }
 
@@ -397,15 +416,27 @@
               </section>
 
               <section class="ps-panel ps-field-panel">
-                <h4>📋 Principes FFF de la semaine <small>(auto)</small></h4>
+                <h4>🎯 Principes travaillés aujourd'hui
+                  <small>(${(draft.selectedPrincipleNums || []).length}/${draft.principes.length})</small>
+                </h4>
                 ${draft.principes.length ? `
-                  <ul class="ps-principes-preview-list">
-                    ${draft.principes.map(it => `
-                      <li>
-                        <strong>#${it.principleNum || '?'}</strong> ${h(it.criterion || it.label || '')}
-                        ${it.objective ? `<div class="ps-principe-obj">🎯 ${h(it.objective)}</div>` : ''}
-                      </li>
-                    `).join('')}
+                  <div class="ps-principes-actions">
+                    <button class="ps-btn" type="button" data-pre-action="all-principes">Tout cocher</button>
+                    <button class="ps-btn" type="button" data-pre-action="none-principes">Tout décocher</button>
+                  </div>
+                  <ul class="ps-principes-toggle-list">
+                    ${draft.principes.map(it => {
+                      const num = it.principleNum;
+                      const on = (draft.selectedPrincipleNums || []).includes(num);
+                      return `<li>
+                        <button class="ps-principe-toggle ${on ? 'on' : ''}" type="button"
+                                data-pre-action="toggle-principe" data-num="${num}">
+                          ${on ? '✓' : '☐'} <strong>#${num || '?'}</strong>
+                          <span class="ps-principe-toggle-label">${h(it.criterion || it.label || '')}</span>
+                          ${it.objective ? `<div class="ps-principe-toggle-obj">🎯 ${h(it.objective)}</div>` : ''}
+                        </button>
+                      </li>`;
+                    }).join('')}
                   </ul>
                 ` : `
                   <p class="ps-hint">Aucun principe défini cette semaine. Ajoute-les depuis la vue Semaine.</p>
@@ -579,6 +610,9 @@
     if (a === 'toggle-present') { togglePresent(el.dataset.pid); return true; }
     if (a === 'all-presents') { setAllPresents(true); return true; }
     if (a === 'none-presents') { setAllPresents(false); return true; }
+    if (a === 'toggle-principe') { togglePrincipe(parseInt(el.dataset.num, 10)); return true; }
+    if (a === 'all-principes') { setAllPrincipes(true); return true; }
+    if (a === 'none-principes') { setAllPrincipes(false); return true; }
     if (a === 'set-objectif') { setObjectif(el.value); return true; }
     if (a === 'set-timing') { setTiming(el.value); return true; }
     if (a === 'set-rappels') { setRappels(el.value); return true; }
@@ -673,20 +707,24 @@
           </div>
         </div>
 
-        ${draft.principes.length ? `
-          <div class="ps-pdf-principes-block">
-            <div class="ps-pdf-principes-label">📋 Principes FFF de la semaine</div>
-            <ul class="ps-pdf-principes-list">
-              ${draft.principes.map(it => `
-                <li>
-                  <span class="ps-pdf-principe-num">#${it.principleNum || '?'}</span>
-                  <span class="ps-pdf-principe-crit">${h(it.criterion || it.label || '')}</span>
-                  ${it.objective ? `<div class="ps-pdf-principe-obj">→ ${h(it.objective)}</div>` : ''}
-                </li>
-              `).join('')}
-            </ul>
-          </div>
-        ` : ''}
+        ${(() => {
+          const sel = draft.selectedPrincipleNums || [];
+          const shown = draft.principes.filter(it => sel.includes(it.principleNum));
+          if (!shown.length) return '';
+          return `
+            <div class="ps-pdf-principes-block">
+              <div class="ps-pdf-principes-label">🎯 Principes travaillés aujourd'hui</div>
+              <ul class="ps-pdf-principes-list">
+                ${shown.map(it => `
+                  <li>
+                    <span class="ps-pdf-principe-num">#${it.principleNum || '?'}</span>
+                    <span class="ps-pdf-principe-crit">${h(it.criterion || it.label || '')}</span>
+                    ${it.objective ? `<div class="ps-pdf-principe-obj">→ ${h(it.objective)}</div>` : ''}
+                  </li>
+                `).join('')}
+              </ul>
+            </div>`;
+        })()}
       </div>
 
       <!-- Bloc 3 : GROUPES -->

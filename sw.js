@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v6.8.2-cleanup-orphelins-preseance';
+const CACHE_VERSION = 'v6.9.0-principes-selectionnables-par-seance';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

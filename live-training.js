@@ -165,9 +165,17 @@
 
   function ensureObjectivesFromWeek() {
     const principles = currentWeekPrinciples();
+    // Filtre selon la sélection définie dans la Fiche pré-séance (si présente)
+    // Sinon comportement legacy = tous les principes de la semaine
+    const s0 = todaySession();
+    const selected = s0?.preparation?.selectedPrincipleNums;
+    let toInject = principles;
+    if (Array.isArray(selected)) {
+      toInject = principles.filter(p => selected.includes(p.principleNum) || p.custom);
+    }
     setSession(s => {
       const existing = new Map(s.objectives.map(o => [o.key, o]));
-      principles.forEach(p => {
+      toInject.forEach(p => {
         if (!existing.has(p.key)) {
           s.objectives.push({
             id: 'obj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
