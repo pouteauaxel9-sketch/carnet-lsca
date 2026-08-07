@@ -80,6 +80,8 @@
       pool: presentPids.slice(), // joueurs non affectés
       contenuHtml: '',
       contenuFile: '',
+      timing: 'Échauffement · 10 min\nAtelier 1 · 20 min\nAtelier 2 · 20 min\nJeu final · 15 min\nDébrief · 5 min',
+      rappels: '',
     };
 
     renderEditor();
@@ -204,6 +206,14 @@
     if (!draft) return;
     draft.objectif = txt || '';
   }
+  function setTiming(txt) {
+    if (!draft) return;
+    draft.timing = txt || '';
+  }
+  function setRappels(txt) {
+    if (!draft) return;
+    draft.rappels = txt || '';
+  }
 
   /* ── Éditeur (modal) avec drag & drop ───────────────── */
 
@@ -280,6 +290,16 @@
                     <a href="#" onclick="return false" style="color:#009640;text-decoration:underline">Retour vue Semaine</a> pour en ajouter.
                   </p>
                 `}
+
+                <h4 style="margin-top:12px">⏱ Timing de la séance</h4>
+                <textarea class="ps-textarea" rows="5"
+                          placeholder="Une phase par ligne, ex: Échauffement · 10 min"
+                          data-pre-action="set-timing">${h(draft.timing)}</textarea>
+
+                <h4 style="margin-top:12px">⚠ Rappels du jour</h4>
+                <textarea class="ps-textarea" rows="3"
+                          placeholder="Ex: Rendre les nouveaux maillots, penser au retour de blessure de X..."
+                          data-pre-action="set-rappels">${h(draft.rappels)}</textarea>
 
                 <h4 style="margin-top:12px">Contenu de la séance</h4>
                 <div class="ps-content-actions">
@@ -419,6 +439,8 @@
     if (a === 'random') { applyRandom(); return true; }
     if (a === 'by-team') { applyByTeam(); return true; }
     if (a === 'set-objectif') { setObjectif(el.value); return true; }
+    if (a === 'set-timing') { setTiming(el.value); return true; }
+    if (a === 'set-rappels') { setRappels(el.value); return true; }
     if (a === 'import-image') {
       const file = el.files?.[0];
       if (file) importImage(file);
@@ -518,6 +540,31 @@
           ${groupesHtml}
         </div>
       </section>
+
+      ${(draft.timing || draft.rappels) ? `
+        <section class="ps-pdf-extras">
+          ${draft.timing ? `
+            <div class="ps-pdf-extra-block ps-pdf-timing">
+              <div class="ps-pdf-extra-label">⏱ Timing de la séance</div>
+              <ul class="ps-pdf-timing-list">
+                ${draft.timing.split('\n').filter(Boolean).map(line => {
+                  const m = line.match(/^(.+?)\s*·\s*(.+)$/);
+                  if (m) return `<li><span class="ps-pdf-timing-phase">${h(m[1].trim())}</span><span class="ps-pdf-timing-dur">${h(m[2].trim())}</span></li>`;
+                  return `<li><span class="ps-pdf-timing-phase">${h(line.trim())}</span></li>`;
+                }).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          ${draft.rappels ? `
+            <div class="ps-pdf-extra-block ps-pdf-rappels">
+              <div class="ps-pdf-extra-label">⚠ Rappels du jour</div>
+              <ul class="ps-pdf-rappels-list">
+                ${draft.rappels.split('\n').filter(Boolean).map(line => `<li>${h(line.trim())}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+        </section>
+      ` : ''}
 
       <footer class="ps-pdf-foot">
         ${draft.presentPids.length} présents · ${draft.principes.length} principe${draft.principes.length > 1 ? 's' : ''} FFF · v6.0.0 · Axel Pouteau
@@ -731,6 +778,50 @@
       .ps-pdf-team-empty {
         font-size: 7px; color: #94a3b8; font-style: italic; text-align: center;
         padding: 2px;
+      }
+
+      /* ── Extras bas de page (timing + rappels côte à côte) ── */
+      .ps-pdf-extras {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+        margin-top: 6px; flex-shrink: 0;
+      }
+      .ps-pdf-extra-block {
+        border-radius: 4px; padding: 5px 8px;
+        font-size: 9px;
+      }
+      .ps-pdf-timing {
+        background: #f0f9ff; border-left: 3px solid #0284c7;
+      }
+      .ps-pdf-rappels {
+        background: #fef3c7; border-left: 3px solid #f59e0b;
+      }
+      .ps-pdf-extra-label {
+        font-size: 8px; text-transform: uppercase;
+        font-weight: 800; letter-spacing: .06em;
+        margin-bottom: 3px;
+      }
+      .ps-pdf-timing .ps-pdf-extra-label { color: #0284c7; }
+      .ps-pdf-rappels .ps-pdf-extra-label { color: #b45309; }
+      .ps-pdf-timing-list {
+        list-style: none; padding: 0; margin: 0;
+      }
+      .ps-pdf-timing-list li {
+        display: flex; justify-content: space-between;
+        align-items: baseline;
+        padding: 1px 0;
+        border-bottom: 1px dotted rgba(2, 132, 199, .2);
+      }
+      .ps-pdf-timing-list li:last-child { border-bottom: none; }
+      .ps-pdf-timing-phase { color: #0f172a; font-weight: 500; }
+      .ps-pdf-timing-dur {
+        color: #0284c7; font-weight: 700; font-size: 9px;
+        white-space: nowrap;
+      }
+      .ps-pdf-rappels-list {
+        list-style: disc; padding-left: 14px; margin: 0;
+      }
+      .ps-pdf-rappels-list li {
+        color: #0f172a; padding: 1px 0;
       }
 
       /* Footer */
