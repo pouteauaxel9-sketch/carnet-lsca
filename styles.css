@@ -10033,3 +10033,66 @@ body.season-transition-active { overflow: hidden; }
 .ps-principe-toggle.on .ps-principe-toggle-obj {
   color: #009640;
 }
+
+/* ══════════════════════════════════════════════════════════
+   Widget anniversaires sur le dashboard
+   ══════════════════════════════════════════════════════════ */
+
+.birthday-card {
+  margin-bottom: var(--sp-4);
+}
+.birthday-today {
+  background: linear-gradient(90deg, #fef3c7, #fef9c3);
+  border-left: 4px solid var(--accent-warn);
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-3);
+  font-size: var(--text-sm);
+  color: #92400e;
+}
+.birthday-today strong { margin-right: var(--sp-2); }
+.bday-chip-today {
+  display: inline-block;
+  background: var(--accent-warn);
+  color: white;
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-full);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin: 2px;
+}
+
+.birthday-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bday-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 50px 60px 90px;
+  gap: var(--sp-2);
+  align-items: center;
+  padding: 6px var(--sp-3);
+  background: var(--neutral-50);
+  border-radius: var(--r-sm);
+  font-size: var(--text-sm);
+  transition: background var(--transition-fast);
+}
+.bday-row:hover { background: var(--brand-soft); }
+.bday-date { font-weight: 700; color: var(--brand); font-family: var(--font-mono); }
+.bday-name { font-weight: 600; color: var(--neutral-900); }
+.bday-cat {
+  font-size: var(--text-xs);
+  background: var(--neutral-200);
+  color: var(--neutral-700);
+  padding: 2px 6px;
+  border-radius: var(--r-full);
+  text-align: center;
+  font-weight: 700;
+}
+.bday-age { color: var(--neutral-500); font-size: var(--text-xs); }
+.bday-in { color: var(--neutral-500); font-size: var(--text-xs); text-align: right; font-style: italic; }
+@media (max-width: 640px) {
+  .bday-row { grid-template-columns: 50px 1fr 60px; }
+  .bday-row .bday-cat, .bday-row .bday-age { display: none; }
+}

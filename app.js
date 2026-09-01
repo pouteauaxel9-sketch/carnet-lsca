@@ -37,7 +37,7 @@ const CLUB_DATA = {
   femalePlayers:0,
   categories:{
     u13:{ teams:['U13 A','U13 B','U13 C','U12'] },
-    u11:{ teams:['U11 A','U11 B','U11 C'] },
+    u11:{ teams:['U11 A','U11 B','U10'] },
     u9:{ teams:['U9 A','U9 B','U9 C','U9 D'] }
   },
   standings:[
@@ -1101,6 +1101,8 @@ function renderDashboard() {
         </div>
       </div>
 
+      ${renderBirthdaysCard()}
+
       <div class="dashboard-main-grid dashboard-main-grid-compact">
         ${renderCategoryAccessCard(categories)}
         ${renderStandingsCard(feeds.standings)}
@@ -1108,6 +1110,60 @@ function renderDashboard() {
       </div>
     </section>
   `;
+}
+
+/* ── Widget anniversaires (aujourd'hui + 30 jours à venir) ── */
+function renderBirthdaysCard() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const bdays = [];
+  Object.keys(state.data || {}).forEach(cat => {
+    const players = state.data[cat] || {};
+    Object.keys(players).forEach(pid => {
+      const prof = players[pid]?.profil;
+      if (!prof || prof.left) return;
+      if (!prof.naissance) return;
+      const nais = new Date(prof.naissance);
+      if (isNaN(nais.getTime())) return;
+      // Prochain anniversaire à venir
+      const next = new Date(today.getFullYear(), nais.getMonth(), nais.getDate());
+      if (next < today) next.setFullYear(today.getFullYear() + 1);
+      const daysUntil = Math.round((next.getTime() - today.getTime()) / 86400000);
+      const age = next.getFullYear() - nais.getFullYear();
+      const displayName = (prof.prenom && prof.nom) ? prof.prenom + ' ' + prof.nom : pid;
+      bdays.push({ pid, cat, displayName, nais, daysUntil, age, month: nais.getMonth(), day: nais.getDate() });
+    });
+  });
+  bdays.sort((a, b) => a.daysUntil - b.daysUntil);
+  const upcoming = bdays.filter(b => b.daysUntil <= 30);
+  const todays = upcoming.filter(b => b.daysUntil === 0);
+
+  if (!upcoming.length) return '';
+
+  return `
+    <section class="dashboard-card birthday-card">
+      <div class="card-head">
+        <div><div class="card-kicker">Anniversaires</div><h2>🎂 À venir</h2></div>
+      </div>
+      ${todays.length ? `
+        <div class="birthday-today">
+          🎉 <strong>Aujourd'hui</strong> :
+          ${todays.map(b => `<span class="bday-chip bday-chip-today">${h(b.displayName)} (${b.age} ans · ${b.cat.toUpperCase()})</span>`).join(' ')}
+        </div>` : ''}
+      <div class="birthday-list">
+        ${upcoming.filter(b => b.daysUntil > 0).slice(0, 8).map(b => {
+          const dateLbl = String(b.day).padStart(2, '0') + '/' + String(b.month + 1).padStart(2, '0');
+          const inLbl = b.daysUntil === 1 ? 'demain' : 'dans ' + b.daysUntil + ' j';
+          return `<div class="bday-row">
+            <span class="bday-date">${dateLbl}</span>
+            <span class="bday-name">${h(b.displayName)}</span>
+            <span class="bday-cat">${h(b.cat.toUpperCase())}</span>
+            <span class="bday-age">${b.age} ans</span>
+            <span class="bday-in">${inLbl}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </section>`;
 }
 
 function getLastObsDate(pid, season = state.season) {
@@ -1352,6 +1408,7 @@ function profileBody(pid) {
             `<option value="${h(t)}" ${prof.team === t ? 'selected' : ''}>${h(t)}</option>`).join('')}
         </select>
       </div>
+      ${state.cat !== 'u9' ? `
       <div class="field-group">
         <label class="field-label" for="pf-poste1">Poste principal</label>
         <select class="field-input" id="pf-poste1" data-field="poste1">
@@ -1365,7 +1422,7 @@ function profileBody(pid) {
           <option value="">Optionnel</option>
           ${POSTES.map(poste => `<option value="${h(poste)}" ${prof.poste2 === poste ? 'selected' : ''}>${h(poste)}</option>`).join('')}
         </select>
-      </div>
+      </div>` : ''}
       <div class="field-group full">
         <div class="field-label">Pied fort</div>
         <div class="foot-row">
