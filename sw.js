@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v7.9.1-netlify-config-min-stats-team-cachees';
+const CACHE_VERSION = 'v7.9.2-sw-no-cache-functions-detection-maintenance-fff';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -112,6 +112,21 @@ self.addEventListener('fetch', event => {
   // APIs externes : network-only
   if (url.hostname.endsWith('.supabase.co') || url.hostname.endsWith('fff.fr')) {
     event.respondWith(fetch(req).catch(() => new Response('Offline', { status: 503 })));
+    return;
+  }
+
+  // Netlify Functions : TOUJOURS network-only (jamais de cache, elles doivent
+  // être exécutées à chaque appel, et un 403/503 ne doit JAMAIS être caché)
+  if (url.pathname.startsWith('/.netlify/functions/')) {
+    event.respondWith(fetch(req).catch(() => new Response(JSON.stringify({ error: 'offline' }), {
+      status: 503, headers: { 'Content-Type': 'application/json' }
+    })));
+    return;
+  }
+
+  // Proxys CORS publics : pareil, pas de cache
+  if (url.hostname === 'corsproxy.io' || url.hostname === 'api.allorigins.win' || url.hostname === 'api.codetabs.com') {
+    event.respondWith(fetch(req).catch(() => new Response('{"error":"proxy down"}', { status: 503 })));
     return;
   }
 

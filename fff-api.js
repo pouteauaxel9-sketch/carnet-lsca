@@ -145,6 +145,14 @@
 
     const apiUrl = buildApiUrl(parsed.competId, parsed.phaseId, parsed.pouleId);
     const json = await fetchFff(parsed, apiUrl);
+
+    // Détection d'une page HTML "maintenance" renvoyée par la FFF (503 masqué)
+    if (typeof json === 'string' && json.includes('APPLICATION MOMENTAN')) {
+      throw new Error('FFF en maintenance — réessaie dans quelques minutes');
+    }
+    if (!json || (!Array.isArray(json) && !Array.isArray(json?.['hydra:member']))) {
+      throw new Error('Réponse FFF inattendue (API probablement en maintenance)');
+    }
     const items = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
                 : Array.isArray(json) ? json
                 : [];
