@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v7.3.1-import-pdf-cat-mapping-fix';
+const CACHE_VERSION = 'v7.4.2-compo-tactique-dans-pdf';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

@@ -9974,6 +9974,122 @@ body.season-transition-active { overflow: hidden; }
   background: #bbf7d0;
 }
 
+/* ── Filtre par équipe dans la section présents ── */
+.ps-team-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0 10px;
+  padding: 6px 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+.ps-team-chip {
+  padding: 4px 10px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all .12s;
+}
+.ps-team-chip:hover {
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+.ps-team-chip.on {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #fff;
+}
+.ps-team-chip-nt {
+  font-style: italic;
+  color: #94a3b8;
+  margin-left: auto;
+}
+
+/* ── Chip de l'équipe principale affichée dans un ps-present-chip ── */
+.ps-chip-team {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.ps-present-chip.on .ps-chip-team {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+/* ── Chip de poste affiché dans ps-dnd-chip (compo équipes) ── */
+.ps-dnd-chip .ps-chip-poste {
+  display: inline-block;
+  min-width: 22px;
+  padding: 1px 5px;
+  margin-right: 6px;
+  background: #0f172a;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: .3px;
+}
+.ps-dnd-chip .ps-chip-name {
+  font-weight: 600;
+}
+
+/* ── Sélecteur de compo tactique par équipe ── */
+.ps-formation-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 4px;
+  background: rgba(255,255,255,0.6);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.ps-formation-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.ps-formation-sel {
+  flex: 1;
+  padding: 3px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+.ps-formation-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 4px 8px 6px;
+  background: rgba(255,255,255,0.6);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.ps-formation-slot {
+  display: inline-block;
+  padding: 1px 6px;
+  background: #0f172a;
+  color: #fff;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+
 /* ── Toggles principes dans la Fiche pré-séance ── */
 .ps-principes-actions {
   display: flex; gap: 4px;

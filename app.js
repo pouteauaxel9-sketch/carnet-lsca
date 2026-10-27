@@ -2757,7 +2757,7 @@ const INPUT_DISPATCHERS = [
   { dataAttr: 'liveAction',    module: 'LiveTrainingModule',    actions: ['search', 'save-juggle'] },
   { dataAttr: 'historyAction', module: 'SessionsHistoryModule', actions: ['edit-juggle', 'set-obj-past', 'set-bilan-note'] },
   { dataAttr: 'weeklyAction',  module: 'WeeklyFocusModule',     actions: ['set-theme', 'set-note', 'edit-item-objective'] },
-  { dataAttr: 'preAction',     module: 'PreSeanceModule',       actions: ['set-contenu', 'set-objectif', 'set-timing', 'set-rappels'] },
+  { dataAttr: 'preAction',     module: 'PreSeanceModule',       actions: ['set-contenu', 'set-objectif', 'set-timing', 'set-rappels', 'set-formation'] },
 ];
 
 document.addEventListener('input', event => {

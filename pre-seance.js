@@ -23,6 +23,7 @@
 
   let draft = null;
   let saveTimer = null;
+  let teamFilter = '';   // '' = toutes équipes · sinon nom d'équipe (ex. 'U11 A')
 
   function state() { return window.appState || {}; }
   function utils() { return window.appUtils || {}; }
@@ -90,6 +91,21 @@
   function playerTeam(pid, cat) {
     cat = cat || state().cat;
     return state().data?.[cat]?.[pid]?.profil?.team || '';
+  }
+
+  function playerPoste(pid, cat) {
+    cat = cat || state().cat;
+    return state().data?.[cat]?.[pid]?.profil?.poste1 || '';
+  }
+
+  // Abréviation courte du poste (max 3 caractères) pour affichage compact
+  function posteShort(poste) {
+    if (!poste) return '';
+    const p = String(poste).trim();
+    // Prend les initiales des mots (ex: "Milieu Défensif" → "MD")
+    const words = p.split(/\s+/);
+    if (words.length >= 2) return words.map(w => w[0]?.toUpperCase() || '').join('').slice(0, 3);
+    return p.slice(0, 3).toUpperCase();
   }
 
   function todayIso() { return new Date().toISOString().slice(0, 10); }
@@ -165,6 +181,7 @@
 
   function close() {
     draft = null;
+    teamFilter = '';
     const root = document.querySelector('#pre-seance-root');
     if (root) root.innerHTML = '';
   }
@@ -465,14 +482,39 @@
                   <button class="ps-btn" type="button" data-pre-action="none-presents">Tout décocher</button>
                 </div>
               </div>
+              ${(() => {
+                const teams = (window.CLUB_DATA?.categories?.[draft.cat]?.teams) || [];
+                if (!teams.length) return '';
+                return `
+                  <div class="ps-team-filter" role="tablist" aria-label="Filtrer par équipe">
+                    <button class="ps-team-chip ${teamFilter === '' ? 'on' : ''}" type="button"
+                            data-pre-action="filter-team" data-team="">Toutes</button>
+                    ${teams.map(t => `
+                      <button class="ps-team-chip ${teamFilter === t ? 'on' : ''}" type="button"
+                              data-pre-action="filter-team" data-team="${h(t)}">${h(t)}</button>`).join('')}
+                    <button class="ps-team-chip ps-team-chip-nt ${teamFilter === '__none__' ? 'on' : ''}" type="button"
+                            data-pre-action="filter-team" data-team="__none__" title="Joueurs sans équipe renseignée">Sans équipe</button>
+                  </div>`;
+              })()}
               <div class="ps-presents-chips">
-                ${sortedPlayers(draft.cat).map(pid => {
-                  const present = draft.presentPids.includes(pid);
-                  return `<button class="ps-present-chip ${present ? 'on' : ''}" type="button"
-                          data-pre-action="toggle-present" data-pid="${h(pid)}">
-                    ${present ? '✓' : '☐'} ${h(playerLabel(pid, draft.cat))}
-                  </button>`;
-                }).join('')}
+                ${(() => {
+                  const all = sortedPlayers(draft.cat);
+                  const filtered = teamFilter === '' ? all
+                    : teamFilter === '__none__' ? all.filter(pid => !playerTeam(pid, draft.cat))
+                    : all.filter(pid => playerTeam(pid, draft.cat) === teamFilter);
+                  if (!filtered.length) {
+                    return `<div class="ps-pool-empty">Aucun joueur dans ce filtre.</div>`;
+                  }
+                  return filtered.map(pid => {
+                    const present = draft.presentPids.includes(pid);
+                    const team = playerTeam(pid, draft.cat);
+                    const teamTag = team ? `<span class="ps-chip-team">${h(team)}</span>` : '';
+                    return `<button class="ps-present-chip ${present ? 'on' : ''}" type="button"
+                            data-pre-action="toggle-present" data-pid="${h(pid)}">
+                      ${present ? '✓' : '☐'} ${h(playerLabel(pid, draft.cat))}${teamTag}
+                    </button>`;
+                  }).join('');
+                })()}
               </div>
             </section>
 
@@ -514,10 +556,35 @@
   }
 
   function renderDraggableChip(pid, source) {
+    // Pastille poste uniquement pour U11 et U13 (inutile en U9)
+    const showPoste = draft.cat === 'u11' || draft.cat === 'u13';
+    const poste = showPoste ? playerPoste(pid, draft.cat) : '';
+    const posteTag = poste ? `<span class="ps-chip-poste" title="${h(poste)}">${h(posteShort(poste))}</span>` : '';
     return `<div class="ps-dnd-chip" draggable="true"
               data-pid="${h(pid)}" data-source="${h(source)}">
-      ${h(playerLabel(pid, draft.cat))}
+      ${posteTag}<span class="ps-chip-name">${h(playerLabel(pid, draft.cat))}</span>
     </div>`;
+  }
+
+  /* ── Compositions tactiques (foot à 8 pour U11/U13) ─────────── */
+
+  const FORMATIONS = {
+    '1-2-4-1': { label: '1-2-4-1', postes: ['GB','DC','DC','MD','MG','MC','MC','BU'] },
+    '1-2-3-2': { label: '1-2-3-2', postes: ['GB','DC','DC','MD','MG','MC','BU','BU'] },
+    '1-3-3-1': { label: '1-3-3-1', postes: ['GB','DCD','DC','DCG','MD','MG','MC','BU'] },
+  };
+
+  function getFormation(gi, ti) {
+    const g = draft.groupes[gi];
+    if (!g.formations) g.formations = {};
+    return g.formations[ti] || '';
+  }
+  function setFormation(gi, ti, key) {
+    const g = draft.groupes[gi];
+    if (!g.formations) g.formations = {};
+    g.formations[ti] = key || '';
+    persistDraft();
+    renderEditor();
   }
 
   function renderGroupCard(g, gi) {
@@ -530,12 +597,30 @@
         <div class="ps-group-teams">
           ${g.teams.map((team, ti) => {
             const c = TEAM_COLORS[ti];
+            const showFormation = draft.cat === 'u11' || draft.cat === 'u13';
+            const curFormation = showFormation ? getFormation(gi, ti) : '';
+            const formationPicker = showFormation ? `
+              <div class="ps-formation-row">
+                <label class="ps-formation-label">Compo :</label>
+                <select class="ps-formation-sel" data-pre-action="set-formation"
+                        data-group="${gi}" data-team="${ti}">
+                  <option value="">Libre</option>
+                  ${Object.keys(FORMATIONS).map(k => `
+                    <option value="${k}" ${curFormation === k ? 'selected' : ''}>${h(FORMATIONS[k].label)}</option>`).join('')}
+                </select>
+              </div>
+              ${curFormation ? `
+                <div class="ps-formation-legend">
+                  ${FORMATIONS[curFormation].postes.map(p => `<span class="ps-formation-slot">${h(p)}</span>`).join('')}
+                </div>` : ''}
+            ` : '';
             return `
               <div class="ps-team-box ps-team-${c.key}" data-drop-zone="team" data-group="${gi}" data-team="${ti}"
                    style="background:${c.bg}20; border-color:${c.bg}">
                 <div class="ps-team-head" style="background:${c.bg}; color:${c.text}">
                   ${c.label} <span class="ps-team-count">(${team.length})</span>
                 </div>
+                ${formationPicker}
                 <div class="ps-team-chips">
                   ${team.map(pid => renderDraggableChip(pid, 'team-' + gi + '-' + ti)).join('') ||
                     '<div class="ps-team-empty">Dépose ici</div>'}
@@ -608,6 +693,17 @@
     if (a === 'toggle-present') { togglePresent(el.dataset.pid); return true; }
     if (a === 'all-presents') { setAllPresents(true); return true; }
     if (a === 'none-presents') { setAllPresents(false); return true; }
+    if (a === 'filter-team') {
+      teamFilter = el.dataset.team || '';
+      renderEditor();
+      return true;
+    }
+    if (a === 'set-formation') {
+      const gi = parseInt(el.dataset.group, 10);
+      const ti = parseInt(el.dataset.team, 10);
+      setFormation(gi, ti, el.value);
+      return true;
+    }
     if (a === 'toggle-principe') { togglePrincipe(parseInt(el.dataset.num, 10)); return true; }
     if (a === 'all-principes') { setAllPrincipes(true); return true; }
     if (a === 'none-principes') { setAllPrincipes(false); return true; }
@@ -638,7 +734,8 @@
     const logoSrc = cat === 'u13' ? (logos.gjLsca || logos.louverne || '') : (logos.louverne || '');
     const logoName = cat === 'u13' ? 'GJ LSCA' : 'Louverné Sports';
 
-    // Groupes → HTML avec 2 équipes chacun
+    // Groupes → HTML avec 2 équipes chacun + compo tactique + postes (U11/U13)
+    const showPoste = cat === 'u11' || cat === 'u13';
     const groupesHtml = draft.groupes.map((g, gi) => {
       const totalJoueurs = g.teams[0].length + g.teams[1].length;
       return `<div class="ps-pdf-group">
@@ -646,9 +743,23 @@
         <div class="ps-pdf-group-teams">
           ${g.teams.map((team, ti) => {
             const c = TEAM_COLORS[ti];
-            const players = team.map(pid => `<div class="ps-pdf-player">${h(playerLabel(pid, cat))}</div>`).join('');
+            const formKey = showPoste ? (g.formations?.[ti] || '') : '';
+            const formation = formKey ? FORMATIONS[formKey] : null;
+            const formationHead = formation ? `
+              <div class="ps-pdf-team-formation">
+                <span class="ps-pdf-formation-name">${h(formation.label)}</span>
+                <div class="ps-pdf-formation-slots">
+                  ${formation.postes.map(p => `<span class="ps-pdf-formation-slot">${h(p)}</span>`).join('')}
+                </div>
+              </div>` : '';
+            const players = team.map(pid => {
+              const poste = showPoste ? playerPoste(pid, cat) : '';
+              const posteTag = poste ? `<span class="ps-pdf-player-poste">${h(posteShort(poste))}</span>` : '';
+              return `<div class="ps-pdf-player">${posteTag}<span class="ps-pdf-player-name">${h(playerLabel(pid, cat))}</span></div>`;
+            }).join('');
             return `<div class="ps-pdf-team" style="background:${c.bg}15; border-color:${c.bg}">
               <div class="ps-pdf-team-head" style="background:${c.bg}; color:${c.text}">${c.label}</div>
+              ${formationHead}
               <div class="ps-pdf-team-list">${players || '<div class="ps-pdf-team-empty">—</div>'}</div>
             </div>`;
           }).join('')}
@@ -1028,10 +1139,43 @@
       .ps-pdf-player {
         font-size: 8px; padding: 0 2px; color: #0f172a;
         line-height: 1.4;
+        display: flex; align-items: center; gap: 3px;
       }
+      .ps-pdf-player-poste {
+        display: inline-block;
+        min-width: 14px;
+        padding: 0 3px;
+        background: #0f172a; color: #fff;
+        border-radius: 2px;
+        font-size: 7px; font-weight: 800;
+        text-align: center; letter-spacing: .3px;
+      }
+      .ps-pdf-player-name { font-weight: 500; }
       .ps-pdf-team-empty {
         font-size: 7px; color: #94a3b8; font-style: italic; text-align: center;
         padding: 2px;
+      }
+
+      /* ── Compo tactique affichée en entête d'équipe (PDF) ── */
+      .ps-pdf-team-formation {
+        padding: 2px 4px;
+        border-bottom: 1px dashed rgba(0,0,0,0.15);
+        background: rgba(255,255,255,0.5);
+      }
+      .ps-pdf-formation-name {
+        font-size: 7px; font-weight: 800; color: #0f172a;
+        letter-spacing: .3px;
+      }
+      .ps-pdf-formation-slots {
+        display: flex; flex-wrap: wrap; gap: 2px; margin-top: 2px;
+      }
+      .ps-pdf-formation-slot {
+        display: inline-block;
+        padding: 0 3px;
+        background: #0f172a; color: #fff;
+        border-radius: 2px;
+        font-size: 6px; font-weight: 700;
+        letter-spacing: .3px;
       }
 
       /* ── Extras (timing + rappels côte à côte) ── */
