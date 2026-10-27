@@ -394,16 +394,17 @@
   function renderJuggleView() {
     const cat = state().cat;
     const pres = presentPids();
-    let visibleP;
-    if (pres.length > 0) {
-      visibleP = sortedPlayers(cat).filter(p => pres.includes(p));
-    } else {
-      visibleP = sortedPlayers(cat);
-    }
+    // On n'affiche QUE les présents (plus de fallback "tous les joueurs"
+    // pour ne pas noyer l'éducateur avec les absents).
+    let visibleP = sortedPlayers(cat).filter(p => pres.includes(p));
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       visibleP = visibleP.filter(pid => playerLabel(pid).toLowerCase().includes(q));
     }
+
+    const legendText = pres.length === 0
+      ? 'Aucun présent — clique 👥 pour cocher'
+      : `${visibleP.length} présent${visibleP.length > 1 ? 's' : ''}`;
 
     return `
       <div class="live-shell">
@@ -412,11 +413,11 @@
         <div class="live-toolbar">
           <input type="search" class="live-search" placeholder="🔍 Rechercher un joueur…"
                  value="${h(searchQuery)}" data-live-action="search" autocomplete="off">
-          <span class="live-juggle-legend">${pres.length > 0 ? 'Seulement les présents (' + visibleP.length + ')' : 'Aucun présent sélectionné — clique 👥 en haut'}</span>
+          <span class="live-juggle-legend">${legendText}</span>
         </div>
         <div class="live-juggle-list">
           ${visibleP.length === 0
-            ? '<p class="live-empty">Sélectionne les joueurs présents (bouton 👥 en haut).</p>'
+            ? '<p class="live-empty">Aucun joueur présent sélectionné.<br>Clique sur <strong>👥</strong> en haut à droite pour cocher les présents.</p>'
             : visibleP.map(pid => renderJuggleRow(pid)).join('')}
         </div>
       </div>`;
@@ -653,7 +654,7 @@
       if (list) {
         const cat = state().cat;
         const pres = presentPids();
-        let vp = pres.length > 0 ? sortedPlayers(cat).filter(p => pres.includes(p)) : sortedPlayers(cat);
+        let vp = sortedPlayers(cat).filter(p => pres.includes(p));
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
           vp = vp.filter(pid => playerLabel(pid).toLowerCase().includes(q));
