@@ -79,7 +79,8 @@ const CLUB_DATA = {
 // Saison 2026-2027 — toutes les équipes engagées du club
 // Les URLs FFF seront ajoutées plus tard quand les championnats seront démarrés.
 const TEAM_SOURCE_CONFIG = {
-  u13a:{ key:'u13a', category:'u13', teamLabel:'U13 A', officialName:'GJ LSCA LOUVERNE',    identity:'GJ LSCA',          pending:true, division:'District Mayenne D1 · poule C' },
+  u13a:{ key:'u13a', category:'u13', teamLabel:'U13 A', officialName:'GJ LSCA LOUVERNE',    identity:'GJ LSCA',          division:'District Mayenne D1 · poule C',
+         fffUrl:'https://mayenne.fff.fr/competitions?tab=ranking&id=450413&phase=1&poule=3&type=ch' },
   u13b:{ key:'u13b', category:'u13', teamLabel:'U13 B', officialName:'GJ LSCA LOUVERNE 2',  identity:'GJ LSCA',          pending:true, division:'District Mayenne D2 · poule E' },
   u13c:{ key:'u13c', category:'u13', teamLabel:'U13 C', officialName:'GJ LSCA LOUVERNE 3',  identity:'GJ LSCA',          pending:true, division:'District Mayenne D3 · poule F' },
   u13d:{ key:'u13d', category:'u13', teamLabel:'U13 D', officialName:'GJ LSCA LOUVERNE 4',  identity:'GJ LSCA',          pending:true, division:'District Mayenne D3 · poule E' },
@@ -629,22 +630,88 @@ function getRefreshLabel() {
 }
 
 function buildDashboardFeeds(cat = state.cat) {
-  // Source de vérité pour les classements : TEAM_SOURCE_CONFIG (code).
-  // On ignore les anciens cfb6_feeds et state.remoteClubData qui pouvaient
-  // afficher la saison précédente lorsqu'ils étaient définis.
+  // Pour chaque équipe du club de cette catégorie :
+  //  - Si on a l'URL FFF ET les données déjà chargées depuis l'API DOFA → on affiche
+  //    la poule complète (toutes les équipes de la poule, ligne de notre équipe surlignée)
+  //  - Sinon → ligne "Classement à venir" (en attendant l'URL ou le fetch)
   const teams = getConfiguredTeamsForCategory(cat);
-  const standings = teams.map(team => {
-    const remote = state.remoteSources[team.key] || {};
-    const sourceStatus = remote.status || 'configured';
-    return {
-      team:team.teamLabel,
-      rank:remote.ranking?.rank || (team.pending ? 'Classement à venir' : sourceStatus === 'synced' ? '-' : 'Prêt à brancher'),
-      points:remote.ranking?.points || '-',
-      played:remote.ranking?.played || '-',
-      note:team.division || team.officialName
-    };
+  const fffCache = state.fffStandingsByCat?.[cat] || {};
+  const standings = [];
+
+  teams.forEach(team => {
+    const compLabel = team.division || team.officialName || team.teamLabel;
+    const fffData = team.fffUrl ? fffCache[team.key] : null;
+
+    if (fffData && fffData.standings) {
+      // On a reçu la poule complète : toutes les équipes
+      fffData.standings.forEach(row => {
+        const isOurs = row.teamCode === team.key.toUpperCase()
+                    || isSameTeam(row.team, team.officialName);
+        standings.push({
+          rank: row.rank,
+          team: row.team,
+          points: row.pts,
+          played: row.played,
+          won: row.won, draw: row.draw, lost: row.lost,
+          diff: row.diff,
+          competition: compLabel + (fffData.pouleName ? ' — ' + fffData.pouleName : ''),
+          competitionLevel: 'district',
+          isOurTeam: isOurs,
+        });
+      });
+    } else if (fffData && fffData.error) {
+      standings.push({
+        rank: '!', team: team.teamLabel + ' — ' + fffData.error,
+        points: '-', played: '-', diff: '-',
+        competition: compLabel, competitionLevel: 'district',
+      });
+    } else {
+      standings.push({
+        rank: '-', team: team.teamLabel,
+        points: '-', played: '-', diff: '-',
+        competition: compLabel, competitionLevel: 'district',
+        isOurTeam: true,
+      });
+    }
   });
+
+  // Déclenche le fetch asynchrone en arrière-plan (idempotent, cache 1h)
+  ensureFffStandings(cat);
+
   return { standings };
+}
+
+// Compare 2 noms d'équipe (normalisation : minuscules, sans accents, sans ponctuation)
+function isSameTeam(a, b) {
+  const n = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+                .toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  const na = n(a); const nb = n(b);
+  if (!na || !nb) return false;
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
+// Fetch FFF en arrière-plan, re-render quand les données arrivent
+async function ensureFffStandings(cat) {
+  if (!window.FffApiModule) return;
+  state.fffFetchingFor = state.fffFetchingFor || {};
+  if (state.fffFetchingFor[cat]) return;      // déjà en cours
+  const teams = getConfiguredTeamsForCategory(cat).filter(t => t.fffUrl);
+  if (!teams.length) return;
+  // Si on a déjà toutes les data en mémoire (ou en cache localStorage valide), rien à faire
+  const cache = state.fffStandingsByCat?.[cat] || {};
+  const missing = teams.filter(t => !cache[t.key]);
+  if (!missing.length) return;
+
+  state.fffFetchingFor[cat] = true;
+  try {
+    const results = await window.FffApiModule.fetchStandingsForTeams(missing);
+    state.fffStandingsByCat = state.fffStandingsByCat || {};
+    state.fffStandingsByCat[cat] = Object.assign({}, cache, results);
+    // Re-render pour afficher les classements fraîchement arrivés
+    if (state.view === 'dashboard') renderAll();
+  } finally {
+    state.fffFetchingFor[cat] = false;
+  }
 }
 
 async function tryFetchTeamSource(team) {

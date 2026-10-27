@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v7.7.2-fix-anciens-classements-ecrasent-nouveaux';
+const CACHE_VERSION = 'v7.8.0-fff-api-classements-live';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -53,6 +53,7 @@ const STATIC_ASSETS = [
   './sessions-history.js',
   './season-transition.js',
   './sync-supabase.js',
+  './fff-api.js',
   './pre-seance.js',
   './pdf-report.js',
   './pdf-logos.js',
