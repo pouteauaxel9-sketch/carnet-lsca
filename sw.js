@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v7.8.2-suppr-comparaison-saison-passee';
+const CACHE_VERSION = 'v7.8.3-noms-equipes-FFF-classement-filtre-par-equipe';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

@@ -182,6 +182,7 @@ window.CATS       = CATS;
 window.PILLARS    = PILLARS;
 window.JDATA      = JDATA;
 window.CLUB_DATA  = CLUB_DATA;
+window.TEAM_SOURCE_CONFIG = TEAM_SOURCE_CONFIG;
 window.POSTES     = POSTES;
 
 let state = {

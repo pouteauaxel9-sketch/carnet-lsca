@@ -380,8 +380,20 @@
 
     const upcoming = (feeds.upcoming || []).filter(matchesTeam);
     const past = (feeds.past || []).filter(matchesTeam);
-    // Le classement est partagé par toutes les équipes de la catégorie — on garde tel quel
-    const standings = feeds.standings;
+
+    // Filtre : on veut UNIQUEMENT le classement de la poule de cette équipe
+    // (pas toutes les équipes de la catégorie). On identifie la bonne poule
+    // en comparant la division/compétition stockée pour cette équipe au champ
+    // `competition` de chaque standing.
+    const teamConfig = Object.values(window.TEAM_SOURCE_CONFIG || {})
+      .find(t => t.teamLabel === teamLabel);
+    const myDiv = teamConfig?.division || teamConfig?.officialName || '';
+    const normalizeStr = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const myDivNorm = normalizeStr(myDiv);
+    const standings = (feeds.standings || []).filter(row => {
+      const compNorm = normalizeStr(row.competition || '');
+      return myDivNorm && compNorm.startsWith(myDivNorm);
+    });
 
     // Si rien de pertinent, on cache la section
     if (!upcoming.length && !past.length && (!standings || !standings.length)) return '';

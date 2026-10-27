@@ -18,7 +18,7 @@
 (function () {
   'use strict';
 
-  const CACHE_KEY = 'cfb6_fff_cache_v1';     // { [url]: { fetchedAt, data } }
+  const CACHE_KEY = 'cfb6_fff_cache_v2';     // { [url]: { fetchedAt, data } } — bump pour invalider cache "Équipe inconnue"
   const CACHE_TTL_MS = 60 * 60 * 1000;        // 1 h
 
   /* ── Cache localStorage (dédoublonne les requêtes) ─────────────── */
@@ -71,10 +71,12 @@
   }
 
   // Transforme un item de la réponse API en objet simple affichable
+  // La structure réelle : item.equipe.{short_name, short_name_ligue, short_name_federation, cl_no, ...}
   function normalize(item) {
-    const club = item?.equipe?.club || {};
-    const label = club.short_name_ligue || club.short_name || item?.equipe?.name || 'Équipe inconnue';
-    const code  = item?.equipe?.code || '';
+    const equipe = item?.equipe || {};
+    const label = equipe.short_name_ligue || equipe.short_name || equipe.short_name_federation
+               || equipe.name || 'Équipe ' + (equipe.cl_no || '?');
+    const code  = equipe.cl_no || equipe.code || '';
     return {
       rank:      item.rank ?? '-',
       team:      label,
