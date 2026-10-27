@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v7.8.3-noms-equipes-FFF-classement-filtre-par-equipe';
+const CACHE_VERSION = 'v7.8.4-debug-fff-fetch-loading-state';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

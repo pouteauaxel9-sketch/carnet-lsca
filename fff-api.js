@@ -104,13 +104,22 @@
 
   async function fetchViaCorsProxies(apiUrl) {
     let lastErr = null;
-    for (const makeProxy of CORS_PROXIES) {
+    for (let i = 0; i < CORS_PROXIES.length; i++) {
+      const proxyUrl = CORS_PROXIES[i](apiUrl);
       try {
-        const resp = await fetch(makeProxy(apiUrl), { method: 'GET', cache: 'no-store' });
-        if (!resp.ok) { lastErr = new Error('Proxy HTTP ' + resp.status); continue; }
-        return await resp.json();
+        console.log('[FFF] Tentative proxy #' + (i + 1) + ':', proxyUrl);
+        const resp = await fetch(proxyUrl, { method: 'GET', cache: 'no-store' });
+        if (!resp.ok) {
+          lastErr = new Error('Proxy #' + (i + 1) + ' HTTP ' + resp.status);
+          console.warn('[FFF] ' + lastErr.message);
+          continue;
+        }
+        const json = await resp.json();
+        console.log('[FFF] ✓ Proxy #' + (i + 1) + ' OK, ' + (json?.['hydra:member']?.length || 0) + ' équipes');
+        return json;
       } catch (e) {
         lastErr = e;
+        console.warn('[FFF] Proxy #' + (i + 1) + ' erreur :', e.message);
       }
     }
     throw lastErr || new Error('Tous les proxys CORS ont échoué');

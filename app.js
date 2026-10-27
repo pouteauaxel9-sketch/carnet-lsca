@@ -639,14 +639,16 @@ function buildDashboardFeeds(cat = state.cat) {
   const fffCache = state.fffStandingsByCat?.[cat] || {};
   const standings = [];
 
+  const isFetching = state.fffFetchingFor?.[cat];
+
   teams.forEach(team => {
     const compLabel = team.division || team.officialName || team.teamLabel;
     const fffData = team.fffUrl ? fffCache[team.key] : null;
 
-    if (fffData && fffData.standings) {
+    if (fffData && Array.isArray(fffData.standings) && fffData.standings.length) {
       // On a reçu la poule complète : toutes les équipes
       fffData.standings.forEach(row => {
-        const isOurs = row.teamCode === team.key.toUpperCase()
+        const isOurs = String(row.teamCode) === String(team.key).toUpperCase()
                     || isSameTeam(row.team, team.officialName);
         standings.push({
           rank: row.rank,
@@ -662,13 +664,19 @@ function buildDashboardFeeds(cat = state.cat) {
       });
     } else if (fffData && fffData.error) {
       standings.push({
-        rank: '!', team: team.teamLabel + ' — ' + fffData.error,
+        rank: '!', team: '⚠ ' + team.teamLabel + ' — ' + fffData.error,
         points: '-', played: '-', diff: '-',
+        competition: compLabel, competitionLevel: 'district',
+      });
+    } else if (team.fffUrl && isFetching) {
+      standings.push({
+        rank: '…', team: team.teamLabel + ' — chargement…',
+        points: '…', played: '…', diff: '…',
         competition: compLabel, competitionLevel: 'district',
       });
     } else {
       standings.push({
-        rank: '-', team: team.teamLabel,
+        rank: '-', team: team.teamLabel + (team.fffUrl ? '' : ' (pas d\'URL FFF)'),
         points: '-', played: '-', diff: '-',
         competition: compLabel, competitionLevel: 'district',
         isOurTeam: true,
