@@ -556,13 +556,11 @@
   }
 
   function renderDraggableChip(pid, source) {
-    // Pastille poste uniquement pour U11 et U13 (inutile en U9)
-    const showPoste = draft.cat === 'u11' || draft.cat === 'u13';
-    const poste = showPoste ? playerPoste(pid, draft.cat) : '';
-    const posteTag = poste ? `<span class="ps-chip-poste" title="${h(poste)}">${h(posteShort(poste))}</span>` : '';
+    // Pas d'affichage du poste préférentiel du joueur : c'est l'éducateur
+    // qui décide où le placer en fonction de la compo tactique de la séance.
     return `<div class="ps-dnd-chip" draggable="true"
               data-pid="${h(pid)}" data-source="${h(source)}">
-      ${posteTag}<span class="ps-chip-name">${h(playerLabel(pid, draft.cat))}</span>
+      <span class="ps-chip-name">${h(playerLabel(pid, draft.cat))}</span>
     </div>`;
   }
 
@@ -752,11 +750,9 @@
                   ${formation.postes.map(p => `<span class="ps-pdf-formation-slot">${h(p)}</span>`).join('')}
                 </div>
               </div>` : '';
-            const players = team.map(pid => {
-              const poste = showPoste ? playerPoste(pid, cat) : '';
-              const posteTag = poste ? `<span class="ps-pdf-player-poste">${h(posteShort(poste))}</span>` : '';
-              return `<div class="ps-pdf-player">${posteTag}<span class="ps-pdf-player-name">${h(playerLabel(pid, cat))}</span></div>`;
-            }).join('');
+            const players = team.map(pid =>
+              `<div class="ps-pdf-player"><span class="ps-pdf-player-name">${h(playerLabel(pid, cat))}</span></div>`
+            ).join('');
             return `<div class="ps-pdf-team" style="background:${c.bg}15; border-color:${c.bg}">
               <div class="ps-pdf-team-head" style="background:${c.bg}; color:${c.text}">${c.label}</div>
               ${formationHead}
