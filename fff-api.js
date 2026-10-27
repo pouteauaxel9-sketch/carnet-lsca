@@ -93,36 +93,44 @@
     };
   }
 
-  // L'API api-dofa.fff.fr n'autorise pas les appels cross-origin depuis
-  // notre domaine Netlify. On passe par un proxy CORS public (fallback en
-  // chaîne). À terme, on remplacera par une Supabase Edge Function dédiée.
-  const CORS_PROXIES = [
+  // On passe par notre propre Netlify Function (/.netlify/functions/fff-proxy)
+  // qui fait l'appel côté serveur et renvoie le JSON avec les bons headers CORS.
+  // En fallback, quelques proxys publics (utiles en local avant déploiement).
+  function buildNetlifyProxyUrl({ competId, phaseId, pouleId }) {
+    return `/.netlify/functions/fff-proxy?compet=${competId}&phase=${phaseId}&poule=${pouleId}`;
+  }
+  const PUBLIC_CORS_FALLBACKS = [
     url => 'https://corsproxy.io/?' + encodeURIComponent(url),
     url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-    url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
   ];
 
-  async function fetchViaCorsProxies(apiUrl) {
-    let lastErr = null;
-    for (let i = 0; i < CORS_PROXIES.length; i++) {
-      const proxyUrl = CORS_PROXIES[i](apiUrl);
-      try {
-        console.log('[FFF] Tentative proxy #' + (i + 1) + ':', proxyUrl);
-        const resp = await fetch(proxyUrl, { method: 'GET', cache: 'no-store' });
-        if (!resp.ok) {
-          lastErr = new Error('Proxy #' + (i + 1) + ' HTTP ' + resp.status);
-          console.warn('[FFF] ' + lastErr.message);
-          continue;
-        }
+  async function fetchFff(parsed, apiUrl) {
+    // 1) Essai via la Netlify Function (le chemin propre, prod)
+    try {
+      const proxyUrl = buildNetlifyProxyUrl(parsed);
+      console.log('[FFF] Appel Netlify Function :', proxyUrl);
+      const resp = await fetch(proxyUrl, { method: 'GET', cache: 'no-store' });
+      if (resp.ok) {
         const json = await resp.json();
-        console.log('[FFF] ✓ Proxy #' + (i + 1) + ' OK, ' + (json?.['hydra:member']?.length || 0) + ' équipes');
+        console.log('[FFF] ✓ Netlify OK, ' + (json?.['hydra:member']?.length || 0) + ' équipes');
         return json;
-      } catch (e) {
-        lastErr = e;
-        console.warn('[FFF] Proxy #' + (i + 1) + ' erreur :', e.message);
       }
+      console.warn('[FFF] Netlify Function HTTP ' + resp.status + ' → fallback proxys publics');
+    } catch (e) {
+      console.warn('[FFF] Netlify Function erreur, fallback :', e.message);
     }
-    throw lastErr || new Error('Tous les proxys CORS ont échoué');
+    // 2) Fallback : proxys publics (dev local sans Netlify)
+    let lastErr = null;
+    for (let i = 0; i < PUBLIC_CORS_FALLBACKS.length; i++) {
+      const proxyUrl = PUBLIC_CORS_FALLBACKS[i](apiUrl);
+      try {
+        console.log('[FFF] Fallback proxy #' + (i + 1) + ':', proxyUrl);
+        const resp = await fetch(proxyUrl, { method: 'GET', cache: 'no-store' });
+        if (!resp.ok) { lastErr = new Error('Proxy #' + (i + 1) + ' HTTP ' + resp.status); continue; }
+        return await resp.json();
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error('Impossible de joindre l\'API FFF');
   }
 
   async function fetchStandings(url, { force = false } = {}) {
@@ -136,7 +144,7 @@
     }
 
     const apiUrl = buildApiUrl(parsed.competId, parsed.phaseId, parsed.pouleId);
-    const json = await fetchViaCorsProxies(apiUrl);
+    const json = await fetchFff(parsed, apiUrl);
     const items = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
                 : Array.isArray(json) ? json
                 : [];

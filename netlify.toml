@@ -1,0 +1,8 @@
+# Config Netlify minimale — déclare le dossier des Functions
+[build]
+  functions = "netlify/functions"
+  publish   = "."
+
+[functions]
+  # Node >= 18 est requis pour disposer de `fetch` global
+  node_bundler = "esbuild"
