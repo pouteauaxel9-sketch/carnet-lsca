@@ -98,19 +98,29 @@
     // sauvée avant l'ouverture du Mode Terrain — évite les crash)
     if (!s.startedAt) s.startedAt = new Date().toISOString();
     if (s.endedAt === undefined) s.endedAt = null;
+
+    // Sync présents depuis la pré-séance :
+    // - À la première ouverture, pré-remplir depuis la préparation.
+    // - Tant que l'éducateur n'a pas édité manuellement en Mode Terrain
+    //   (flag `presentsEditedInMT`), on garde la liste alignée sur la prépa
+    //   pour que les ajouts/retraits côté Fiche pré-séance soient visibles ici.
+    const prep = s.preparation;
+    const prepPresents = prep?.presentPids?.length
+      ? prep.presentPids.slice()
+      : (prep?.groupes
+          ? (() => {
+              const out = [];
+              prep.groupes.forEach(g => (g.teams || []).forEach(t => (t || []).forEach(pid => out.push(pid))));
+              return out;
+            })()
+          : null);
+
     if (!Array.isArray(s.presentPids)) {
-      // Reprise auto : si la préparation a défini des joueurs (via groupes ou présents),
-      // on pré-remplit avec ceux-là
-      const prep = s.preparation;
-      if (prep?.presentPids?.length) {
-        s.presentPids = prep.presentPids.slice();
-      } else if (prep?.groupes) {
-        const fromGroupes = [];
-        prep.groupes.forEach(g => (g.teams || []).forEach(t => (t || []).forEach(pid => fromGroupes.push(pid))));
-        s.presentPids = fromGroupes;
-      } else {
-        s.presentPids = [];
-      }
+      s.presentPids = prepPresents ? prepPresents : [];
+    } else if (!s.presentsEditedInMT && prepPresents) {
+      // L'éducateur n'a pas encore touché la liste depuis le Mode Terrain,
+      // on re-synchronise depuis la pré-séance (ajouts/retraits visibles).
+      s.presentPids = prepPresents;
     }
     if (!Array.isArray(s.objectives)) s.objectives = [];
     saveSessions(store);
@@ -139,11 +149,13 @@
       const idx = s.presentPids.indexOf(pid);
       if (idx === -1) s.presentPids.push(pid);
       else s.presentPids.splice(idx, 1);
+      s.presentsEditedInMT = true; // stoppe la resync auto depuis la pré-séance
     });
   }
   function setAllPresent(all) {
     setSession(s => {
       s.presentPids = all ? sortedPlayers(state().cat) : [];
+      s.presentsEditedInMT = true;
     });
   }
 
