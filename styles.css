@@ -5551,6 +5551,65 @@ body {
   margin-bottom: 20px !important;
   color: var(--rd-text) !important;
 }
+
+/* ── Switch catégorie prominent en haut du dashboard ── */
+.dash-cat-switcher {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background: var(--rd-surface);
+  border: 1px solid var(--rd-border);
+  border-radius: var(--rd-r-lg);
+  box-shadow: var(--rd-shadow-sm);
+}
+.dash-cat-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 12px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all .15s ease;
+  font-family: inherit;
+  text-align: center;
+  min-height: 56px;
+}
+.dash-cat-chip:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+.dash-cat-chip.on {
+  background: #009640;
+  border-color: #006e2f;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0,150,64,0.25);
+}
+.dash-cat-chip.on:hover {
+  background: #007a34;
+  transform: translateY(-1px);
+}
+.dash-cat-chip-label {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  line-height: 1;
+}
+
+/* Mobile : plus compact */
+@media (max-width: 640px) {
+  .dash-cat-switcher {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 6px;
+  }
+  .dash-cat-chip { padding: 12px 4px; min-height: 48px; }
+  .dash-cat-chip-label { font-size: 18px; }
+}
 .dashboard-hero h1 {
   font-family: 'Outfit', sans-serif !important;
   font-size: 28px !important;

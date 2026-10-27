@@ -1097,6 +1097,20 @@ function renderDashboard() {
 
   return `
     <section class="dashboard-shell">
+
+      <!-- Switch catégorie prominent en haut du dashboard -->
+      <nav class="dash-cat-switcher" role="tablist" aria-label="Choisir une catégorie">
+        ${categories.map(cat => {
+          const active = state.cat === cat;
+          return `
+            <button class="dash-cat-chip ${active ? 'on' : ''}" type="button"
+                    role="tab" aria-selected="${active}"
+                    data-action="set-dashboard-cat" data-cat="${cat}">
+              <span class="dash-cat-chip-label">${h(CAT_LABELS[cat] || cat.toUpperCase())}</span>
+            </button>`;
+        }).join('')}
+      </nav>
+
       <div class="dashboard-hero">
         <div class="dash-hero-main">
           <div class="dash-identity-badge" style="background:${identityBg};color:${identityFg};border:1px solid ${identityBorder}">${h(currentIdentity)}</div>
@@ -1997,6 +2011,7 @@ function renderAll() {
   layout.classList.toggle('dashboard-mode', state.view === 'dashboard');
   // La sidebar joueurs n'est utile que sur la vue Joueurs
   layout.classList.toggle('no-sidebar', state.view !== 'player');
+  updateNavLogo();
   renderPrimaryNav();
   renderSeasonOptions();
   renderSidebar();
@@ -2004,6 +2019,22 @@ function renderAll() {
   q('#sb-search').value = state.search;
   q('#refresh-btn').textContent = state.remoteStatus === 'refreshing' ? 'Actualisation...' : 'Actualiser';
   q('#refresh-btn').disabled = state.remoteStatus === 'refreshing';
+}
+
+// Change le logo de la nav selon la catégorie active
+// U13 → GJ LSCA · toutes les autres → Louverné Sports
+function updateNavLogo() {
+  const img  = document.getElementById('nav-logo-img');
+  const link = document.getElementById('nav-logo');
+  if (!img) return;
+  const isLsca = state.cat === 'u13';
+  const nextSrc  = isLsca ? 'assets/logo-gj-lsca-cropped.png' : 'assets/logo-louverne-sports.png';
+  const nextAlt  = isLsca ? 'GJ LSCA' : 'Louverné Sports';
+  // N'actualise le src que si différent (évite reflow + requête inutile)
+  const curBase = img.getAttribute('src') || '';
+  if (!curBase.endsWith(nextSrc.split('/').pop())) img.src = nextSrc;
+  if (img.alt !== nextAlt) img.alt = nextAlt;
+  if (link) link.setAttribute('aria-label', 'Accueil ' + nextAlt);
 }
 
 function updateProfileField(field, value) {
@@ -2500,6 +2531,15 @@ document.addEventListener('click', event => {
     state.bilansTab = 'equipes';
     state.selTeam = null;
     state.comparePlayer = '';
+    renderAll();
+    return;
+  }
+
+  if (action === 'set-dashboard-cat') {
+    // Change juste la catégorie active en gardant la vue dashboard
+    state.cat = target.dataset.cat;
+    state.selPlayer = null;
+    state.selTeam = null;
     renderAll();
     return;
   }
