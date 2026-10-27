@@ -23,12 +23,13 @@
   const PUSH_DEBOUNCE_MS = 5000;
 
   // Clés localStorage à synchroniser (données app, pas les préférences per-device)
+  // 'cfb6_feeds' retiré en v7.7.2 : la carte Classements lit maintenant
+  // TEAM_SOURCE_CONFIG (code), donc plus besoin de synchroniser ces feeds.
   const SYNC_KEYS = [
     'cfb6_state',              // joueurs / évaluations / observations
     'cfb6_live_sessions_v1',   // Mode Terrain : séances + bilans
     'cfb6_weekly_focus_v1',    // Semaine + Plan saison
     'cfb6_roster',             // Roster additions
-    'cfb6_feeds',              // Feeds manuels (au cas où)
   ];
 
   let pushTimer = null;

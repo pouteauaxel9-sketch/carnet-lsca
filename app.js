@@ -629,28 +629,9 @@ function getRefreshLabel() {
 }
 
 function buildDashboardFeeds(cat = state.cat) {
-  // Uniquement les classements (les matchs à venir/résultats ont été retirés).
-  if (state.remoteClubData) {
-    const category = state.remoteClubData.categories?.find(item => item.code === cat);
-    const teams = state.remoteClubData.teams?.filter(team => team.category_id === category?.id) || [];
-    const standings = teams.map(team => {
-      const standing = state.remoteClubData.standings?.find(item => item.team_id === team.id);
-      return {
-        team:team.label,
-        rank:standing?.rank_text || 'A synchroniser',
-        points:standing?.points ?? '-',
-        played:standing?.played ?? '-',
-        note:team.official_name || team.label
-      };
-    });
-    return { standings };
-  }
-
-  const manual = loadManualFeeds()[cat];
-  if (manual && manual.standings?.length) {
-    return { standings: manual.standings };
-  }
-
+  // Source de vérité pour les classements : TEAM_SOURCE_CONFIG (code).
+  // On ignore les anciens cfb6_feeds et state.remoteClubData qui pouvaient
+  // afficher la saison précédente lorsqu'ils étaient définis.
   const teams = getConfiguredTeamsForCategory(cat);
   const standings = teams.map(team => {
     const remote = state.remoteSources[team.key] || {};
@@ -2325,6 +2306,18 @@ function importData(file) {
   };
   reader.readAsText(file);
 }
+
+// Migration v7.7.2 : nettoie les anciens feeds de classements de la saison précédente
+// (la carte Classements lit maintenant TEAM_SOURCE_CONFIG dans le code).
+(function cleanupStaleClassements() {
+  const DONE_KEY = 'cfb6_cleanup_classements_v7_7_2';
+  if (localStorage.getItem(DONE_KEY) === 'done') return;
+  try {
+    localStorage.removeItem('cfb6_feeds');
+    // On n'écrit PAS dans state.remoteClubData — il sera repeuplé si pertinent par Supabase.
+  } catch (_) { /* ignore */ }
+  try { localStorage.setItem(DONE_KEY, 'done'); } catch (_) {}
+})();
 
 function loadAll() {
   state.remoteSources = createInitialRemoteSources();

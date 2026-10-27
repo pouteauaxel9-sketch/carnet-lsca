@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v7.7.1-U13-D-ajout-poules-precises';
+const CACHE_VERSION = 'v7.7.2-fix-anciens-classements-ecrasent-nouveaux';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
