@@ -71,11 +71,12 @@
   }
 
   // Détecte la catégorie app depuis le libellé FFF
-  // U6/U7/U8/U9 → u9 ; U10/U11 → u11 ; U12/U13 → u13 ; sinon null
+  // U6/U7 → u7 ; U8/U9 → u9 ; U10/U11 → u11 ; U12/U13 → u13 ; sinon null
   function mapCategory(fffLabel) {
     const m = String(fffLabel || '').match(/U\s*(\d{1,2})/i);
     if (!m) return null;
     const n = parseInt(m[1], 10);
+    if (n <= 7)  return 'u7';
     if (n <= 9)  return 'u9';
     if (n <= 11) return 'u11';
     if (n <= 13) return 'u13';
@@ -286,7 +287,7 @@
           <li>Les joueurs <strong>déjà présents sont détectés automatiquement</strong> (par n° de licence puis par nom)</li>
           <li>Les champs <strong>vides</strong> sont remplis (nom, prénom, date de naissance, licence)</li>
           <li>Les champs <strong>que tu as déjà saisis ne sont jamais écrasés</strong></li>
-          <li>Catégorie auto depuis le libellé FFF (<em>U8/U9 → U9, U10/U11 → U11, U12/U13 → U13</em>)</li>
+          <li>Catégorie auto depuis le libellé FFF (<em>U6/U7 → U7, U8/U9 → U9, U10/U11 → U11, U12/U13 → U13</em>)</li>
         </ul>
         <input type="file" accept="application/pdf" id="import-licences-file"
                style="display:block;width:100%;padding:12px;border:2px dashed #cbd5e1;border-radius:8px"
@@ -302,10 +303,10 @@
 
   function renderPreview() {
     const list = modal.parsed || [];
-    const byCat = { u9: [], u11: [], u13: [] };
+    const byCat = { u7: [], u9: [], u11: [], u13: [] };
     list.forEach(p => { (byCat[p.cat] || (byCat[p.cat] = [])).push(p); });
-    const catOrder = ['u9', 'u11', 'u13'];
-    const CAT_LABELS = window.CAT_LABELS || { u9: 'U9', u11: 'U11', u13: 'U13' };
+    const catOrder = window.CATS ? window.CATS.slice().reverse() : ['u7', 'u9', 'u11', 'u13'];
+    const CAT_LABELS = window.CAT_LABELS || { u7: 'U7', u9: 'U9', u11: 'U11', u13: 'U13' };
     return `
       <div class="import-body" style="padding:16px 20px;overflow-y:auto;flex:1">
         <p style="margin:0 0 12px"><strong>${list.length} joueur${list.length > 1 ? 's' : ''}</strong> détecté${list.length > 1 ? 's' : ''} dans le PDF.</p>
@@ -344,7 +345,7 @@
 
   function renderDone() {
     const r = modal.result || { created: [], enriched: [], skipped: [] };
-    const CAT_LABELS = window.CAT_LABELS || { u9: 'U9', u11: 'U11', u13: 'U13' };
+    const CAT_LABELS = window.CAT_LABELS || { u7: 'U7', u9: 'U9', u11: 'U11', u13: 'U13' };
     const groupByCat = (arr) => {
       const g = {};
       arr.forEach(x => { (g[x.cat] || (g[x.cat] = [])).push(x); });

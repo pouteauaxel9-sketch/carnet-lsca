@@ -6,7 +6,8 @@ const MANUAL_FEEDS_KEY = 'cfb6_feeds';
 // Format : 'https://raw.githubusercontent.com/TON_USERNAME/TON_REPO/main/data/feeds.json'
 // Laisser vide tant que le repo n'est pas créé.
 const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/pouteauaxel9-sketch/carnet-lsca/main/data/feeds.json';
-const CAT_LABELS = { u13: 'U13', u11: 'U11', u9: 'U9' };
+const CAT_LABELS = { u13: 'U13', u11: 'U11', u9: 'U9', u7: 'U7' };
+const CATS = ['u13', 'u11', 'u9', 'u7'];  // ordre canonique des catégories
 const SEASONS = ['2026-2027', '2025-2026', '2024-2025', '2023-2024'];
 const AC = [
   ['#E6F1FB','#0C447C'],
@@ -38,7 +39,8 @@ const CLUB_DATA = {
   categories:{
     u13:{ teams:['U13 A','U13 B','U13 C','U12'] },
     u11:{ teams:['U11 A','U11 B','U10'] },
-    u9:{ teams:['U9 A','U9 B','U9 C','U9 D'] }
+    u9:{ teams:['U9 A','U9 B','U9 C','U9 D'] },
+    u7:{ teams:['U7 A','U7 B','U7 C','U6'] }
   },
   standings:[
     { team:'U13 A', category:'u13', rank:'Sync a brancher', points:'-', note:'District Mayenne' },
@@ -134,6 +136,13 @@ const PILLARS = {
     { key:'physique', label:'Physique', criteria:['Vitesse / sprint','Coordination','Agilite','Equilibre'] },
     { key:'mental', label:'Mental', criteria:["Reaction a l'erreur",'Engagement','Communication','Confiance en soi','Perseverance'] },
     { key:'perso', label:'Personnel', criteria:['Assiduite','Comportement','Esprit d equipe'] }
+  ],
+  u7: [
+    { key:'technique', label:'Technique', criteria:['Conduite de balle','Controle / 1re touche','Frappe','Jonglerie pied fort','Dribble 1v1'] },
+    { key:'tactique', label:'Tactique', criteria:['Jeu en equipe','Jeu sans ballon','Demarquage'] },
+    { key:'physique', label:'Physique', criteria:['Coordination','Agilite','Equilibre','Vitesse / sprint'] },
+    { key:'mental', label:'Mental', criteria:['Engagement','Confiance en soi','Plaisir','Ecoute consignes'] },
+    { key:'perso', label:'Personnel', criteria:['Assiduite','Comportement','Esprit d equipe'] }
   ]
 };
 
@@ -165,7 +174,8 @@ const JDATA = {
     { name:'Vannier Julian', seasons:{ '2025-2026':50 } }, { name:'Verger Adam', seasons:{} }
   ] },
   u11: { target:20, acq:15, players:[] },
-  u9: { target:15, acq:10, players:[] }
+  u9: { target:15, acq:10, players:[] },
+  u7: { target:10, acq:6, players:[] }
 };
 
 const WEIGHTS = { technique:0.35, tactique:0.25, physique:0.20, mental:0.15, perso:0.05 };
@@ -173,6 +183,7 @@ const WEIGHTS = { technique:0.35, tactique:0.25, physique:0.20, mental:0.15, per
 // Exposer les constantes pour les modules externes (chargés après app.js)
 window.SEASONS    = SEASONS;
 window.CAT_LABELS = CAT_LABELS;
+window.CATS       = CATS;
 window.PILLARS    = PILLARS;
 window.JDATA      = JDATA;
 window.CLUB_DATA  = CLUB_DATA;
@@ -1408,7 +1419,7 @@ function profileBody(pid) {
             `<option value="${h(t)}" ${prof.team === t ? 'selected' : ''}>${h(t)}</option>`).join('')}
         </select>
       </div>
-      ${state.cat !== 'u9' ? `
+      ${state.cat !== 'u9' && state.cat !== 'u7' ? `
       <div class="field-group">
         <label class="field-label" for="pf-poste1">Poste principal</label>
         <select class="field-input" id="pf-poste1" data-field="poste1">
@@ -2275,7 +2286,7 @@ function importData(file) {
     try {
       const parsed = JSON.parse(event.target?.result || '{}');
       const nextData = parsed.data || parsed;
-      ['u13','u11','u9'].forEach(cat => {
+      CATS.forEach(cat => {
         if (!state.data[cat]) state.data[cat] = {};
         if (nextData[cat] && typeof nextData[cat] === 'object') Object.assign(state.data[cat], nextData[cat]);
       });
@@ -2296,13 +2307,16 @@ function loadAll() {
     const raw = localStorage.getItem(APP_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') state.data = { u13: parsed.u13 || {}, u11: parsed.u11 || {}, u9: parsed.u9 || {} };
+      if (parsed && typeof parsed === 'object') {
+        state.data = {};
+        CATS.forEach(cat => { state.data[cat] = parsed[cat] || {}; });
+      }
     }
   } catch (error) {
     console.error(error);
   }
 
-  ['u13','u11','u9'].forEach(cat => {
+  CATS.forEach(cat => {
     JDATA[cat].players.forEach(player => ensureData(cat, player.name, state.season));
   });
 
@@ -2810,10 +2824,11 @@ window.reloadAppFromStorage = function reloadAppFromStorage() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
-        state.data = { u13: parsed.u13 || {}, u11: parsed.u11 || {}, u9: parsed.u9 || {} };
+        state.data = {};
+        CATS.forEach(cat => { state.data[cat] = parsed[cat] || {}; });
       }
     }
-    ['u13','u11','u9'].forEach(cat => {
+    CATS.forEach(cat => {
       JDATA[cat].players.forEach(player => ensureData(cat, player.name, state.season));
     });
     renderAll();

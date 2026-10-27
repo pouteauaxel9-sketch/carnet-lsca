@@ -22,23 +22,23 @@
   /* Principes FFF */
   const GAME_PRINCIPLES = [
     { num: 1, phase: 'avec', subPhase: 'construire', label: "Créer et utiliser des espaces",
-      priority: { u9: 'prioritaire', u11: 'prioritaire', u13: 'secondaire', u15: 'secondaire', u18: 'secondaire' } },
+      priority: { u7: 'prioritaire', u9: 'prioritaire', u11: 'prioritaire', u13: 'secondaire', u15: 'secondaire', u18: 'secondaire' } },
     { num: 2, phase: 'avec', subPhase: 'construire', label: "Jouer dans les intervalles et entre les lignes",
-      priority: { u9: 'non-prioritaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
+      priority: { u7: 'non-prioritaire', u9: 'non-prioritaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
     { num: 3, phase: 'avec', subPhase: 'construire', label: "Jouer à l'opposé après avoir fixé collectivement",
-      priority: { u9: 'non-prioritaire', u11: 'non-prioritaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
+      priority: { u7: 'non-prioritaire', u9: 'non-prioritaire', u11: 'non-prioritaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
     { num: 4, phase: 'avec', subPhase: 'desequilibrer', label: "Jouer combiné pour créer un surnombre",
-      priority: { u9: 'non-prioritaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
+      priority: { u7: 'non-prioritaire', u9: 'non-prioritaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
     { num: 5, phase: 'avec', subPhase: 'desequilibrer', label: "Se démarquer pour fixer et éliminer, passer ou finir",
-      priority: { u9: 'secondaire', u11: 'prioritaire', u13: 'prioritaire', u15: 'prioritaire', u18: 'prioritaire' } },
+      priority: { u7: 'secondaire', u9: 'secondaire', u11: 'prioritaire', u13: 'prioritaire', u15: 'prioritaire', u18: 'prioritaire' } },
     { num: 6, phase: 'sans', subPhase: 'opposer', label: "Freiner la progression de l'adversaire, organiser et réorganiser les alignements",
-      priority: { u9: 'prioritaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
+      priority: { u7: 'prioritaire', u9: 'prioritaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
     { num: 7, phase: 'sans', subPhase: 'recuperer', label: "S'organiser en déséquilibre",
-      priority: { u9: 'secondaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
+      priority: { u7: 'secondaire', u9: 'secondaire', u11: 'secondaire', u13: 'secondaire', u15: 'prioritaire', u18: 'prioritaire' } },
     { num: 8, phase: 'sans', subPhase: 'recuperer', label: "Densifier et être actif dans le CJD (axe ballon-but)",
-      priority: { u9: 'prioritaire', u11: 'prioritaire', u13: 'prioritaire', u15: 'secondaire', u18: 'secondaire' } },
+      priority: { u7: 'prioritaire', u9: 'prioritaire', u11: 'prioritaire', u13: 'prioritaire', u15: 'secondaire', u18: 'secondaire' } },
     { num: 9, phase: 'sans', subPhase: 'recuperer', label: "Défendre son but, récupérer ou dégager le ballon",
-      priority: { u9: 'secondaire', u11: 'prioritaire', u13: 'secondaire', u15: 'secondaire', u18: 'prioritaire' } },
+      priority: { u7: 'secondaire', u9: 'secondaire', u11: 'prioritaire', u13: 'secondaire', u15: 'secondaire', u18: 'prioritaire' } },
   ];
   const PHASE_LABELS = { avec: "On a le ballon", sans: "On n'a pas le ballon" };
   const SUBPHASE_LABELS = {
