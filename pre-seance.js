@@ -69,18 +69,11 @@
   function sortedPlayers(cat) {
     cat = cat || state().cat;
     const players = state().data?.[cat] || {};
-    // Union : joueurs dans state.data (avec profil / juggleLog) + roster JDATA (nouveaux joueurs
-    // ajoutés qui n'ont pas encore d'entrée state.data)
+    // Source de vérité unique : le roster courant JDATA[cat].players.
+    // Si un joueur est supprimé du roster il disparaît partout, même si
+    // state.data garde des traces (profil partiel, carnet de jonglerie…).
     const rosterNames = (window.JDATA?.[cat]?.players || []).map(p => p.name);
-    const stateNames = Object.keys(players).filter(pid => {
-      const p = players[pid];
-      if (!p) return false;
-      if (p.profil?.left) return false;
-      return p.profil || p.juggleLog;
-    });
-    const all = new Set([...stateNames, ...rosterNames]);
-    // Filtre : exclure les joueurs marqués "left" même s'ils sont encore dans le roster
-    const filtered = Array.from(all).filter(pid => !players[pid]?.profil?.left);
+    const filtered = rosterNames.filter(pid => !players[pid]?.profil?.left);
     return filtered.sort((a, b) => playerLabel(a, cat).localeCompare(playerLabel(b, cat), 'fr'));
   }
 
