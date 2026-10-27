@@ -37,16 +37,29 @@ const CLUB_DATA = {
   season:'2026-2027',
   femalePlayers:0,
   categories:{
-    u13:{ teams:['U13 A','U13 B','U13 C','U12'] },
+    u13:{ teams:['U13 A','U13 B','U13 C','U13 D','U12'] },
     u11:{ teams:['U11 A','U11 B','U10'] },
     u9:{ teams:['U9 A','U9 B','U9 C','U9 D'] },
     u7:{ teams:['U7 A','U7 B','U7 C','U6'] }
   },
   standings:[
-    { team:'U13 A', category:'u13', rank:'Sync a brancher', points:'-', note:'District Mayenne' },
-    { team:'U13 B', category:'u13', rank:'Sync a brancher', points:'-', note:'District Mayenne' },
-    { team:'U13 C', category:'u13', rank:'Sync a brancher', points:'-', note:'District Mayenne' },
-    { team:'U12', category:'u13', rank:'Sync a brancher', points:'-', note:'District Mayenne' }
+    // Saison 2026-2027
+    { team:'U13 A', category:'u13', rank:'-', points:'-', note:'District Mayenne D1 · poule C' },
+    { team:'U13 B', category:'u13', rank:'-', points:'-', note:'District Mayenne D2 · poule E' },
+    { team:'U13 C', category:'u13', rank:'-', points:'-', note:'District Mayenne D3 · poule F' },
+    { team:'U13 D', category:'u13', rank:'-', points:'-', note:'District Mayenne D3 · poule E' },
+    { team:'U12',   category:'u13', rank:'-', points:'-', note:'District Mayenne D1 · poule B' },
+    { team:'U11 A', category:'u11', rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U11 B', category:'u11', rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U10',   category:'u11', rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U9 A',  category:'u9',  rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U9 B',  category:'u9',  rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U9 C',  category:'u9',  rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U9 D',  category:'u9',  rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U7 A',  category:'u7',  rank:'-', points:'-', note:'Plateaux District' },
+    { team:'U7 B',  category:'u7',  rank:'-', points:'-', note:'Plateaux District' },
+    { team:'U7 C',  category:'u7',  rank:'-', points:'-', note:'Plateaux District' },
+    { team:'U6',    category:'u7',  rank:'-', points:'-', note:'Plateaux District' }
   ],
   matches:{
     past:[
@@ -63,47 +76,28 @@ const CLUB_DATA = {
   ]
 };
 
+// Saison 2026-2027 — toutes les équipes engagées du club
+// Les URLs FFF seront ajoutées plus tard quand les championnats seront démarrés.
 const TEAM_SOURCE_CONFIG = {
-  u13a:{
-    key:'u13a',
-    category:'u13',
-    teamLabel:'U13 A',
-    officialName:'GJ LSCA LOUVERNE',
-    identity:'GJ LSCA',
-    sources:{
-      ranking:'https://mayenne.fff.fr/competitions?tab=ranking&id=437629&phase=2&poule=2&type=ch',
-      agenda:'https://mayenne.fff.fr/competitions?tab=agenda&id=437629&phase=2&poule=2&type=ch',
-      results:'https://mayenne.fff.fr/competitions?doing_wp_cron=1777045696.9000658988952636718750&id=437629&poule=2&phase=2&type=ch&tab=resultat&beginWeek=06%2F04%2F2026&endweek=12%2F04%2F2026'
-    }
-  },
-  u13b:{
-    key:'u13b',
-    category:'u13',
-    teamLabel:'U13 B',
-    officialName:'GJ LSCA LOUVERNE 2',
-    identity:'GJ LSCA',
-    pending:true
-  },
-  u13c:{
-    key:'u13c',
-    category:'u13',
-    teamLabel:'U13 C',
-    officialName:'GJ LSCA LOUVERNE 3',
-    identity:'GJ LSCA',
-    pending:true
-  },
-  u12:{
-    key:'u12',
-    category:'u13',
-    teamLabel:'U12',
-    officialName:'GJ LSCA LOUVERNE 21',
-    identity:'GJ LSCA',
-    sources:{
-      ranking:'https://mayenne.fff.fr/competitions?tab=ranking&id=437631&phase=2&poule=1&type=ch',
-      agenda:'https://mayenne.fff.fr/competitions?tab=agenda&id=437631&phase=2&poule=1&type=ch&beginWeek=2026-05-04&endWeek=2026-05-10&limitWeek=2026-04-20',
-      results:'https://mayenne.fff.fr/competitions?tab=resultat&id=437631&phase=2&poule=1&type=ch&beginWeek=13%2F04%2F2026&endweek=19%2F04%2F2026'
-    }
-  }
+  u13a:{ key:'u13a', category:'u13', teamLabel:'U13 A', officialName:'GJ LSCA LOUVERNE',    identity:'GJ LSCA',          pending:true, division:'District Mayenne D1 · poule C' },
+  u13b:{ key:'u13b', category:'u13', teamLabel:'U13 B', officialName:'GJ LSCA LOUVERNE 2',  identity:'GJ LSCA',          pending:true, division:'District Mayenne D2 · poule E' },
+  u13c:{ key:'u13c', category:'u13', teamLabel:'U13 C', officialName:'GJ LSCA LOUVERNE 3',  identity:'GJ LSCA',          pending:true, division:'District Mayenne D3 · poule F' },
+  u13d:{ key:'u13d', category:'u13', teamLabel:'U13 D', officialName:'GJ LSCA LOUVERNE 4',  identity:'GJ LSCA',          pending:true, division:'District Mayenne D3 · poule E' },
+  u12: { key:'u12',  category:'u13', teamLabel:'U12',   officialName:'GJ LSCA LOUVERNE 21', identity:'GJ LSCA',          pending:true, division:'District Mayenne D1 · poule B' },
+
+  u11a:{ key:'u11a', category:'u11', teamLabel:'U11 A', officialName:'LOUVERNE SP.',        identity:'Louverné Sports',  pending:true, division:'District Mayenne' },
+  u11b:{ key:'u11b', category:'u11', teamLabel:'U11 B', officialName:'LOUVERNE SP. 2',      identity:'Louverné Sports',  pending:true, division:'District Mayenne' },
+  u10: { key:'u10',  category:'u11', teamLabel:'U10',   officialName:'LOUVERNE SP. 21',     identity:'Louverné Sports',  pending:true, division:'District Mayenne' },
+
+  u9a: { key:'u9a',  category:'u9',  teamLabel:'U9 A',  officialName:'LOUVERNE SP.',        identity:'Louverné Sports',  pending:true, division:'District Mayenne' },
+  u9b: { key:'u9b',  category:'u9',  teamLabel:'U9 B',  officialName:'LOUVERNE SP. 2',      identity:'Louverné Sports',  pending:true, division:'District Mayenne' },
+  u9c: { key:'u9c',  category:'u9',  teamLabel:'U9 C',  officialName:'LOUVERNE SP. 3',      identity:'Louverné Sports',  pending:true, division:'District Mayenne' },
+  u9d: { key:'u9d',  category:'u9',  teamLabel:'U9 D',  officialName:'LOUVERNE SP. 4',      identity:'Louverné Sports',  pending:true, division:'District Mayenne' },
+
+  u7a: { key:'u7a',  category:'u7',  teamLabel:'U7 A',  officialName:'LOUVERNE SP.',        identity:'Louverné Sports',  pending:true, division:'Plateaux District' },
+  u7b: { key:'u7b',  category:'u7',  teamLabel:'U7 B',  officialName:'LOUVERNE SP. 2',      identity:'Louverné Sports',  pending:true, division:'Plateaux District' },
+  u7c: { key:'u7c',  category:'u7',  teamLabel:'U7 C',  officialName:'LOUVERNE SP. 3',      identity:'Louverné Sports',  pending:true, division:'Plateaux District' },
+  u6:  { key:'u6',   category:'u7',  teamLabel:'U6',    officialName:'LOUVERNE SP. 4',      identity:'Louverné Sports',  pending:true, division:'Plateaux District' },
 };
 
 const IDEAL_PROFILE = {
@@ -663,10 +657,10 @@ function buildDashboardFeeds(cat = state.cat) {
     const sourceStatus = remote.status || 'configured';
     return {
       team:team.teamLabel,
-      rank:remote.ranking?.rank || (team.pending ? 'Source manquante' : sourceStatus === 'synced' ? '-' : 'Pret a brancher'),
+      rank:remote.ranking?.rank || (team.pending ? 'Classement à venir' : sourceStatus === 'synced' ? '-' : 'Prêt à brancher'),
       points:remote.ranking?.points || '-',
       played:remote.ranking?.played || '-',
-      note:team.officialName
+      note:team.division || team.officialName
     };
   });
   return { standings };
@@ -2028,7 +2022,7 @@ function updateNavLogo() {
   const link = document.getElementById('nav-logo');
   if (!img) return;
   const isLsca = state.cat === 'u13';
-  const nextSrc  = isLsca ? 'assets/logo-gj-lsca-cropped.png' : 'assets/logo-louverne-sports.png';
+  const nextSrc  = isLsca ? 'assets/logo-gj-lsca.png' : 'assets/logo-louverne-sports.png';
   const nextAlt  = isLsca ? 'GJ LSCA' : 'Louverné Sports';
   // N'actualise le src que si différent (évite reflow + requête inutile)
   const curBase = img.getAttribute('src') || '';
