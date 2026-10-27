@@ -204,6 +204,7 @@
           <div class="roster-list">${rows}</div>
           <div class="modal-footer">
             <button class="btn-ghost" type="button" data-roster-action="open-create">+ Ajouter un joueur</button>
+            <button class="btn-ghost" type="button" data-roster-action="import-licences" title="Importer un PDF de licences FFF (FootClubs) — toutes catégories">📁 Importer PDF licences</button>
             <span style="flex:1"></span>
             <button class="btn-primary" type="button" data-roster-action="close">Fermer</button>
           </div>
@@ -276,6 +277,16 @@
       utils()?.showToast('Joueur supprimé');
       renderModal();
       utils()?.renderAll();
+      return true;
+    }
+    if (ra === 'import-licences') {
+      // Ouvre le module d'import PDF licences FFF
+      closeModal();
+      if (window.ImportLicencesModule?.openModal) {
+        window.ImportLicencesModule.openModal();
+      } else {
+        utils()?.showToast('Module d\'import indisponible');
+      }
       return true;
     }
     if (ra === 'submit-on-enter') return true; // handled via keydown

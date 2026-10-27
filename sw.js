@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v7.2.2-roster-source-verite';
+const CACHE_VERSION = 'v7.3.1-import-pdf-cat-mapping-fix';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -35,6 +35,7 @@ const STATIC_ASSETS = [
   './evaluation-seance.js',
   './observation-match.js',
   './roster.js',
+  './import-licences.js',
   './post-match.js',
   './excel-export.js',
   './team-view.js',
