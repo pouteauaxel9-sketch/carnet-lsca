@@ -1,7 +1,7 @@
-# Config Netlify minimale — déclare le dossier des Functions
+# Config Netlify minimale — déclare uniquement le dossier des Functions.
+# On ne touche PAS à publish/base pour ne pas écraser la config du site côté dashboard.
 [build]
   functions = "netlify/functions"
-  publish   = "."
 
 [functions]
   # Node >= 18 est requis pour disposer de `fetch` global

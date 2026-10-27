@@ -336,16 +336,12 @@
           <div>
             <div class="card-kicker">Équipe</div>
             <h1>${h(team)}</h1>
-            <p>Bilan saison ${h(state().season)} agrégé à partir des observations match des ${players.length} joueurs.</p>
+            <p>Effectif de ${players.length} joueur${players.length > 1 ? 's' : ''} · Saison ${h(state().season)}.</p>
           </div>
-          <div class="team-hero-stats">
-            <div class="dash-stat"><span>Matchs joués</span><strong>${s.played}</strong></div>
-            <div class="dash-stat"><span>V — N — D</span><strong>${s.won} — ${s.draw} — ${s.lost}</strong></div>
-            <div class="dash-stat"><span>Buts</span><strong>${s.gf} : ${s.ga}</strong></div>
-            <div class="dash-stat"><span>Différence</span><strong>${s.goalDiff > 0 ? '+' : ''}${s.goalDiff}</strong></div>
-            <div class="dash-stat"><span>% victoires</span><strong>${winPct}%</strong></div>
-            <div class="dash-stat ${streakClass}"><span>Série en cours</span><strong>${h(streakLabel)}</strong></div>
-          </div>
+          <!-- Bloc stats agrégées désactivé (v7.9.1) : affichait des données
+               d'observations non-scopées par saison → risquait d'afficher
+               des stats de la saison précédente. À réactiver quand les
+               observations seront proprement nettoyées. -->
         </div>
 
         ${renderFFFSection(cat, team)}
