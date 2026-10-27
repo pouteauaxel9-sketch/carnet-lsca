@@ -308,7 +308,6 @@
     return `
       <div class="team-list-grid">${cards}</div>
       ${unassignedBlock}
-      ${renderCompareBlock(cat)}
     `;
   }
 
@@ -531,42 +530,8 @@ function renderEffectifCard(players, cat) {
     `;
   }
 
-  /* ── Comparaison ────────────────────────────────────── */
-
-  function renderCompareBlock(cat) {
-    const teams = listTeams(cat);
-    if (teams.length < 2) return '';
-
-    const summaries = teams.map(t => ({ team: t, ...teamSummary(cat, t, state().season) }));
-    const headers = ['Equipe', 'Effectif', 'Joues', 'V/N/D', 'BP-BC', 'Pts', '% V', 'Implic. totales'];
-    return `
-      <section class="dashboard-card cat-table-card">
-        <div class="card-head">
-          <div><div class="card-kicker">Comparaison</div><h2>Equipes de ${h(CAT_LABELS()[cat] || cat.toUpperCase())}</h2></div>
-        </div>
-        <div class="cat-table-wrap">
-          <table class="cat-table compare-table">
-            <thead><tr>${headers.map(hd => `<th>${h(hd)}</th>`).join('')}</tr></thead>
-            <tbody>
-              ${summaries.map(s => {
-                const winPct = s.played ? Math.round((s.won / s.played) * 100) : 0;
-                const implications = (s.gf || 0);
-                return `<tr>
-                  <td><strong>${h(s.team)}</strong></td>
-                  <td>${s.effectif || 0}</td>
-                  <td>${s.played}</td>
-                  <td>${s.won}/${s.draw}/${s.lost}</td>
-                  <td>${s.gf}-${s.ga}</td>
-                  <td><strong>${s.points || 0}</strong></td>
-                  <td>${winPct}%</td>
-                  <td>${implications}</td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-      </section>`;
-  }
+  // Bloc "Comparaison Equipes de U13" supprimé en v7.8.2 — données issues
+  // d'observations de la saison précédente, conflit avec les classements FFF live.
 
   window.TeamModule = {
     listTeams: listTeams,
@@ -576,6 +541,5 @@ function renderEffectifCard(players, cat) {
     fffMatchesForTeam: fffMatchesForTeam,
     renderListBody: renderListBody,
     renderTeamBody: renderTeamBody,
-    renderCompareBlock: renderCompareBlock,
   };
 })();

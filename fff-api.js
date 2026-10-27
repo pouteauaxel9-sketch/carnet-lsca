@@ -91,6 +91,29 @@
     };
   }
 
+  // L'API api-dofa.fff.fr n'autorise pas les appels cross-origin depuis
+  // notre domaine Netlify. On passe par un proxy CORS public (fallback en
+  // chaîne). À terme, on remplacera par une Supabase Edge Function dédiée.
+  const CORS_PROXIES = [
+    url => 'https://corsproxy.io/?' + encodeURIComponent(url),
+    url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+    url => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url),
+  ];
+
+  async function fetchViaCorsProxies(apiUrl) {
+    let lastErr = null;
+    for (const makeProxy of CORS_PROXIES) {
+      try {
+        const resp = await fetch(makeProxy(apiUrl), { method: 'GET', cache: 'no-store' });
+        if (!resp.ok) { lastErr = new Error('Proxy HTTP ' + resp.status); continue; }
+        return await resp.json();
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error('Tous les proxys CORS ont échoué');
+  }
+
   async function fetchStandings(url, { force = false } = {}) {
     const parsed = parseUrl(url);
     if (!parsed) throw new Error('URL FFF invalide : ' + url);
@@ -102,9 +125,7 @@
     }
 
     const apiUrl = buildApiUrl(parsed.competId, parsed.phaseId, parsed.pouleId);
-    const resp = await fetch(apiUrl, { method: 'GET', cache: 'no-store' });
-    if (!resp.ok) throw new Error('API FFF ' + resp.status + ' sur ' + apiUrl);
-    const json = await resp.json();
+    const json = await fetchViaCorsProxies(apiUrl);
     const items = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
                 : Array.isArray(json) ? json
                 : [];
