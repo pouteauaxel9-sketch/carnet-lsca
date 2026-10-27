@@ -555,12 +555,15 @@
     if (scrollEl && prevScroll > 0) scrollEl.scrollTop = prevScroll;
   }
 
-  function renderDraggableChip(pid, source) {
-    // Pas d'affichage du poste préférentiel du joueur : c'est l'éducateur
-    // qui décide où le placer en fonction de la compo tactique de la séance.
+  function renderDraggableChip(pid, source, slotPoste) {
+    // slotPoste : poste imposé par la compo tactique selon la position du joueur
+    // dans l'équipe (ex: 1er = GB, 2e = DC, 3e = DC… pour 1-2-4-1).
+    // Pour les joueurs du pool ou si pas de compo, slotPoste est vide.
+    const posteTag = slotPoste
+      ? `<span class="ps-chip-poste">${h(slotPoste)}</span>` : '';
     return `<div class="ps-dnd-chip" draggable="true"
               data-pid="${h(pid)}" data-source="${h(source)}">
-      <span class="ps-chip-name">${h(playerLabel(pid, draft.cat))}</span>
+      ${posteTag}<span class="ps-chip-name">${h(playerLabel(pid, draft.cat))}</span>
     </div>`;
   }
 
@@ -597,6 +600,8 @@
             const c = TEAM_COLORS[ti];
             const showFormation = draft.cat === 'u11' || draft.cat === 'u13';
             const curFormation = showFormation ? getFormation(gi, ti) : '';
+            const slotPostes = (showFormation && curFormation && FORMATIONS[curFormation])
+              ? FORMATIONS[curFormation].postes : [];
             const formationPicker = showFormation ? `
               <div class="ps-formation-row">
                 <label class="ps-formation-label">Compo :</label>
@@ -607,10 +612,6 @@
                     <option value="${k}" ${curFormation === k ? 'selected' : ''}>${h(FORMATIONS[k].label)}</option>`).join('')}
                 </select>
               </div>
-              ${curFormation ? `
-                <div class="ps-formation-legend">
-                  ${FORMATIONS[curFormation].postes.map(p => `<span class="ps-formation-slot">${h(p)}</span>`).join('')}
-                </div>` : ''}
             ` : '';
             return `
               <div class="ps-team-box ps-team-${c.key}" data-drop-zone="team" data-group="${gi}" data-team="${ti}"
@@ -620,7 +621,7 @@
                 </div>
                 ${formationPicker}
                 <div class="ps-team-chips">
-                  ${team.map(pid => renderDraggableChip(pid, 'team-' + gi + '-' + ti)).join('') ||
+                  ${team.map((pid, pi) => renderDraggableChip(pid, 'team-' + gi + '-' + ti, slotPostes[pi] || '')).join('') ||
                     '<div class="ps-team-empty">Dépose ici</div>'}
                 </div>
               </div>`;
@@ -743,16 +744,17 @@
             const c = TEAM_COLORS[ti];
             const formKey = showPoste ? (g.formations?.[ti] || '') : '';
             const formation = formKey ? FORMATIONS[formKey] : null;
+            const slotPostes = formation ? formation.postes : [];
             const formationHead = formation ? `
               <div class="ps-pdf-team-formation">
                 <span class="ps-pdf-formation-name">${h(formation.label)}</span>
-                <div class="ps-pdf-formation-slots">
-                  ${formation.postes.map(p => `<span class="ps-pdf-formation-slot">${h(p)}</span>`).join('')}
-                </div>
               </div>` : '';
-            const players = team.map(pid =>
-              `<div class="ps-pdf-player"><span class="ps-pdf-player-name">${h(playerLabel(pid, cat))}</span></div>`
-            ).join('');
+            const players = team.map((pid, pi) => {
+              const posteTag = slotPostes[pi]
+                ? `<span class="ps-pdf-player-poste">${h(slotPostes[pi])}</span>`
+                : '';
+              return `<div class="ps-pdf-player">${posteTag}<span class="ps-pdf-player-name">${h(playerLabel(pid, cat))}</span></div>`;
+            }).join('');
             return `<div class="ps-pdf-team" style="background:${c.bg}15; border-color:${c.bg}">
               <div class="ps-pdf-team-head" style="background:${c.bg}; color:${c.text}">${c.label}</div>
               ${formationHead}

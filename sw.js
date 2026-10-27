@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v7.4.3-compo-libre-sans-pastille-poste-joueur';
+const CACHE_VERSION = 'v7.4.4-poste-par-slot-compo';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
