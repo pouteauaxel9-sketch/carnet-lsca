@@ -38,10 +38,15 @@ exports.handler = async function (event) {
   const apiUrl = `https://api-dofa.fff.fr/api/compets/${compet}/phases/${phase}/poules/${poule}/classement_journees`;
 
   try {
+    // On imite un vrai navigateur Chrome : certains sites FFF renvoient leur page
+    // "maintenance" quand ils détectent un User-Agent de bot/serveur.
     const resp = await fetch(apiUrl, {
       headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Carnet-LSCA/1.0 (+netlify-fff-proxy)',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+        'Referer': 'https://mayenne.fff.fr/',
+        'Origin': 'https://mayenne.fff.fr',
       },
     });
 
