@@ -1,5 +1,5 @@
 {
-  "scrapedAt": "2026-10-28T13:58:52.411Z",
+  "scrapedAt": "2026-10-28T15:30:35.474Z",
   "season": "2026-2027",
   "teams": {
     "u13a": {
@@ -91,6 +91,188 @@
           "goalsAgst": 39,
           "diff": 33,
           "forfeits": 0
+        }
+      ],
+      "matches": [
+        {
+          "date": "2026-09-19T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "GJ VAL DE JOUANNE",
+          "awayTeam": "MESLAY DU MAINE AS",
+          "homeCode": 191807,
+          "awayCode": 1361,
+          "homeScore": 5,
+          "awayScore": 0,
+          "status": "A",
+          "terrain": "STADE GILBERT BELLAIN"
+        },
+        {
+          "date": "2026-09-19T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "GJ CHATEAU-GON.PAYS",
+          "awayTeam": "GJ LSCA  LOUVERNE",
+          "homeCode": 191810,
+          "awayCode": 201960,
+          "homeScore": 3,
+          "awayScore": 3,
+          "status": "A",
+          "terrain": "STADE DU PAVÉ 1"
+        },
+        {
+          "date": "2026-09-19T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "FC DU CRAONNAIS",
+          "awayTeam": "GJ HAUT-ANJOU",
+          "homeCode": 1298,
+          "awayCode": 191806,
+          "homeScore": 4,
+          "awayScore": 4,
+          "status": "A",
+          "terrain": "STADE MAURICE COURNÉ 2"
+        },
+        {
+          "date": "2026-09-26T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "GJ LSCA  LOUVERNE",
+          "awayTeam": "FC DU CRAONNAIS",
+          "homeCode": 201960,
+          "awayCode": 1298,
+          "homeScore": 7,
+          "awayScore": 2,
+          "status": "A",
+          "terrain": "Stade Municipal 2"
+        },
+        {
+          "date": "2026-09-26T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "MESLAY DU MAINE AS",
+          "awayTeam": "GJ CHATEAU-GON.PAYS",
+          "homeCode": 1361,
+          "awayCode": 191810,
+          "homeScore": 0,
+          "awayScore": 18,
+          "status": "A",
+          "terrain": "PARC DES SPORTS 2"
+        },
+        {
+          "date": "2026-09-26T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "GJ HAUT-ANJOU",
+          "awayTeam": "GJ VAL DE JOUANNE",
+          "homeCode": 191806,
+          "awayCode": 191807,
+          "homeScore": 1,
+          "awayScore": 2,
+          "status": "A",
+          "terrain": "STADE DU PAVÉ 3"
+        },
+        {
+          "date": "2026-10-03T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "GJ CHATEAU-GON.PAYS",
+          "awayTeam": "GJ VAL DE JOUANNE",
+          "homeCode": 191810,
+          "awayCode": 191807,
+          "homeScore": 12,
+          "awayScore": 1,
+          "status": "A",
+          "terrain": "STADE DU PAVÉ 1"
+        },
+        {
+          "date": "2026-10-03T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "FC DU CRAONNAIS",
+          "awayTeam": "MESLAY DU MAINE AS",
+          "homeCode": 1298,
+          "awayCode": 1361,
+          "homeScore": 6,
+          "awayScore": 5,
+          "status": "A",
+          "terrain": "STADE MAURICE COURNÉ 2"
+        },
+        {
+          "date": "2026-10-03T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "GJ LSCA  LOUVERNE",
+          "awayTeam": "GJ HAUT-ANJOU",
+          "homeCode": 201960,
+          "awayCode": 191806,
+          "homeScore": 7,
+          "awayScore": 2,
+          "status": "A",
+          "terrain": "Stade Municipal 2"
+        },
+        {
+          "date": "2026-10-10T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "MESLAY DU MAINE AS",
+          "awayTeam": "GJ LSCA  LOUVERNE",
+          "homeCode": 1361,
+          "awayCode": 201960,
+          "homeScore": 1,
+          "awayScore": 5,
+          "status": "A",
+          "terrain": "PARC DES SPORTS 2"
+        },
+        {
+          "date": "2026-10-10T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "GJ VAL DE JOUANNE",
+          "awayTeam": "FC DU CRAONNAIS",
+          "homeCode": 191807,
+          "awayCode": 1298,
+          "homeScore": 3,
+          "awayScore": 2,
+          "status": "A",
+          "terrain": "STADE GILBERT BELLAIN"
+        },
+        {
+          "date": "2026-10-10T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "GJ CHATEAU-GON.PAYS",
+          "awayTeam": "GJ HAUT-ANJOU",
+          "homeCode": 191810,
+          "awayCode": 191806,
+          "homeScore": 7,
+          "awayScore": 0,
+          "status": "A",
+          "terrain": "STADE DU PAVÉ 1"
+        },
+        {
+          "date": "2026-10-17T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "GJ LSCA  LOUVERNE",
+          "awayTeam": "GJ VAL DE JOUANNE",
+          "homeCode": 201960,
+          "awayCode": 191807,
+          "homeScore": 13,
+          "awayScore": 0,
+          "status": "A",
+          "terrain": "Stade Municipal 2"
+        },
+        {
+          "date": "2026-10-17T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "FC DU CRAONNAIS",
+          "awayTeam": "GJ CHATEAU-GON.PAYS",
+          "homeCode": 1298,
+          "awayCode": 191810,
+          "homeScore": 1,
+          "awayScore": 5,
+          "status": "A",
+          "terrain": "STADE MAURICE COURNÉ 2"
+        },
+        {
+          "date": "2026-10-17T00:00:00+00:00",
+          "journeeNo": null,
+          "homeTeam": "GJ HAUT-ANJOU",
+          "awayTeam": "MESLAY DU MAINE AS",
+          "homeCode": 191806,
+          "awayCode": 1361,
+          "homeScore": 5,
+          "awayScore": 0,
+          "status": "A",
+          "terrain": "STADE DU PAVÉ 1"
         }
       ]
     }
