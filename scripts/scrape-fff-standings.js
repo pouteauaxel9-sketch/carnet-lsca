@@ -84,31 +84,42 @@ async function launchBrowser() {
 
 async function fetchStanding(page, parsed) {
   const apiUrl = buildApiUrl(parsed);
-  // On navigue sur mayenne.fff.fr d'abord pour obtenir les cookies Cloudflare
-  // (sinon l'API API-DOFA renvoie 403 ou la page "application indisponible")
-  await page.goto('https://mayenne.fff.fr/competitions/', {
+  // Navigation directe vers l'API URL : Puppeteer suit les redirections et stocke
+  // les cookies Cloudflare automatiquement. Le body de la page = la réponse JSON.
+  // Cette approche évite le problème CORS d'un fetch() cross-subdomain fff.fr → api-dofa.fff.fr.
+  const resp = await page.goto(apiUrl, {
     waitUntil: 'domcontentloaded',
-    timeout: 30000,
+    timeout: 45000,
   });
-  // Petit délai pour laisser Cloudflare poser ses cookies
-  await new Promise(r => setTimeout(r, 1500));
 
-  // Puis on fetch l'API côté page (JS tourne depuis l'origin fff.fr → pas de CORS/anti-bot)
-  const result = await page.evaluate(async (url) => {
-    try {
-      const r = await fetch(url, { credentials: 'include' });
-      if (!r.ok) return { error: 'HTTP ' + r.status };
-      const text = await r.text();
-      if (text.includes('APPLICATION MOMENTAN')) return { error: 'FFF maintenance' };
-      try { return { json: JSON.parse(text) }; }
-      catch { return { error: 'Non-JSON (début: ' + text.slice(0, 80) + ')' }; }
-    } catch (e) {
-      return { error: 'fetch failed: ' + (e.message || e) };
-    }
-  }, apiUrl);
+  const status = resp?.status() || 0;
+  const text   = await page.evaluate(() => document.body?.innerText || document.documentElement.textContent || '');
 
-  if (result.error) throw new Error(result.error);
-  return result.json;
+  if (text.includes('APPLICATION MOMENTAN')) {
+    throw new Error('FFF a renvoyé sa page maintenance (anti-bot ou vraie panne)');
+  }
+  if (status >= 400) {
+    throw new Error('HTTP ' + status + ' (début réponse: ' + text.slice(0, 100).replace(/\s+/g, ' ') + ')');
+  }
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error('Réponse non-JSON (début: ' + text.slice(0, 100).replace(/\s+/g, ' ') + ')');
+  }
+}
+
+// Au tout premier lancement, on visite la page publique pour que Cloudflare pose
+// ses cookies anti-bot (passé en argument "warmup" une seule fois).
+async function warmup(page) {
+  try {
+    await page.goto('https://mayenne.fff.fr/competitions/', {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
+    });
+    await new Promise(r => setTimeout(r, 2500)); // laisse Cloudflare challenge se résoudre
+  } catch (e) {
+    console.warn('  (warmup échoué, on tente quand même : ' + e.message + ')');
+  }
 }
 
 /* ── Main ─────────────────────────────────────────── */
@@ -126,9 +137,16 @@ async function main() {
 
   const browser = await launchBrowser();
   const page    = await browser.newPage();
-  // User-agent navigateur réel
+  // User-agent navigateur réel + headers typiques
   await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
-  await page.setExtraHTTPHeaders({ 'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8' });
+  await page.setExtraHTTPHeaders({
+    'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+    'Accept':          'application/json, text/plain, */*',
+  });
+
+  // Chauffe Cloudflare une seule fois (cookies anti-bot)
+  console.log('🔥 Warmup Cloudflare...');
+  await warmup(page);
 
   const result = {
     scrapedAt: new Date().toISOString(),
