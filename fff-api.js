@@ -93,65 +93,91 @@
     };
   }
 
-  // On passe par notre propre Netlify Function (/.netlify/functions/fff-proxy)
-  // qui fait l'appel côté serveur et renvoie le JSON avec les bons headers CORS.
-  // En fallback, quelques proxys publics (utiles en local avant déploiement).
+  // Source principale : data/standings.json (produit par GitHub Actions toutes les 2h).
+  // Servi par Netlify sous le même domaine, donc pas de CORS, pas de rate limit.
+  // Fallback : Netlify Function (si classement très récent manque dans le JSON).
+  const STANDINGS_JSON_URL = './data/standings.json';
+  let standingsCache = null;
+  let standingsCachePromise = null;
+
+  async function loadStandingsJson() {
+    if (standingsCache) return standingsCache;
+    if (standingsCachePromise) return standingsCachePromise;
+    standingsCachePromise = fetch(STANDINGS_JSON_URL + '?t=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(json => { standingsCache = json; return json; })
+      .catch(e => { console.warn('[FFF] data/standings.json indisponible :', e.message); return null; });
+    return standingsCachePromise;
+  }
+
+  // Fallback via Netlify Function (si JSON pas à jour)
   function buildNetlifyProxyUrl({ competId, phaseId, pouleId }) {
     return `/.netlify/functions/fff-proxy?compet=${competId}&phase=${phaseId}&poule=${pouleId}`;
   }
-  const PUBLIC_CORS_FALLBACKS = [
-    url => 'https://corsproxy.io/?' + encodeURIComponent(url),
-    url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-  ];
 
-  async function fetchFff(parsed, apiUrl) {
-    // 1) Essai via la Netlify Function (le chemin propre, prod)
+  async function fetchViaFallback(parsed) {
     try {
       const proxyUrl = buildNetlifyProxyUrl(parsed);
-      console.log('[FFF] Appel Netlify Function :', proxyUrl);
+      console.log('[FFF] Fallback Netlify Function :', proxyUrl);
       const resp = await fetch(proxyUrl, { method: 'GET', cache: 'no-store' });
       if (resp.ok) {
-        const json = await resp.json();
-        console.log('[FFF] ✓ Netlify OK, ' + (json?.['hydra:member']?.length || 0) + ' équipes');
-        return json;
+        const text = await resp.text();
+        if (text.includes('APPLICATION MOMENTAN')) throw new Error('FFF en maintenance');
+        return JSON.parse(text);
       }
-      console.warn('[FFF] Netlify Function HTTP ' + resp.status + ' → fallback proxys publics');
+      throw new Error('Netlify Function HTTP ' + resp.status);
     } catch (e) {
-      console.warn('[FFF] Netlify Function erreur, fallback :', e.message);
+      console.warn('[FFF] Fallback KO :', e.message);
+      throw e;
     }
-    // 2) Fallback : proxys publics (dev local sans Netlify)
-    let lastErr = null;
-    for (let i = 0; i < PUBLIC_CORS_FALLBACKS.length; i++) {
-      const proxyUrl = PUBLIC_CORS_FALLBACKS[i](apiUrl);
-      try {
-        console.log('[FFF] Fallback proxy #' + (i + 1) + ':', proxyUrl);
-        const resp = await fetch(proxyUrl, { method: 'GET', cache: 'no-store' });
-        if (!resp.ok) { lastErr = new Error('Proxy #' + (i + 1) + ' HTTP ' + resp.status); continue; }
-        return await resp.json();
-      } catch (e) { lastErr = e; }
-    }
-    throw lastErr || new Error('Impossible de joindre l\'API FFF');
   }
 
   async function fetchStandings(url, { force = false } = {}) {
     const parsed = parseUrl(url);
     if (!parsed) throw new Error('URL FFF invalide : ' + url);
 
-    // Cache hit
+    // Cache hit en mémoire + localStorage
     if (!force) {
       const cached = getCached(url);
       if (cached) return cached;
     }
 
+    // 1) PRIORITÉ : lecture du JSON pré-scrapé par GitHub Actions (rafraîchi toutes les 2h)
+    try {
+      const data = await loadStandingsJson();
+      if (data?.teams) {
+        // On cherche l'équipe par URL exacte dans le JSON
+        for (const key of Object.keys(data.teams)) {
+          const entry = data.teams[key];
+          if (entry.url === url && Array.isArray(entry.standings) && entry.standings.length) {
+            const result = {
+              fetchedAt:     data.scrapedAt || new Date().toISOString(),
+              pouleName:     entry.pouleName || '',
+              categoryLabel: entry.categoryLabel || '',
+              standings:     entry.standings,
+              source:        'github-actions',
+            };
+            setCached(url, result);
+            console.log('[FFF] ✓ Chargé depuis data/standings.json (scrape du ' + (data.scrapedAt || '?') + ')');
+            return result;
+          }
+        }
+        console.log('[FFF] URL non présente dans data/standings.json → fallback Netlify Function');
+      }
+    } catch (e) {
+      console.warn('[FFF] Lecture JSON échouée, fallback Netlify :', e.message);
+    }
+
+    // 2) FALLBACK : Netlify Function (si pas encore dans le JSON ou JSON vide)
     const apiUrl = buildApiUrl(parsed.competId, parsed.phaseId, parsed.pouleId);
-    const json = await fetchFff(parsed, apiUrl);
+    const json = await fetchViaFallback(parsed);
 
     // Détection d'une page HTML "maintenance" renvoyée par la FFF (503 masqué)
     if (typeof json === 'string' && json.includes('APPLICATION MOMENTAN')) {
-      throw new Error('FFF en maintenance — réessaie dans quelques minutes');
+      throw new Error('FFF en maintenance — classement sera dans le prochain scrape auto');
     }
     if (!json || (!Array.isArray(json) && !Array.isArray(json?.['hydra:member']))) {
-      throw new Error('Réponse FFF inattendue (API probablement en maintenance)');
+      throw new Error('Réponse FFF inattendue (API probablement bloquée côté serveur)');
     }
     const items = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
                 : Array.isArray(json) ? json

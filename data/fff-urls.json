@@ -1,0 +1,10 @@
+{
+  "comment": "URLs des championnats FFF à scraper. Format : clé = team key (identique à TEAM_SOURCE_CONFIG dans app.js). Pour ajouter une équipe, copie-colle une entrée + ta nouvelle URL.",
+  "season": "2026-2027",
+  "teams": {
+    "u13a": {
+      "label": "U13 A",
+      "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450413&phase=1&poule=3&type=ch"
+    }
+  }
+}

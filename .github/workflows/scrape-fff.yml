@@ -1,0 +1,42 @@
+name: Scrape FFF Standings
+
+on:
+  # Toutes les 2h entre 7h et 22h (heure UTC = France -1h/-2h selon saison)
+  schedule:
+    - cron: '0 6,8,10,12,14,16,18,20 * * *'
+  # Déclenchement manuel depuis l'onglet "Actions" du repo
+  workflow_dispatch:
+  # Déclenchement automatique quand on modifie la config des URLs
+  push:
+    branches: [main]
+    paths:
+      - 'data/fff-urls.json'
+      - 'scripts/scrape-fff-standings.js'
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run scraper
+        run: node scripts/scrape-fff-standings.js
+
+      - name: Commit standings si changement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [[ -n $(git status --porcelain data/standings.json) ]]; then
+            git add data/standings.json
+            git commit -m "chore(fff): refresh standings $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          else
+            echo "Aucun changement, rien à commit"
+          fi
