@@ -52,13 +52,15 @@ function buildApiUrl({ competId, phaseId, pouleId }) {
 }
 
 // Endpoints matchs à essayer (le 1er qui répond un JSON array = gagné)
+// Découvert via DevTools de mayenne.fff.fr : poule_journees retourne les matchs par journée.
 function buildMatchesApiUrls({ competId, phaseId, pouleId }) {
   const base = `https://api-dofa.fff.fr/api/compets/${competId}/phases/${phaseId}/poules/${pouleId}`;
   return [
+    `${base}/poule_journees`,         // ← trouvé via DevTools réel
     `${base}/matchs`,
     `${base}/rencontres`,
     `${base}/journees/matchs`,
-    `${base}/matches`,
+    `${base}/calendrier`,
   ];
 }
 
@@ -109,6 +111,18 @@ async function fetchStanding(parsed) {
   return fetchViaScraper(buildApiUrl(parsed));
 }
 
+// Aplatit : si l'endpoint renvoie des journées contenant des matchs, extrait les matchs
+function flattenMatches(items) {
+  const out = [];
+  items.forEach(it => {
+    if (Array.isArray(it?.matchs))       it.matchs.forEach(m => out.push(m));
+    else if (Array.isArray(it?.matches)) it.matches.forEach(m => out.push(m));
+    else if (Array.isArray(it?.rencontres)) it.rencontres.forEach(m => out.push(m));
+    else if (it?.home || it?.away || it?.equipe_home || it?.date_rencontre) out.push(it);
+  });
+  return out;
+}
+
 // Essaie plusieurs endpoints matchs jusqu'à en trouver un qui marche
 async function fetchMatches(parsed) {
   const urls = buildMatchesApiUrls(parsed);
@@ -120,8 +134,9 @@ async function fetchMatches(parsed) {
                   : Array.isArray(json) ? json
                   : [];
       if (items.length > 0) {
-        console.log(`  ✓ endpoint matchs trouvé : ${url.split('/').pop()}`);
-        return items;
+        const flat = flattenMatches(items);
+        console.log(`  ✓ endpoint matchs trouvé : ${url.split('/').pop()} (${flat.length} matchs après flatten)`);
+        if (flat.length > 0) return flat;
       }
     } catch (e) { lastErr = e; }
   }
