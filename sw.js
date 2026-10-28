@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.1.5-team-view-standings-direct-cache';
+const CACHE_VERSION = 'v8.1.6-suppr-renderFFFSection-dupliquee';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

@@ -533,40 +533,10 @@ function renderEffectifCard(players, cat) {
       </section>`;
   }
 
-  /* ── Section FFF (classement + matchs filtres equipe) ─── */
-
-  function renderFFFSection(cat, teamLabel) {
-    const u = utils();
-    if (!u?.buildDashboardFeeds) return '';
-    const feeds = u.buildDashboardFeeds(cat);
-    if (!feeds) return '';
-
-    const matchesTeam = (m) => {
-      if (!m) return false;
-      const lbl = (teamLabel || '').toLowerCase();
-      if (m.team && String(m.team).toLowerCase() === lbl) return true;
-      if (m.home && String(m.home).toLowerCase().includes(lbl)) return true;
-      if (m.away && String(m.away).toLowerCase().includes(lbl)) return true;
-      return false;
-    };
-
-    const upcoming = (feeds.upcoming || []).filter(matchesTeam);
-    const past = (feeds.past || []).filter(matchesTeam);
-    const standings = feeds.standings;
-
-    if (!upcoming.length && !past.length && (!standings || !standings.length)) return '';
-
-    return `
-      <div class="team-fff-section">
-        <h3 class="team-section-title">FFF Donnees</h3>
-        <div class="dashboard-main-grid">
-          ${standings?.length ? u.renderStandingsCard(standings) : ''}
-          ${upcoming.length ? u.renderMatchCard('Matchs a venir', teamLabel, upcoming.slice(0, 5), true) : ''}
-          ${past.length ? u.renderMatchCard('Resultats recents', teamLabel, past.slice(0, 8), false) : ''}
-        </div>
-      </div>
-    `;
-  }
+  // ⚠️ v8.1.6 — ancienne 2e déclaration de renderFFFSection supprimée.
+  // Elle écrasait la bonne (ligne ~362) qui filtre par équipe spécifique,
+  // ce qui faisait apparaître TOUS les classements des équipes de la cat.
+  // Désormais seule la version plus haut est utilisée.
 
   // Bloc "Comparaison Equipes de U13" supprimé en v7.8.2 — données issues
   // d'observations de la saison précédente, conflit avec les classements FFF live.
