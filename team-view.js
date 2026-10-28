@@ -317,6 +317,14 @@
     const s = teamSummary(cat, team, state().season);
     const players = teamPlayers(cat, team);
     const winPct = s.played ? Math.round((s.won / s.played) * 100) : 0;
+
+    // Est-ce qu'on a des matchs FFF pour cette équipe ? Si oui, on cache
+    // la carte "Derniers matchs" (observations) pour éviter la double info.
+    const CFG0 = window.TEAM_SOURCE_CONFIG || {};
+    const teamKey0 = Object.keys(CFG0).find(k => CFG0[k].teamLabel === team);
+    const hasFffMatchesForTeam = teamKey0
+      ? !!(window.appState?.fffStandingsByCat?.[cat]?.[teamKey0]?.matches?.length)
+      : false;
     const streakLabel = s.streak.count
       ? (s.streak.kind === 'W' ? s.streak.count + ' victoires d\'affilée' : s.streak.kind === 'D' ? s.streak.count + ' nuls' : s.streak.count + ' défaites d\'affilée')
       : 'Pas encore de série';
@@ -351,7 +359,7 @@
           ${renderLeadersCard('Top passeurs', s.topPasseurs, 'passes_d')}
           ${renderLeadersCard('Top notes', s.topNotes, 'noteAvg')}
           ${renderMinutesCard(s.topMinutes)}
-          ${renderRecentMatchesCard(s.matches)}
+          ${hasFffMatchesForTeam ? '' : renderRecentMatchesCard(s.matches)}
           ${renderEffectifCard(players, cat)}
         </div>
       </section>`;
@@ -485,14 +493,17 @@
         </div>
       </section>` : '';
 
+    // Si on a des matchs FFF, on masque les cartes "obs." pour éviter la double info.
+    const hasFffMatches = fffMatches.length > 0;
+
     return `
       <div class="team-fff-section">
         <h3 class="team-section-title">📡 Données FFF</h3>
         <div class="team-fff-grid">
           ${standings.length ? utils.renderStandingsCard(standings) : ''}
           ${fffMatchesCard}
-          ${upcoming.length ? utils.renderMatchCard('Matchs à venir (obs.)', `${teamLabel}`, upcoming.slice(0, 5), true) : ''}
-          ${past.length ? utils.renderMatchCard('Résultats récents (obs.)', `${teamLabel}`, past.slice(0, 8), false) : ''}
+          ${!hasFffMatches && upcoming.length ? utils.renderMatchCard('Matchs à venir (obs.)', `${teamLabel}`, upcoming.slice(0, 5), true) : ''}
+          ${!hasFffMatches && past.length ? utils.renderMatchCard('Résultats récents (obs.)', `${teamLabel}`, past.slice(0, 8), false) : ''}
         </div>
       </div>
     `;

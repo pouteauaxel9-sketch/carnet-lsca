@@ -162,10 +162,11 @@
               pouleName:     entry.pouleName || '',
               categoryLabel: entry.categoryLabel || '',
               standings:     entry.standings,
+              matches:       Array.isArray(entry.matches) ? entry.matches : [],
               source:        'github-actions',
             };
             setCached(url, result);
-            console.log('[FFF] ✓ Chargé depuis data/standings.json (scrape du ' + (data.scrapedAt || '?') + ', ' + entry.standings.length + ' équipes)');
+            console.log('[FFF] ✓ Chargé depuis data/standings.json (scrape du ' + (data.scrapedAt || '?') + ', ' + entry.standings.length + ' équipes, ' + result.matches.length + ' matchs)');
             return result;
           }
           console.warn('[FFF] Entrée "' + foundKey + '" trouvée mais standings vide dans data/standings.json');

@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.2.1-endpoint-poule_journees-flatten';
+const CACHE_VERSION = 'v8.2.2-fff-matches-propages-app-vieilles-cartes-masquees';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
