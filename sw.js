@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.1.6-suppr-renderFFFSection-dupliquee';
+const CACHE_VERSION = 'v8.2.0-matchs-fff-dans-vue-equipe';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

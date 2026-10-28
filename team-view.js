@@ -389,6 +389,8 @@
       : teamLabel;
 
     let standings = [];
+    let fffMatches = [];                 // matchs scrapés depuis FFF (si dispo)
+    let pouleNameFromFff = '';
     if (teamConfig && teamKey) {
       const fffCache = window.appState?.fffStandingsByCat?.[cat] || {};
       const entry   = fffCache[teamKey];
@@ -407,6 +409,7 @@
           isOurTeam:  row.team === teamConfig.officialName
                    || /lsca|louverne/i.test(row.team),
         }));
+        pouleNameFromFff = entry.pouleName || '';
       } else if (teamConfig.fffUrl) {
         // Pas encore chargé : placeholder "chargement"
         const isFetching = window.appState?.fffFetchingFor?.[cat];
@@ -419,18 +422,77 @@
           isOurTeam: true,
         }];
       }
+      // Matchs FFF filtrés sur notre équipe (via code club ou nom)
+      if (entry && Array.isArray(entry.matches) && entry.matches.length) {
+        const ourCode  = standings.find(r => r.isOurTeam)?.teamCode;
+        const ourLabel = teamConfig.officialName || '';
+        fffMatches = entry.matches.filter(m =>
+          m.homeCode === ourCode || m.awayCode === ourCode
+          || (ourLabel && (m.homeTeam === ourLabel || m.awayTeam === ourLabel))
+          || /lsca|louverne/i.test(m.homeTeam) || /lsca|louverne/i.test(m.awayTeam)
+        );
+      }
     }
 
     // Si rien de pertinent, on cache la section
-    if (!upcoming.length && !past.length && !standings.length) return '';
+    if (!upcoming.length && !past.length && !standings.length && !fffMatches.length) return '';
+
+    // Rendu matchs FFF (plus riches : date + domicile/exterieur + score + vs adversaire)
+    const now = Date.now();
+    const splitMatches = (ms) => {
+      const upcoming = [], past = [];
+      ms.forEach(m => {
+        const t = m.date ? new Date(m.date).getTime() : null;
+        if (t == null || isNaN(t)) past.push(m);
+        else if (t >= now) upcoming.push(m);
+        else past.push(m);
+      });
+      return { upcoming: upcoming.slice(0, 6), past: past.slice(-8).reverse() };
+    };
+    const fff = splitMatches(fffMatches);
+
+    const renderMatchRow = (m, done) => {
+      const dt = m.date ? new Date(m.date) : null;
+      const dateStr = dt && !isNaN(dt) ? dt.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }) : '—';
+      const atHome = /lsca|louverne/i.test(m.homeTeam) || m.homeCode === standings.find(r => r.isOurTeam)?.teamCode;
+      const opp    = atHome ? m.awayTeam : m.homeTeam;
+      const scoreT = (m.homeScore != null && m.awayScore != null) ? (atHome ? `${m.homeScore}-${m.awayScore}` : `${m.awayScore}-${m.homeScore}`) : '—';
+      let cls = ''; let badge = '?';
+      if (done && m.homeScore != null && m.awayScore != null) {
+        const diff = (atHome ? m.homeScore - m.awayScore : m.awayScore - m.homeScore);
+        if (diff > 0) { cls = 'fixture-win';  badge = 'V'; }
+        else if (diff < 0) { cls = 'fixture-loss'; badge = 'D'; }
+        else { cls = 'fixture-draw'; badge = 'N'; }
+      }
+      return `
+        <div class="fixture-row ${cls}">
+          <span class="fx-date">${h(dateStr)}</span>
+          <span class="fx-loc">${atHome ? 'Dom.' : 'Ext.'}</span>
+          <span class="fx-opp">vs ${h(opp)}</span>
+          <span class="fx-score">${h(scoreT)}</span>
+          ${done ? `<span class="fx-badge fx-${badge}">${badge}</span>` : ''}
+        </div>`;
+    };
+
+    const fffMatchesCard = (fff.upcoming.length || fff.past.length) ? `
+      <section class="dashboard-card">
+        <div class="card-head">
+          <div><div class="card-kicker">Calendrier FFF</div><h2>Matchs ${h(teamLabel)}</h2></div>
+        </div>
+        <div class="fixture-list">
+          ${fff.upcoming.length ? '<div class="fixture-group-head">📅 À venir</div>' + fff.upcoming.map(m => renderMatchRow(m, false)).join('') : ''}
+          ${fff.past.length     ? '<div class="fixture-group-head">✅ Résultats</div>' + fff.past.map(m => renderMatchRow(m, true)).join('') : ''}
+        </div>
+      </section>` : '';
 
     return `
       <div class="team-fff-section">
         <h3 class="team-section-title">📡 Données FFF</h3>
-        <div class="dashboard-main-grid">
+        <div class="team-fff-grid">
           ${standings.length ? utils.renderStandingsCard(standings) : ''}
-          ${upcoming.length ? utils.renderMatchCard('Matchs à venir', `${teamLabel}`, upcoming.slice(0, 5), true) : ''}
-          ${past.length ? utils.renderMatchCard('Résultats récents', `${teamLabel}`, past.slice(0, 8), false) : ''}
+          ${fffMatchesCard}
+          ${upcoming.length ? utils.renderMatchCard('Matchs à venir (obs.)', `${teamLabel}`, upcoming.slice(0, 5), true) : ''}
+          ${past.length ? utils.renderMatchCard('Résultats récents (obs.)', `${teamLabel}`, past.slice(0, 8), false) : ''}
         </div>
       </div>
     `;

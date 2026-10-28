@@ -51,6 +51,17 @@ function buildApiUrl({ competId, phaseId, pouleId }) {
   return `https://api-dofa.fff.fr/api/compets/${competId}/phases/${phaseId}/poules/${pouleId}/classement_journees`;
 }
 
+// Endpoints matchs à essayer (le 1er qui répond un JSON array = gagné)
+function buildMatchesApiUrls({ competId, phaseId, pouleId }) {
+  const base = `https://api-dofa.fff.fr/api/compets/${competId}/phases/${phaseId}/poules/${pouleId}`;
+  return [
+    `${base}/matchs`,
+    `${base}/rencontres`,
+    `${base}/journees/matchs`,
+    `${base}/matches`,
+  ];
+}
+
 function buildScraperApiUrl(targetUrl) {
   const u = new URL('https://api.scraperapi.com/');
   u.searchParams.set('api_key', SCRAPERAPI_KEY);
@@ -82,20 +93,58 @@ function normalizeRow(item) {
 
 /* ── Fetch avec ScraperAPI ────────────────────────── */
 
-async function fetchStanding(parsed) {
-  const apiUrl    = buildApiUrl(parsed);
+async function fetchViaScraper(apiUrl) {
   const scraperUrl = buildScraperApiUrl(apiUrl);
   const resp = await fetch(scraperUrl, { headers: { 'Accept': 'application/json, text/plain, */*' } });
   if (!resp.ok) throw new Error('ScraperAPI HTTP ' + resp.status);
   const text = await resp.text();
   if (text.includes('APPLICATION MOMENTAN')) {
-    throw new Error('FFF a renvoyé sa page maintenance — réessayer plus tard');
+    throw new Error('FFF maintenance');
   }
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw new Error('Réponse non-JSON : ' + text.slice(0, 150).replace(/\s+/g, ' '));
+  try { return JSON.parse(text); }
+  catch { throw new Error('non-JSON: ' + text.slice(0, 150).replace(/\s+/g, ' ')); }
+}
+
+async function fetchStanding(parsed) {
+  return fetchViaScraper(buildApiUrl(parsed));
+}
+
+// Essaie plusieurs endpoints matchs jusqu'à en trouver un qui marche
+async function fetchMatches(parsed) {
+  const urls = buildMatchesApiUrls(parsed);
+  let lastErr = null;
+  for (const url of urls) {
+    try {
+      const json = await fetchViaScraper(url);
+      const items = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
+                  : Array.isArray(json) ? json
+                  : [];
+      if (items.length > 0) {
+        console.log(`  ✓ endpoint matchs trouvé : ${url.split('/').pop()}`);
+        return items;
+      }
+    } catch (e) { lastErr = e; }
   }
+  throw lastErr || new Error('Aucun endpoint matchs ne répond');
+}
+
+function normalizeMatch(m) {
+  const home = m?.home || m?.equipe_home || m?.equipe1 || m?.domicile || {};
+  const away = m?.away || m?.equipe_away || m?.equipe2 || m?.exterieur || {};
+  const homeLabel = home?.club?.short_name_ligue || home?.short_name_ligue || home?.short_name || home?.name || '?';
+  const awayLabel = away?.club?.short_name_ligue || away?.short_name_ligue || away?.short_name || away?.name || '?';
+  return {
+    date:        m?.date || m?.date_rencontre || m?.start_at || null,
+    journeeNo:   m?.journee_no || m?.journee || m?.cj_no || null,
+    homeTeam:    homeLabel,
+    awayTeam:    awayLabel,
+    homeCode:    home?.club?.cl_no || home?.cl_no || null,
+    awayCode:    away?.club?.cl_no || away?.cl_no || null,
+    homeScore:   (m?.home_score ?? m?.score_home ?? m?.homeGoals ?? m?.but_home) ?? null,
+    awayScore:   (m?.away_score ?? m?.score_away ?? m?.awayGoals ?? m?.but_away) ?? null,
+    status:      m?.status || m?.etat || null,
+    terrain:     m?.terrain?.name || m?.terrain_label || null,
+  };
 }
 
 /* ── Main ─────────────────────────────────────────── */
@@ -129,20 +178,34 @@ async function main() {
       continue;
     }
     try {
+      // Classement
       const json = await fetchStanding(parsed);
       const rows = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
                  : Array.isArray(json) ? json
                  : [];
       const standings  = rows.map(normalizeRow).sort((a, b) => (a.rank || 99) - (b.rank || 99));
       const firstPoule = rows[0]?.poule;
+
+      // Matchs (best effort, pas bloquant)
+      let matches = [];
+      try {
+        const rawMatches = await fetchMatches(parsed);
+        matches = rawMatches.map(normalizeMatch)
+          .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+        console.log(`  ✓ ${matches.length} matchs récupérés`);
+      } catch (e) {
+        console.warn(`  (pas de matchs : ${e.message})`);
+      }
+
       result.teams[key] = {
         label:         team.label || key,
         url:           team.url,
         pouleName:     firstPoule?.name || '',
         categoryLabel: rows[0]?.equipe?.category_label || '',
         standings,
+        matches,
       };
-      console.log(`  ✓ ${standings.length} équipes récupérées (poule : ${firstPoule?.name || '?'})`);
+      console.log(`  ✓ ${standings.length} équipes au classement (poule : ${firstPoule?.name || '?'})`);
       ok++;
     } catch (e) {
       console.error(`  ✗ Échec : ${e.message}`);
