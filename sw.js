@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.1.1-workflow-fix-commit-permissions';
+const CACHE_VERSION = 'v8.1.2-sw-standings-network-first';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -121,6 +121,13 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(req).catch(() => new Response(JSON.stringify({ error: 'offline' }), {
       status: 503, headers: { 'Content-Type': 'application/json' }
     })));
+    return;
+  }
+
+  // data/standings.json : network-first (fallback cache si offline)
+  // → les classements FFF mis à jour par GitHub Actions sont toujours visibles rapidement
+  if (url.pathname.endsWith('/data/standings.json')) {
+    event.respondWith(networkFirst(req));
     return;
   }
 
