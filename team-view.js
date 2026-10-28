@@ -377,28 +377,58 @@
     const upcoming = (feeds.upcoming || []).filter(matchesTeam);
     const past = (feeds.past || []).filter(matchesTeam);
 
-    // Filtre : on veut UNIQUEMENT le classement de la poule de cette équipe
-    // (pas toutes les équipes de la catégorie). On identifie la bonne poule
-    // en comparant la division/compétition stockée pour cette équipe au champ
-    // `competition` de chaque standing.
-    const teamConfig = Object.values(window.TEAM_SOURCE_CONFIG || {})
-      .find(t => t.teamLabel === teamLabel);
-    const myDiv = teamConfig?.division || teamConfig?.officialName || '';
-    const normalizeStr = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-    const myDivNorm = normalizeStr(myDiv);
-    const standings = (feeds.standings || []).filter(row => {
-      const compNorm = normalizeStr(row.competition || '');
-      return myDivNorm && compNorm.startsWith(myDivNorm);
-    });
+    // On construit un classement spécifique à CETTE équipe uniquement en lisant
+    // directement le cache FffApi (évite tous les problèmes de filtre par label
+    // de compétition). On trouve la clé du team dans TEAM_SOURCE_CONFIG, puis
+    // on lit state.fffStandingsByCat[cat][key].
+    const CFG = window.TEAM_SOURCE_CONFIG || {};
+    const teamKey = Object.keys(CFG).find(k => CFG[k].teamLabel === teamLabel);
+    const teamConfig = teamKey ? CFG[teamKey] : null;
+    const compLabel = teamConfig
+      ? (teamConfig.division || teamConfig.officialName || teamLabel)
+      : teamLabel;
+
+    let standings = [];
+    if (teamConfig && teamKey) {
+      const fffCache = window.appState?.fffStandingsByCat?.[cat] || {};
+      const entry   = fffCache[teamKey];
+      if (entry && Array.isArray(entry.standings) && entry.standings.length) {
+        standings = entry.standings.map(row => ({
+          rank:    row.rank,
+          team:    row.team,
+          points:  row.pts,
+          played:  row.played,
+          won:     row.won,
+          draw:    row.draw,
+          lost:    row.lost,
+          diff:    row.diff,
+          competition: compLabel + (entry.pouleName ? ' — ' + entry.pouleName : ''),
+          competitionLevel: 'district',
+          isOurTeam:  row.team === teamConfig.officialName
+                   || /lsca|louverne/i.test(row.team),
+        }));
+      } else if (teamConfig.fffUrl) {
+        // Pas encore chargé : placeholder "chargement"
+        const isFetching = window.appState?.fffFetchingFor?.[cat];
+        standings = [{
+          rank: isFetching ? '…' : '-',
+          team: teamLabel + (isFetching ? ' — chargement…' : ''),
+          points: '-', played: '-', diff: '-',
+          competition: compLabel,
+          competitionLevel: 'district',
+          isOurTeam: true,
+        }];
+      }
+    }
 
     // Si rien de pertinent, on cache la section
-    if (!upcoming.length && !past.length && (!standings || !standings.length)) return '';
+    if (!upcoming.length && !past.length && !standings.length) return '';
 
     return `
       <div class="team-fff-section">
         <h3 class="team-section-title">📡 Données FFF</h3>
         <div class="dashboard-main-grid">
-          ${standings?.length ? utils.renderStandingsCard(standings) : ''}
+          ${standings.length ? utils.renderStandingsCard(standings) : ''}
           ${upcoming.length ? utils.renderMatchCard('Matchs à venir', `${teamLabel}`, upcoming.slice(0, 5), true) : ''}
           ${past.length ? utils.renderMatchCard('Résultats récents', `${teamLabel}`, past.slice(0, 8), false) : ''}
         </div>
