@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.2.2-fff-matches-propages-app-vieilles-cartes-masquees';
+const CACHE_VERSION = 'v8.2.3-bump-cache-fff-pour-recuperer-matches';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

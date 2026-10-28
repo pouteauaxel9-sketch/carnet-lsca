@@ -18,8 +18,12 @@
 (function () {
   'use strict';
 
-  const CACHE_KEY = 'cfb6_fff_cache_v2';     // { [url]: { fetchedAt, data } } — bump pour invalider cache "Équipe inconnue"
+  const CACHE_KEY = 'cfb6_fff_cache_v3';     // v3 : inclut maintenant matches dans le résultat (ancien v2 sans matches)
   const CACHE_TTL_MS = 60 * 60 * 1000;        // 1 h
+
+  // Nettoyage one-shot des anciennes versions de cache
+  try { localStorage.removeItem('cfb6_fff_cache_v1'); } catch (_) {}
+  try { localStorage.removeItem('cfb6_fff_cache_v2'); } catch (_) {}
 
   /* ── Cache localStorage (dédoublonne les requêtes) ─────────────── */
 
