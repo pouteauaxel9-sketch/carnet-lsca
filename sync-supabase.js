@@ -30,6 +30,7 @@
     'cfb6_live_sessions_v1',   // Mode Terrain : séances + bilans
     'cfb6_weekly_focus_v1',    // Semaine + Plan saison
     'cfb6_roster',             // Roster additions
+    'cfb6_fff_urls_override',  // URLs FFF saisies via le modal Config championnats
   ];
 
   let pushTimer = null;

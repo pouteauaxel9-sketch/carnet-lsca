@@ -79,12 +79,16 @@ const CLUB_DATA = {
 // Saison 2026-2027 — toutes les équipes engagées du club
 // Les URLs FFF seront ajoutées plus tard quand les championnats seront démarrés.
 const TEAM_SOURCE_CONFIG = {
-  u13a:{ key:'u13a', category:'u13', teamLabel:'U13 A', officialName:'GJ LSCA LOUVERNE',    identity:'GJ LSCA',          division:'District Mayenne D1 · poule C',
+  u13a:{ key:'u13a', category:'u13', teamLabel:'U13 A', officialName:'GJ LSCA LOUVERNE',    identity:'GJ LSCA', division:'District Mayenne D1 · poule C',
          fffUrl:'https://mayenne.fff.fr/competitions?tab=ranking&id=450413&phase=1&poule=3&type=ch' },
-  u13b:{ key:'u13b', category:'u13', teamLabel:'U13 B', officialName:'GJ LSCA LOUVERNE 2',  identity:'GJ LSCA',          pending:true, division:'District Mayenne D2 · poule E' },
-  u13c:{ key:'u13c', category:'u13', teamLabel:'U13 C', officialName:'GJ LSCA LOUVERNE 3',  identity:'GJ LSCA',          pending:true, division:'District Mayenne D3 · poule F' },
-  u13d:{ key:'u13d', category:'u13', teamLabel:'U13 D', officialName:'GJ LSCA LOUVERNE 4',  identity:'GJ LSCA',          pending:true, division:'District Mayenne D3 · poule E' },
-  u12: { key:'u12',  category:'u13', teamLabel:'U12',   officialName:'GJ LSCA LOUVERNE 21', identity:'GJ LSCA',          pending:true, division:'District Mayenne D1 · poule B' },
+  u13b:{ key:'u13b', category:'u13', teamLabel:'U13 B', officialName:'GJ LSCA LOUVERNE 2',  identity:'GJ LSCA', division:'District Mayenne D2 · poule E',
+         fffUrl:'https://mayenne.fff.fr/competitions?tab=ranking&id=450427&phase=1&poule=5&type=ch' },
+  u13c:{ key:'u13c', category:'u13', teamLabel:'U13 C', officialName:'GJ LSCA LOUVERNE 3',  identity:'GJ LSCA', division:'District Mayenne D3 · poule F',
+         fffUrl:'https://mayenne.fff.fr/competitions?tab=ranking&id=450428&phase=1&poule=6&type=ch' },
+  u13d:{ key:'u13d', category:'u13', teamLabel:'U13 D', officialName:'GJ LSCA LOUVERNE 4',  identity:'GJ LSCA', division:'District Mayenne D3 · poule E',
+         fffUrl:'https://mayenne.fff.fr/competitions?tab=ranking&id=450428&phase=1&poule=5&type=ch' },
+  u12: { key:'u12',  category:'u13', teamLabel:'U12',   officialName:'GJ LSCA LOUVERNE 21', identity:'GJ LSCA', division:'District Mayenne D1 · poule B',
+         fffUrl:'https://mayenne.fff.fr/competitions?tab=ranking&id=450429&phase=1&poule=2&type=ch' },
 
   u11a:{ key:'u11a', category:'u11', teamLabel:'U11 A', officialName:'LOUVERNE SP.',        identity:'Louverné Sports',  pending:true, division:'District Mayenne' },
   u11b:{ key:'u11b', category:'u11', teamLabel:'U11 B', officialName:'LOUVERNE SP. 2',      identity:'Louverné Sports',  pending:true, division:'District Mayenne' },
@@ -183,6 +187,15 @@ window.PILLARS    = PILLARS;
 window.JDATA      = JDATA;
 window.CLUB_DATA  = CLUB_DATA;
 window.TEAM_SOURCE_CONFIG = TEAM_SOURCE_CONFIG;
+
+// Applique les overrides URLs FFF de l'utilisateur (depuis le modal Config FFF)
+// pour que l'app utilise les mêmes URLs que celles qu'il a saisies dans l'UI.
+try {
+  const overrides = JSON.parse(localStorage.getItem('cfb6_fff_urls_override') || '{}') || {};
+  Object.keys(overrides).forEach(key => {
+    if (TEAM_SOURCE_CONFIG[key]) TEAM_SOURCE_CONFIG[key].fffUrl = overrides[key];
+  });
+} catch (_) { /* ignore */ }
 window.POSTES     = POSTES;
 
 let state = {
@@ -2650,7 +2663,13 @@ document.addEventListener('click', event => {
   }
   if (action === 'clear-player-photo') { clearPlayerPhoto(); return; }
 
-  // Menu actions secondaires (Importer JSON / Exporter JSON / Imprimer)
+  // Menu actions secondaires (Importer JSON / Exporter JSON / Imprimer / Config FFF)
+  if (action === 'open-config-fff') {
+    toggleMoreMenu(false);
+    if (window.ConfigFffModule?.open) window.ConfigFffModule.open();
+    else showToast('Module config FFF indisponible');
+    return;
+  }
   if (action === 'trigger-import') {
     toggleMoreMenu(false);
     q('#import-file').click();

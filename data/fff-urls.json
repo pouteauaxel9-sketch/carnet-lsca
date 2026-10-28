@@ -1,10 +1,26 @@
 {
-  "comment": "URLs des championnats FFF à scraper. Format : clé = team key (identique à TEAM_SOURCE_CONFIG dans app.js). Pour ajouter une équipe, copie-colle une entrée + ta nouvelle URL.",
+  "comment": "URLs des championnats FFF à scraper. Format : clé = team key (identique à TEAM_SOURCE_CONFIG dans app.js). Pour ajouter une équipe, copie-colle une entrée + ta nouvelle URL. Les équipes sans championnat (plateaux U7/U9…) sont absentes = pas de scrape pour elles.",
   "season": "2026-2027",
   "teams": {
     "u13a": {
       "label": "U13 A",
       "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450413&phase=1&poule=3&type=ch"
+    },
+    "u13b": {
+      "label": "U13 B",
+      "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450427&phase=1&poule=5&type=ch"
+    },
+    "u13c": {
+      "label": "U13 C",
+      "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450428&phase=1&poule=6&type=ch"
+    },
+    "u13d": {
+      "label": "U13 D",
+      "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450428&phase=1&poule=5&type=ch"
+    },
+    "u12": {
+      "label": "U12",
+      "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450429&phase=1&poule=2&type=ch"
     }
   }
 }

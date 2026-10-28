@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.2.3-bump-cache-fff-pour-recuperer-matches';
+const CACHE_VERSION = 'v8.4.0-modal-config-fff-dans-app';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -54,6 +54,7 @@ const STATIC_ASSETS = [
   './season-transition.js',
   './sync-supabase.js',
   './fff-api.js',
+  './config-fff.js',
   './pre-seance.js',
   './pdf-report.js',
   './pdf-logos.js',
