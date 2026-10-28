@@ -21,6 +21,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Nécessaire pour pouvoir re-push avec les credentials du GITHUB_TOKEN
+          persist-credentials: true
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node 20
         uses: actions/setup-node@v4
@@ -32,14 +36,24 @@ jobs:
           SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
         run: node scripts/scrape-fff-standings.js
 
+      - name: Diagnostics avant commit
+        run: |
+          echo "─── git status ───"
+          git status
+          echo "─── diff standings.json ───"
+          git diff --stat data/standings.json || true
+          echo "─── contenu début fichier ───"
+          head -c 300 data/standings.json
+
       - name: Commit standings si changement
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [[ -n $(git status --porcelain data/standings.json) ]]; then
-            git add data/standings.json
-            git commit -m "chore(fff): refresh standings $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git push
+          git add data/standings.json
+          if git diff --cached --quiet; then
+            echo "⚪ Aucun changement — rien à commiter"
           else
-            echo "Aucun changement, rien à commit"
+            git commit -m "chore(fff): refresh standings $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push origin HEAD:main
+            echo "✅ Classements commités et poussés sur main"
           fi
