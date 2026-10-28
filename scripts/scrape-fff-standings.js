@@ -3,16 +3,19 @@
  * scrape-fff-standings.js
  *
  * Lit data/fff-urls.json et scrape les classements FFF via l'API DOFA
- * en utilisant Puppeteer (vrai Chrome headless) pour contourner le
- * blocage anti-bot (403) subi par les simples requêtes HTTP depuis les
- * IPs cloud (Netlify Lambda, GitHub Actions runners, etc.).
+ * en passant par ScraperAPI (proxies résidentiels) pour contourner le
+ * blocage anti-bot IP cloud que subissent Netlify Functions, GitHub
+ * Actions runners, Cloudflare Workers, etc.
  *
  * Écrit le résultat dans data/standings.json.
  *
- * Appelé par GitHub Actions (.github/workflows/scrape-fff.yml) toutes les 2h.
- * Peut aussi tourner en local : `npm i puppeteer && node scripts/scrape-fff-standings.js`
+ * Variable d'environnement requise :
+ *   SCRAPERAPI_KEY = clé API ScraperAPI (gratuit : 1000 req/mois)
  *
- * Node 20+ requis. Puppeteer télécharge sa propre version de Chromium.
+ * Appelé par GitHub Actions (.github/workflows/scrape-fff.yml) chaque lundi matin.
+ * En local : `SCRAPERAPI_KEY=xxx node scripts/scrape-fff-standings.js`
+ *
+ * Node 20+ requis (fetch global).
  */
 
 const fs   = require('node:fs');
@@ -21,6 +24,15 @@ const path = require('node:path');
 const ROOT        = path.resolve(__dirname, '..');
 const URLS_FILE   = path.join(ROOT, 'data', 'fff-urls.json');
 const OUTPUT_FILE = path.join(ROOT, 'data', 'standings.json');
+
+const SCRAPERAPI_KEY = process.env.SCRAPERAPI_KEY || '';
+
+if (!SCRAPERAPI_KEY) {
+  console.error('✗ Variable SCRAPERAPI_KEY manquante.');
+  console.error('   GitHub Actions : ajoute-la en secret (Settings → Secrets → Actions).');
+  console.error('   En local : SCRAPERAPI_KEY=xxx node scripts/scrape-fff-standings.js');
+  process.exit(1);
+}
 
 /* ── Parsing URL FFF ──────────────────────────────── */
 
@@ -37,6 +49,15 @@ function parseUrl(url) {
 
 function buildApiUrl({ competId, phaseId, pouleId }) {
   return `https://api-dofa.fff.fr/api/compets/${competId}/phases/${phaseId}/poules/${pouleId}/classement_journees`;
+}
+
+function buildScraperApiUrl(targetUrl) {
+  const u = new URL('https://api.scraperapi.com/');
+  u.searchParams.set('api_key', SCRAPERAPI_KEY);
+  u.searchParams.set('url',     targetUrl);
+  u.searchParams.set('country_code', 'fr');  // IP résidentielle française
+  u.searchParams.set('render',  'false');     // pas besoin d'exécuter JS, l'API renvoie du JSON brut
+  return u.toString();
 }
 
 function normalizeRow(item) {
@@ -59,66 +80,21 @@ function normalizeRow(item) {
   };
 }
 
-/* ── Scraping via Puppeteer ───────────────────────── */
+/* ── Fetch avec ScraperAPI ────────────────────────── */
 
-async function launchBrowser() {
-  let puppeteer;
-  try {
-    puppeteer = require('puppeteer');
-  } catch (e) {
-    console.error('✗ Puppeteer non installé. Dans GitHub Actions, assure-toi que la step "npm install puppeteer" est exécutée avant.');
-    console.error('   En local : npm i puppeteer');
-    throw e;
-  }
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-blink-features=AutomationControlled',
-    ],
-  });
-  return browser;
-}
-
-async function fetchStanding(page, parsed) {
-  const apiUrl = buildApiUrl(parsed);
-  // Navigation directe vers l'API URL : Puppeteer suit les redirections et stocke
-  // les cookies Cloudflare automatiquement. Le body de la page = la réponse JSON.
-  // Cette approche évite le problème CORS d'un fetch() cross-subdomain fff.fr → api-dofa.fff.fr.
-  const resp = await page.goto(apiUrl, {
-    waitUntil: 'domcontentloaded',
-    timeout: 45000,
-  });
-
-  const status = resp?.status() || 0;
-  const text   = await page.evaluate(() => document.body?.innerText || document.documentElement.textContent || '');
-
+async function fetchStanding(parsed) {
+  const apiUrl    = buildApiUrl(parsed);
+  const scraperUrl = buildScraperApiUrl(apiUrl);
+  const resp = await fetch(scraperUrl, { headers: { 'Accept': 'application/json, text/plain, */*' } });
+  if (!resp.ok) throw new Error('ScraperAPI HTTP ' + resp.status);
+  const text = await resp.text();
   if (text.includes('APPLICATION MOMENTAN')) {
-    throw new Error('FFF a renvoyé sa page maintenance (anti-bot ou vraie panne)');
-  }
-  if (status >= 400) {
-    throw new Error('HTTP ' + status + ' (début réponse: ' + text.slice(0, 100).replace(/\s+/g, ' ') + ')');
+    throw new Error('FFF a renvoyé sa page maintenance — réessayer plus tard');
   }
   try {
     return JSON.parse(text);
   } catch (e) {
-    throw new Error('Réponse non-JSON (début: ' + text.slice(0, 100).replace(/\s+/g, ' ') + ')');
-  }
-}
-
-// Au tout premier lancement, on visite la page publique pour que Cloudflare pose
-// ses cookies anti-bot (passé en argument "warmup" une seule fois).
-async function warmup(page) {
-  try {
-    await page.goto('https://mayenne.fff.fr/competitions/', {
-      waitUntil: 'domcontentloaded',
-      timeout: 30000,
-    });
-    await new Promise(r => setTimeout(r, 2500)); // laisse Cloudflare challenge se résoudre
-  } catch (e) {
-    console.warn('  (warmup échoué, on tente quand même : ' + e.message + ')');
+    throw new Error('Réponse non-JSON : ' + text.slice(0, 150).replace(/\s+/g, ' '));
   }
 }
 
@@ -133,20 +109,7 @@ async function main() {
   const teams  = config.teams || {};
   const keys   = Object.keys(teams);
 
-  console.log(`🏆 Scraping ${keys.length} équipe(s) pour la saison ${config.season || '?'} (via Puppeteer)\n`);
-
-  const browser = await launchBrowser();
-  const page    = await browser.newPage();
-  // User-agent navigateur réel + headers typiques
-  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
-  await page.setExtraHTTPHeaders({
-    'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
-    'Accept':          'application/json, text/plain, */*',
-  });
-
-  // Chauffe Cloudflare une seule fois (cookies anti-bot)
-  console.log('🔥 Warmup Cloudflare...');
-  await warmup(page);
+  console.log(`🏆 Scraping ${keys.length} équipe(s) pour la saison ${config.season || '?'} via ScraperAPI\n`);
 
   const result = {
     scrapedAt: new Date().toISOString(),
@@ -166,7 +129,7 @@ async function main() {
       continue;
     }
     try {
-      const json = await fetchStanding(page, parsed);
+      const json = await fetchStanding(parsed);
       const rows = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
                  : Array.isArray(json) ? json
                  : [];
@@ -186,11 +149,9 @@ async function main() {
       result.teams[key] = { label: team.label || key, url: team.url, error: e.message };
       fail++;
     }
-    // Délai entre équipes pour ne pas déclencher le rate-limiting
-    await new Promise(r => setTimeout(r, 1000));
+    // Petit délai entre équipes pour rester courtois
+    await new Promise(r => setTimeout(r, 500));
   }
-
-  await browser.close();
 
   fs.mkdirSync(path.dirname(OUTPUT_FILE), { recursive: true });
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(result, null, 2) + '\n', 'utf-8');

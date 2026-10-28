@@ -1,12 +1,13 @@
 name: Scrape FFF Standings
 
 on:
-  # Toutes les 2h entre 7h et 22h (heure UTC = France -1h/-2h selon saison)
+  # Chaque lundi à 7h UTC = 8h hiver / 9h été France
+  # Les classements FFF ne bougent qu'après les matchs du week-end.
   schedule:
-    - cron: '0 6,8,10,12,14,16,18,20 * * *'
+    - cron: '0 7 * * 1'
   # Déclenchement manuel depuis l'onglet "Actions" du repo
   workflow_dispatch:
-  # Déclenchement automatique quand on modifie la config des URLs
+  # Déclenchement automatique quand on modifie la config des URLs ou le script
   push:
     branches: [main]
     paths:
@@ -26,16 +27,9 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Cache Puppeteer Chromium
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/puppeteer
-          key: puppeteer-${{ runner.os }}-chromium-v1
-
-      - name: Install Puppeteer
-        run: npm install --no-save puppeteer@22
-
-      - name: Run scraper
+      - name: Run scraper (via ScraperAPI)
+        env:
+          SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
         run: node scripts/scrape-fff-standings.js
 
       - name: Commit standings si changement
