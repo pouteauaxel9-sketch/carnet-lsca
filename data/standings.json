@@ -1,6 +1,98 @@
 {
-  "scrapedAt": null,
+  "scrapedAt": "2026-10-28T11:26:12.965Z",
   "season": "2026-2027",
-  "comment": "Ce fichier sera rempli automatiquement par GitHub Actions (.github/workflows/scrape-fff.yml) toutes les 2h. Au 1er run, les classements apparaîtront.",
-  "teams": {}
+  "teams": {
+    "u13a": {
+      "label": "U13 A",
+      "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450413&phase=1&poule=3&type=ch",
+      "pouleName": "Groupe C",
+      "categoryLabel": "U13 - U12 Libre",
+      "standings": [
+        {
+          "rank": 1,
+          "team": "GJ CHATEAU-GON.PAYS",
+          "teamCode": 191810,
+          "played": 5,
+          "pts": 13,
+          "won": 4,
+          "draw": 1,
+          "lost": 0,
+          "goalsFor": 45,
+          "goalsAgst": 5,
+          "diff": 40,
+          "forfeits": 0
+        },
+        {
+          "rank": 2,
+          "team": "GJ LSCA  LOUVERNE",
+          "teamCode": 201960,
+          "played": 5,
+          "pts": 13,
+          "won": 4,
+          "draw": 1,
+          "lost": 0,
+          "goalsFor": 35,
+          "goalsAgst": 8,
+          "diff": 27,
+          "forfeits": 0
+        },
+        {
+          "rank": 3,
+          "team": "GJ VAL DE JOUANNE",
+          "teamCode": 191807,
+          "played": 5,
+          "pts": 9,
+          "won": 3,
+          "draw": 0,
+          "lost": 2,
+          "goalsFor": 11,
+          "goalsAgst": 28,
+          "diff": 17,
+          "forfeits": 0
+        },
+        {
+          "rank": 4,
+          "team": "GJ HAUT-ANJOU",
+          "teamCode": 191806,
+          "played": 5,
+          "pts": 4,
+          "won": 1,
+          "draw": 1,
+          "lost": 3,
+          "goalsFor": 12,
+          "goalsAgst": 20,
+          "diff": 8,
+          "forfeits": 0
+        },
+        {
+          "rank": 5,
+          "team": "FC DU CRAONNAIS",
+          "teamCode": 1298,
+          "played": 5,
+          "pts": 4,
+          "won": 1,
+          "draw": 1,
+          "lost": 3,
+          "goalsFor": 15,
+          "goalsAgst": 24,
+          "diff": 9,
+          "forfeits": 0
+        },
+        {
+          "rank": 6,
+          "team": "MESLAY DU MAINE AS",
+          "teamCode": 1361,
+          "played": 5,
+          "pts": 0,
+          "won": 0,
+          "draw": 0,
+          "lost": 5,
+          "goalsFor": 6,
+          "goalsAgst": 39,
+          "diff": 33,
+          "forfeits": 0
+        }
+      ]
+    }
+  }
 }
