@@ -716,8 +716,12 @@ async function ensureFffStandings(cat) {
     const results = await window.FffApiModule.fetchStandingsForTeams(missing);
     state.fffStandingsByCat = state.fffStandingsByCat || {};
     state.fffStandingsByCat[cat] = Object.assign({}, cache, results);
-    // Re-render pour afficher les classements fraîchement arrivés
-    if (state.view === 'dashboard') renderAll();
+    // Re-render pour afficher les classements fraîchement arrivés.
+    // On re-render toute vue qui affiche des classements FFF :
+    // - dashboard (carte Classements)
+    // - team (vue équipe avec sa poule)
+    // - bilans (vue par équipes)
+    if (['dashboard', 'team', 'bilans'].includes(state.view)) renderAll();
   } finally {
     state.fffFetchingFor[cat] = false;
   }

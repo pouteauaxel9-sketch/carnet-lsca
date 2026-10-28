@@ -142,14 +142,21 @@
       if (cached) return cached;
     }
 
-    // 1) PRIORITÉ : lecture du JSON pré-scrapé par GitHub Actions (rafraîchi toutes les 2h)
+    // 1) PRIORITÉ : lecture du JSON pré-scrapé par GitHub Actions (rafraîchi hebdo)
     try {
       const data = await loadStandingsJson();
       if (data?.teams) {
-        // On cherche l'équipe par URL exacte dans le JSON
-        for (const key of Object.keys(data.teams)) {
-          const entry = data.teams[key];
-          if (entry.url === url && Array.isArray(entry.standings) && entry.standings.length) {
+        // Comparaison par identifiants (compet/phase/poule) plutôt que par URL exacte,
+        // pour tolérer les variations de params (ordre, type=ch présent/absent, etc.)
+        const want = `${parsed.competId}/${parsed.phaseId}/${parsed.pouleId}`;
+        const foundKey = Object.keys(data.teams).find(k => {
+          const entryParsed = parseUrl(data.teams[k].url);
+          if (!entryParsed) return false;
+          return `${entryParsed.competId}/${entryParsed.phaseId}/${entryParsed.pouleId}` === want;
+        });
+        if (foundKey) {
+          const entry = data.teams[foundKey];
+          if (Array.isArray(entry.standings) && entry.standings.length) {
             const result = {
               fetchedAt:     data.scrapedAt || new Date().toISOString(),
               pouleName:     entry.pouleName || '',
@@ -158,11 +165,14 @@
               source:        'github-actions',
             };
             setCached(url, result);
-            console.log('[FFF] ✓ Chargé depuis data/standings.json (scrape du ' + (data.scrapedAt || '?') + ')');
+            console.log('[FFF] ✓ Chargé depuis data/standings.json (scrape du ' + (data.scrapedAt || '?') + ', ' + entry.standings.length + ' équipes)');
             return result;
           }
+          console.warn('[FFF] Entrée "' + foundKey + '" trouvée mais standings vide dans data/standings.json');
+        } else {
+          console.log('[FFF] IDs ' + want + ' absents de data/standings.json. URLs présentes :',
+            Object.values(data.teams).map(t => t.url));
         }
-        console.log('[FFF] URL non présente dans data/standings.json → fallback Netlify Function');
       }
     } catch (e) {
       console.warn('[FFF] Lecture JSON échouée, fallback Netlify :', e.message);
