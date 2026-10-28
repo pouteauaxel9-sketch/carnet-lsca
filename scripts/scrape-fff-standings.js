@@ -2,13 +2,17 @@
 /**
  * scrape-fff-standings.js
  *
- * Lit data/fff-urls.json et scrape les classements FFF via l'API DOFA.
+ * Lit data/fff-urls.json et scrape les classements FFF via l'API DOFA
+ * en utilisant Puppeteer (vrai Chrome headless) pour contourner le
+ * blocage anti-bot (403) subi par les simples requêtes HTTP depuis les
+ * IPs cloud (Netlify Lambda, GitHub Actions runners, etc.).
+ *
  * Écrit le résultat dans data/standings.json.
  *
  * Appelé par GitHub Actions (.github/workflows/scrape-fff.yml) toutes les 2h.
- * Peut aussi tourner en local : `node scripts/scrape-fff-standings.js`
+ * Peut aussi tourner en local : `npm i puppeteer && node scripts/scrape-fff-standings.js`
  *
- * Node 18+ requis (fetch global).
+ * Node 20+ requis. Puppeteer télécharge sa propre version de Chromium.
  */
 
 const fs   = require('node:fs');
@@ -17,14 +21,6 @@ const path = require('node:path');
 const ROOT        = path.resolve(__dirname, '..');
 const URLS_FILE   = path.join(ROOT, 'data', 'fff-urls.json');
 const OUTPUT_FILE = path.join(ROOT, 'data', 'standings.json');
-
-const BROWSER_HEADERS = {
-  'Accept':         'application/json, text/plain, */*',
-  'Accept-Language':'fr-FR,fr;q=0.9,en;q=0.8',
-  'User-Agent':     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-  'Referer':        'https://mayenne.fff.fr/',
-  'Origin':         'https://mayenne.fff.fr',
-};
 
 /* ── Parsing URL FFF ──────────────────────────────── */
 
@@ -63,28 +59,56 @@ function normalizeRow(item) {
   };
 }
 
-/* ── Fetch avec retry ─────────────────────────────── */
+/* ── Scraping via Puppeteer ───────────────────────── */
 
-async function fetchWithRetry(url, { maxRetries = 3, delayMs = 2000 } = {}) {
-  let lastErr = null;
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const resp = await fetch(url, { headers: BROWSER_HEADERS });
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const text = await resp.text();
-      if (text.includes('APPLICATION MOMENTAN')) throw new Error('FFF en maintenance');
-      try {
-        return JSON.parse(text);
-      } catch {
-        throw new Error('Réponse non-JSON (HTML ' + text.slice(0, 60).replace(/\s+/g, ' ') + '…)');
-      }
-    } catch (e) {
-      lastErr = e;
-      console.warn(`  Tentative ${i + 1}/${maxRetries} échouée : ${e.message}`);
-      if (i < maxRetries - 1) await new Promise(r => setTimeout(r, delayMs));
-    }
+async function launchBrowser() {
+  let puppeteer;
+  try {
+    puppeteer = require('puppeteer');
+  } catch (e) {
+    console.error('✗ Puppeteer non installé. Dans GitHub Actions, assure-toi que la step "npm install puppeteer" est exécutée avant.');
+    console.error('   En local : npm i puppeteer');
+    throw e;
   }
-  throw lastErr;
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-blink-features=AutomationControlled',
+    ],
+  });
+  return browser;
+}
+
+async function fetchStanding(page, parsed) {
+  const apiUrl = buildApiUrl(parsed);
+  // On navigue sur mayenne.fff.fr d'abord pour obtenir les cookies Cloudflare
+  // (sinon l'API API-DOFA renvoie 403 ou la page "application indisponible")
+  await page.goto('https://mayenne.fff.fr/competitions/', {
+    waitUntil: 'domcontentloaded',
+    timeout: 30000,
+  });
+  // Petit délai pour laisser Cloudflare poser ses cookies
+  await new Promise(r => setTimeout(r, 1500));
+
+  // Puis on fetch l'API côté page (JS tourne depuis l'origin fff.fr → pas de CORS/anti-bot)
+  const result = await page.evaluate(async (url) => {
+    try {
+      const r = await fetch(url, { credentials: 'include' });
+      if (!r.ok) return { error: 'HTTP ' + r.status };
+      const text = await r.text();
+      if (text.includes('APPLICATION MOMENTAN')) return { error: 'FFF maintenance' };
+      try { return { json: JSON.parse(text) }; }
+      catch { return { error: 'Non-JSON (début: ' + text.slice(0, 80) + ')' }; }
+    } catch (e) {
+      return { error: 'fetch failed: ' + (e.message || e) };
+    }
+  }, apiUrl);
+
+  if (result.error) throw new Error(result.error);
+  return result.json;
 }
 
 /* ── Main ─────────────────────────────────────────── */
@@ -98,7 +122,13 @@ async function main() {
   const teams  = config.teams || {};
   const keys   = Object.keys(teams);
 
-  console.log(`🏆 Scraping ${keys.length} équipe(s) pour la saison ${config.season || '?'}\n`);
+  console.log(`🏆 Scraping ${keys.length} équipe(s) pour la saison ${config.season || '?'} (via Puppeteer)\n`);
+
+  const browser = await launchBrowser();
+  const page    = await browser.newPage();
+  // User-agent navigateur réel
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36');
+  await page.setExtraHTTPHeaders({ 'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8' });
 
   const result = {
     scrapedAt: new Date().toISOString(),
@@ -118,38 +148,37 @@ async function main() {
       continue;
     }
     try {
-      const apiUrl = buildApiUrl(parsed);
-      const json   = await fetchWithRetry(apiUrl);
-      const rows   = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
-                   : Array.isArray(json) ? json
-                   : [];
+      const json = await fetchStanding(page, parsed);
+      const rows = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
+                 : Array.isArray(json) ? json
+                 : [];
       const standings  = rows.map(normalizeRow).sort((a, b) => (a.rank || 99) - (b.rank || 99));
       const firstPoule = rows[0]?.poule;
       result.teams[key] = {
-        label:        team.label || key,
-        url:          team.url,
-        pouleName:    firstPoule?.name || '',
-        categoryLabel:rows[0]?.equipe?.category_label || '',
+        label:         team.label || key,
+        url:           team.url,
+        pouleName:     firstPoule?.name || '',
+        categoryLabel: rows[0]?.equipe?.category_label || '',
         standings,
       };
       console.log(`  ✓ ${standings.length} équipes récupérées (poule : ${firstPoule?.name || '?'})`);
       ok++;
     } catch (e) {
-      console.error(`  ✗ Échec final : ${e.message}`);
+      console.error(`  ✗ Échec : ${e.message}`);
       result.teams[key] = { label: team.label || key, url: team.url, error: e.message };
       fail++;
     }
-    // Petit délai entre équipes pour ne pas déclencher le rate-limiting FFF
-    await new Promise(r => setTimeout(r, 500));
+    // Délai entre équipes pour ne pas déclencher le rate-limiting
+    await new Promise(r => setTimeout(r, 1000));
   }
+
+  await browser.close();
 
   fs.mkdirSync(path.dirname(OUTPUT_FILE), { recursive: true });
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(result, null, 2) + '\n', 'utf-8');
   console.log(`\n✅ Terminé : ${ok} OK · ${fail} échec(s)`);
   console.log(`📄 Fichier écrit : ${OUTPUT_FILE}`);
 
-  // Exit 0 même si certaines équipes ont échoué (on garde les succès)
-  // mais exit 1 si TOUTES ont échoué (pour alerter côté CI)
   if (ok === 0 && fail > 0) {
     console.error('✗ Aucune équipe scrapée avec succès, échec du run');
     process.exit(1);

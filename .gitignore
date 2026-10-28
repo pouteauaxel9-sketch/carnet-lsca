@@ -1,0 +1,18 @@
+# Dépendances Node (jamais commiter — installées à la volée en CI)
+node_modules/
+package-lock.json
+package.json
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Netlify
+.netlify/
+
+# Logs
+*.log
+npm-debug.log*
