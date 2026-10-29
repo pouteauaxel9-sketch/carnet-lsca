@@ -472,13 +472,24 @@
         else if (diff < 0) { cls = 'fixture-loss'; badge = 'D'; }
         else { cls = 'fixture-draw'; badge = 'N'; }
       }
+      // Nombre de joueurs déjà notés pour ce match (si module Stats disponible)
+      let statsBadge = '';
+      if (done && window.MatchStatsModule) {
+        const mkey = window.MatchStatsModule.matchKey(m);
+        const data = window.appState?.data?.[cat] || {};
+        const nb = Object.values(data).filter(p => p?.matchStats?.[mkey]?.played).length;
+        if (nb > 0) statsBadge = `<span class="fx-stats-ok" title="${nb} joueur${nb > 1 ? 's' : ''} not${nb > 1 ? 'és' : 'é'}">📊 ${nb}</span>`;
+      }
+      const clickable = done ? 'data-match-click="1"' : '';
+      const mPayload  = done ? `data-match-json='${h(JSON.stringify(m))}'` : '';
       return `
-        <div class="fixture-row ${cls}">
+        <div class="fixture-row ${cls} ${done ? 'fixture-clickable' : ''}" ${clickable} ${mPayload}>
           <span class="fx-date">${h(dateStr)}</span>
           <span class="fx-loc">${atHome ? 'Dom.' : 'Ext.'}</span>
           <span class="fx-opp">vs ${h(opp)}</span>
           <span class="fx-score">${h(scoreT)}</span>
           ${done ? `<span class="fx-badge fx-${badge}">${badge}</span>` : ''}
+          ${statsBadge}
         </div>`;
     };
 

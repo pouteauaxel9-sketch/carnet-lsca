@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.4.0-modal-config-fff-dans-app';
+const CACHE_VERSION = 'v8.5.0-saisie-stats-match-post-click';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -55,6 +55,7 @@ const STATIC_ASSETS = [
   './sync-supabase.js',
   './fff-api.js',
   './config-fff.js',
+  './match-stats.js',
   './pre-seance.js',
   './pdf-report.js',
   './pdf-logos.js',
