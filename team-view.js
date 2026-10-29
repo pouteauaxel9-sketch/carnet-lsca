@@ -483,12 +483,20 @@
       ? (teamConfig.division || teamConfig.officialName || teamLabel)
       : teamLabel;
 
-    // Détecte toutes les phases disponibles pour cette équipe + choix actif
+    // Détecte toutes les phases disponibles pour cette équipe + choix actif.
+    // Source 1 : data/standings.json (phases scrapées par GitHub Actions)
+    // Source 2 : overrides locaux de la Config FFF (phases ajoutées mais pas encore scrapées)
     const standingsData = window.appState?.__standingsJsonData || {};
     const teamEntryJson = standingsData.teams?.[teamKey];
-    const availablePhases = teamEntryJson?.phases
+    const scrapedPhases = teamEntryJson?.phases
       ? Object.keys(teamEntryJson.phases)
       : (teamEntryJson?.standings ? ['Phase 1'] : []);
+    const configPhases = Array.isArray(teamConfig?.fffPhases)
+      ? teamConfig.fffPhases.map(p => p.label).filter(Boolean)
+      : [];
+    // Union, ordre : phases scrapées d'abord, puis config phases pas encore scrapées
+    const availablePhases = Array.from(new Set([...scrapedPhases, ...configPhases]));
+
     const PHASE_SEL_KEY = 'cfb6_fff_phase_sel';
     let selectedPhases = {};
     try { selectedPhases = JSON.parse(localStorage.getItem(PHASE_SEL_KEY) || '{}') || {}; } catch (_) {}
@@ -498,6 +506,7 @@
     const activePhase = (selectedPhases[teamKey] && availablePhases.includes(selectedPhases[teamKey]))
       ? selectedPhases[teamKey]
       : defaultPhase;
+    const activePhaseIsScraped = scrapedPhases.includes(activePhase);
 
     let standings = [];
     let fffMatches = [];                 // matchs scrapés depuis FFF (si dispo)
@@ -624,18 +633,23 @@
 
     const hasFffMatches = fffMatches.length > 0;
 
-    // Sélecteur de phase (dropdown + onglets) uniquement si > 1 phase
+    // Sélecteur de phase (onglets) uniquement si > 1 phase
     const phaseSelector = (availablePhases.length > 1) ? `
       <div class="fff-phase-switcher">
         <span class="fff-phase-label">📅 Phase :</span>
         <div class="fff-phase-tabs" role="tablist">
-          ${availablePhases.map(p => `
-            <button class="fff-phase-tab ${p === activePhase ? 'on' : ''}" type="button"
-                    role="tab" aria-selected="${p === activePhase}"
-                    data-fff-phase="${h(p)}" data-fff-team-key="${h(teamKey || '')}">
-              ${h(p)}
-            </button>`).join('')}
+          ${availablePhases.map(p => {
+            const scraped = scrapedPhases.includes(p);
+            return `
+              <button class="fff-phase-tab ${p === activePhase ? 'on' : ''} ${scraped ? '' : 'fff-phase-pending'}" type="button"
+                      role="tab" aria-selected="${p === activePhase}"
+                      title="${scraped ? '' : 'Phase configurée mais pas encore scrapée — push data/fff-urls.json sur GitHub'}"
+                      data-fff-phase="${h(p)}" data-fff-team-key="${h(teamKey || '')}">
+                ${h(p)}${scraped ? '' : ' ⏳'}
+              </button>`;
+          }).join('')}
         </div>
+        ${!activePhaseIsScraped ? `<span class="fff-phase-note">⏳ Phase ajoutée mais pas encore scrapée — copie le JSON de Config FFF et pousse-le sur GitHub pour voir les données.</span>` : ''}
       </div>
     ` : '';
 

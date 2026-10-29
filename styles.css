@@ -10186,6 +10186,18 @@ body.season-transition-active { overflow: hidden; }
   background: #009640; border-color: #006e2f; color: #fff;
   box-shadow: 0 2px 6px rgba(0,150,64,0.25);
 }
+.fff-phase-tab.fff-phase-pending {
+  border-style: dashed; color: #92400e; background: #fef3c7;
+}
+.fff-phase-tab.fff-phase-pending.on {
+  background: #d97706; border-color: #b45309; color: #fff;
+}
+.fff-phase-note {
+  width: 100%; display: block; margin-top: 6px;
+  padding: 6px 10px; font-size: 11px;
+  background: #fef3c7; color: #92400e;
+  border-radius: 6px; border-left: 3px solid #d97706;
+}
 
 /* ── Grid 2 colonnes pour section FFF Données (classement + matchs) ── */
 .team-fff-grid {
