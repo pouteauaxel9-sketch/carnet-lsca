@@ -10232,18 +10232,28 @@ body.season-transition-active { overflow: hidden; }
   margin-bottom: 20px;
 }
 .ms-grid-head {
-  display: grid; grid-template-columns: 1fr 120px 120px 80px;
+  display: grid; grid-template-columns: 1fr 60px 120px 120px 70px;
   gap: 8px; padding: 8px 12px;
   background: #f8fafc; font-size: 11px; font-weight: 700;
   color: #64748b; text-transform: uppercase; letter-spacing: .5px;
   border-bottom: 1px solid #e2e8f0;
 }
 .ms-row {
-  display: grid; grid-template-columns: 1fr 120px 120px 80px;
+  display: grid; grid-template-columns: 1fr 60px 120px 120px 70px;
   gap: 8px; padding: 8px 12px; align-items: center;
   border-bottom: 1px solid #f1f5f9;
   opacity: .6; background: #fafbfc;
 }
+
+/* Avatar joueur dans la grille stats */
+.ms-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  object-fit: cover; flex-shrink: 0;
+  background: #e2e8f0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #475569;
+}
+.ms-avatar-ini { background: linear-gradient(135deg, #009640, #006e2f); color: #fff; }
 .ms-row:last-child { border-bottom: 0; }
 .ms-row-on { opacity: 1; background: #fff; }
 
@@ -10283,14 +10293,15 @@ body.season-transition-active { overflow: hidden; }
 .ms-inc:disabled, .ms-dec:disabled { opacity: .4; cursor: not-allowed; }
 .ms-notes-block { margin-top: 16px; }
 
-/* Mobile : stats en 2 colonnes */
+/* Mobile : stats plus compactes */
 @media (max-width: 640px) {
   .ms-grid-head, .ms-row {
-    grid-template-columns: 1fr 80px 80px 60px;
-    font-size: 12px;
+    grid-template-columns: 1fr 48px 70px 70px 54px;
+    font-size: 12px; gap: 4px;
   }
-  .ms-cell input[type=number] { width: 40px; }
-  .ms-inc, .ms-dec { width: 22px; height: 22px; }
+  .ms-cell input[type=number] { width: 36px; }
+  .ms-inc, .ms-dec { width: 20px; height: 20px; }
+  .ms-avatar { width: 22px; height: 22px; }
 }
 
 /* ── Toggles principes dans la Fiche pré-séance ── */

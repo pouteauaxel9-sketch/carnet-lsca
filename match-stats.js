@@ -132,8 +132,8 @@
     listTeamPlayers(cat, teamLabel).forEach(pid => {
       const saved = data[pid]?.matchStats?.[mkey];
       stats[pid] = saved
-        ? { played: saved.played !== false, buts: saved.buts || 0, passes: saved.passes || 0, note: saved.note ?? '' }
-        : { played: false, buts: 0, passes: 0, note: '' };
+        ? { played: saved.played !== false, buts: saved.buts || 0, passes: saved.passes || 0, minutes: saved.minutes || 0, note: saved.note ?? '' }
+        : { played: false, buts: 0, passes: 0, minutes: 0, note: '' };
     });
     const savedNotes = state()?.data?.[cat]?._matchNotes?.[mkey] || '';
     modal = {
@@ -206,6 +206,7 @@
             <div class="ms-players-grid">
               <div class="ms-grid-head">
                 <span>JOUEUR</span>
+                <span>MIN</span>
                 <span>BUTS</span>
                 <span>PASSES</span>
                 <span>NOTE /10</span>
@@ -240,16 +241,28 @@
 
   function renderPlayerRow(pid) {
     const name = playerDisplayName(modal.cat, pid);
-    const st   = modal.draft.stats[pid] || { played: false, buts: 0, passes: 0, note: '' };
+    const prof = state()?.data?.[modal.cat]?.[pid]?.profil || {};
+    const photo = prof.photo || '';
+    const initials = (prof.prenom || pid)[0]?.toUpperCase() + (prof.nom || '')[0]?.toUpperCase() || '?';
+    const st   = modal.draft.stats[pid] || { played: false, buts: 0, passes: 0, minutes: 0, note: '' };
     const dis  = st.played ? '' : 'disabled';
     const cls  = st.played ? 'ms-row ms-row-on' : 'ms-row';
+    const avatar = photo
+      ? `<img class="ms-avatar" src="${h(photo)}" alt="">`
+      : `<span class="ms-avatar ms-avatar-ini">${h(initials)}</span>`;
     return `
       <div class="${cls}" data-pid="${h(pid)}">
         <label class="ms-cell ms-cell-player">
           <input type="checkbox" ${st.played ? 'checked' : ''}
                  data-ms-action="toggle-played" data-pid="${h(pid)}">
+          ${avatar}
           <span>${h(name)}</span>
         </label>
+        <div class="ms-cell">
+          <input type="number" min="0" max="120" value="${st.minutes || 0}"
+                 placeholder="min" title="Minutes jouées"
+                 data-ms-action="set" data-pid="${h(pid)}" data-field="minutes" ${dis}>
+        </div>
         <div class="ms-cell">
           <button class="ms-dec" type="button" data-ms-action="dec" data-pid="${h(pid)}" data-field="buts" ${dis}>−</button>
           <input type="number" min="0" max="20" value="${st.buts || 0}"
@@ -378,10 +391,11 @@
         delete s.data[cat][pid].matchStats[mkey];
       } else {
         s.data[cat][pid].matchStats[mkey] = {
-          played: true,
-          buts:   +st.buts   || 0,
-          passes: +st.passes || 0,
-          note:   st.note === '' ? null : +st.note,
+          played:  true,
+          buts:    +st.buts    || 0,
+          passes:  +st.passes  || 0,
+          minutes: +st.minutes || 0,
+          note:    st.note === '' ? null : +st.note,
           match: {
             date: modal.match.date,
             homeTeam: modal.match.homeTeam, awayTeam: modal.match.awayTeam,

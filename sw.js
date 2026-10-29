@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.5.2-top-buteurs-passeurs-notes-depuis-matchStats';
+const CACHE_VERSION = 'v8.5.3-minutes-photo-dans-grille-stats';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

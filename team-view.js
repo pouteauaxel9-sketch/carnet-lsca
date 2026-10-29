@@ -233,21 +233,22 @@
     const teamPlayerNames = teamPlayers(cat, team);
     const leadersNew = teamPlayerNames.map(pid => {
       const stats = data[pid]?.matchStats || {};
-      let played = 0, buts = 0, passes_d = 0, notes = [];
+      let played = 0, buts = 0, passes_d = 0, minutes = 0, notes = [];
       Object.keys(stats).forEach(mk => {
         // Si on a la liste FFF, on filtre sur les matchs de cette équipe
         if (myMatchKeys.size && !myMatchKeys.has(mk)) return;
         const s = stats[mk];
         if (s?.played === false) return;
         played++;
-        buts     += (+s.buts   || 0);
-        passes_d += (+s.passes || 0);
+        buts     += (+s.buts    || 0);
+        passes_d += (+s.passes  || 0);
+        minutes  += (+s.minutes || 0);
         if (s.note != null && s.note !== '' && !isNaN(+s.note)) notes.push(+s.note);
       });
       return {
         pid,
         matches:   played,
-        buts, passes_d, minutes: 0, notes,
+        buts, passes_d, minutes, notes,
         noteAvg:   notes.length ? +(notes.reduce((a, b) => a + b, 0) / notes.length).toFixed(2) : null,
         implications: buts + passes_d,
       };
