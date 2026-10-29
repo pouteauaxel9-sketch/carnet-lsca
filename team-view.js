@@ -215,24 +215,69 @@
       else break;
     }
 
-    // Leaders : top buteurs / passeurs / notes
-    const perPlayer = new Map();
-    matches.forEach(m => {
-      m.obs.forEach(o => {
-        if (!perPlayer.has(o.pid)) perPlayer.set(o.pid, { matches: 0, buts: 0, passes_d: 0, minutes: 0, notes: [] });
-        const r = perPlayer.get(o.pid);
-        r.matches++;
-        r.buts     += Number(o.stats?.buts) || 0;
-        r.passes_d += Number(o.stats?.passes_d) || 0;
-        r.minutes  += Number(o.temps_jeu) || 0;
-        if (o.note_match != null && o.note_match !== '') r.notes.push(Number(o.note_match));
+    // Leaders : agrégation des matchStats (saisis via le modal "Stats du match"
+    // sur chaque match FFF cliquable). On ne prend QUE les stats des matchs
+    // de cette équipe (via la liste des matchs FFF scrapés, matchKey = date|home|away).
+    //
+    // Fallback legacy : si pas encore de matchStats, on garde les anciennes
+    // observations post-match pour ne rien casser.
+    const CFG = window.TEAM_SOURCE_CONFIG || {};
+    const teamKey = Object.keys(CFG).find(k => CFG[k].teamLabel === team);
+    const teamFffMatches = (teamKey && window.appState?.fffStandingsByCat?.[cat]?.[teamKey]?.matches) || [];
+    const myMatchKeys = new Set();
+    if (window.MatchStatsModule?.matchKey) {
+      teamFffMatches.forEach(m => myMatchKeys.add(window.MatchStatsModule.matchKey(m)));
+    }
+
+    const data = window.appState?.data?.[cat] || {};
+    const teamPlayerNames = teamPlayers(cat, team);
+    const leadersNew = teamPlayerNames.map(pid => {
+      const stats = data[pid]?.matchStats || {};
+      let played = 0, buts = 0, passes_d = 0, notes = [];
+      Object.keys(stats).forEach(mk => {
+        // Si on a la liste FFF, on filtre sur les matchs de cette équipe
+        if (myMatchKeys.size && !myMatchKeys.has(mk)) return;
+        const s = stats[mk];
+        if (s?.played === false) return;
+        played++;
+        buts     += (+s.buts   || 0);
+        passes_d += (+s.passes || 0);
+        if (s.note != null && s.note !== '' && !isNaN(+s.note)) notes.push(+s.note);
       });
+      return {
+        pid,
+        matches:   played,
+        buts, passes_d, minutes: 0, notes,
+        noteAvg:   notes.length ? +(notes.reduce((a, b) => a + b, 0) / notes.length).toFixed(2) : null,
+        implications: buts + passes_d,
+      };
     });
-    const leaders = Array.from(perPlayer.entries()).map(([pid, r]) => ({
-      pid, ...r,
-      noteAvg: r.notes.length ? +(r.notes.reduce((a, b) => a + b, 0) / r.notes.length).toFixed(2) : null,
-      implications: r.buts + r.passes_d,
-    }));
+
+    // Legacy fallback si rien de nouveau
+    const hasNewStats = leadersNew.some(l => l.matches > 0 || l.buts > 0 || l.passes_d > 0 || l.noteAvg != null);
+    let leaders;
+    if (hasNewStats) {
+      leaders = leadersNew;
+    } else {
+      // Ancien système (observations)
+      const perPlayer = new Map();
+      matches.forEach(m => {
+        m.obs.forEach(o => {
+          if (!perPlayer.has(o.pid)) perPlayer.set(o.pid, { matches: 0, buts: 0, passes_d: 0, minutes: 0, notes: [] });
+          const r = perPlayer.get(o.pid);
+          r.matches++;
+          r.buts     += Number(o.stats?.buts) || 0;
+          r.passes_d += Number(o.stats?.passes_d) || 0;
+          r.minutes  += Number(o.temps_jeu) || 0;
+          if (o.note_match != null && o.note_match !== '') r.notes.push(Number(o.note_match));
+        });
+      });
+      leaders = Array.from(perPlayer.entries()).map(([pid, r]) => ({
+        pid, ...r,
+        noteAvg: r.notes.length ? +(r.notes.reduce((a, b) => a + b, 0) / r.notes.length).toFixed(2) : null,
+        implications: r.buts + r.passes_d,
+      }));
+    }
 
     const topButeurs   = leaders.filter(l => l.buts > 0).sort((a, b) => b.buts - a.buts).slice(0, 5);
     const topPasseurs  = leaders.filter(l => l.passes_d > 0).sort((a, b) => b.passes_d - a.passes_d).slice(0, 5);
