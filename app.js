@@ -188,12 +188,21 @@ window.JDATA      = JDATA;
 window.CLUB_DATA  = CLUB_DATA;
 window.TEAM_SOURCE_CONFIG = TEAM_SOURCE_CONFIG;
 
-// Applique les overrides URLs FFF de l'utilisateur (depuis le modal Config FFF)
-// pour que l'app utilise les mêmes URLs que celles qu'il a saisies dans l'UI.
+// Applique les overrides URLs FFF de l'utilisateur (depuis le modal Config FFF).
+// Nouveau format : overrides[key] = [{ label, url }, ...] (array de phases)
+// Legacy    : overrides[key] = "url" (string unique)
 try {
   const overrides = JSON.parse(localStorage.getItem('cfb6_fff_urls_override') || '{}') || {};
   Object.keys(overrides).forEach(key => {
-    if (TEAM_SOURCE_CONFIG[key]) TEAM_SOURCE_CONFIG[key].fffUrl = overrides[key];
+    if (!TEAM_SOURCE_CONFIG[key]) return;
+    const v = overrides[key];
+    if (Array.isArray(v) && v.length) {
+      // La 1ère phase sert d'URL "défaut" pour l'app (le reste sera dans standings.json via scraper)
+      TEAM_SOURCE_CONFIG[key].fffUrl    = v[0].url || '';
+      TEAM_SOURCE_CONFIG[key].fffPhases = v;
+    } else if (typeof v === 'string' && v.trim()) {
+      TEAM_SOURCE_CONFIG[key].fffUrl = v.trim();
+    }
   });
 } catch (_) { /* ignore */ }
 window.POSTES     = POSTES;
@@ -717,6 +726,10 @@ async function ensureFffStandings(cat) {
   if (!window.FffApiModule) return;
   state.fffFetchingFor = state.fffFetchingFor || {};
   if (state.fffFetchingFor[cat]) return;      // déjà en cours
+  // Charge le JSON brut une fois pour toutes (pour accéder aux phases dans team-view)
+  if (!state.__standingsJsonData && window.FffApiModule.loadStandingsJson) {
+    state.__standingsJsonData = await window.FffApiModule.loadStandingsJson();
+  }
   const teams = getConfiguredTeamsForCategory(cat).filter(t => t.fffUrl);
   if (!teams.length) return;
   // Si on a déjà toutes les data en mémoire (ou en cache localStorage valide), rien à faire

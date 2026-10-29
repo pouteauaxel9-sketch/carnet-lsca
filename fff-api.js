@@ -223,10 +223,66 @@
     return results;
   }
 
+  /* ── Multi-phases : lecture directe depuis data/standings.json ─── */
+
+  // Retourne la liste des phases d'une équipe telle qu'elle apparaît dans
+  // le JSON scrapé. [{label, standings, matches, pouleName, categoryLabel}, ...]
+  async function listPhasesForTeam(teamKey) {
+    const data = await loadStandingsJson();
+    const entry = data?.teams?.[teamKey];
+    if (!entry) return [];
+    if (entry.phases && typeof entry.phases === 'object') {
+      return Object.keys(entry.phases).map(label => ({
+        label,
+        ...entry.phases[label],
+      }));
+    }
+    if (entry.standings) {
+      return [{
+        label: 'Phase 1', url: entry.url,
+        standings: entry.standings, matches: entry.matches || [],
+        pouleName: entry.pouleName || '', categoryLabel: entry.categoryLabel || '',
+      }];
+    }
+    return [];
+  }
+
+  function getDefaultPhaseLabel(teamEntry) {
+    if (!teamEntry) return null;
+    if (teamEntry.defaultPhase && teamEntry.phases?.[teamEntry.defaultPhase]) {
+      return teamEntry.defaultPhase;
+    }
+    if (teamEntry.phases) {
+      const labels = Object.keys(teamEntry.phases);
+      return labels[labels.length - 1] || null;
+    }
+    return null;
+  }
+
+  async function getPhaseData(teamKey, phaseLabel) {
+    const data = await loadStandingsJson();
+    const entry = data?.teams?.[teamKey];
+    if (!entry) return null;
+    const label = phaseLabel || getDefaultPhaseLabel(entry);
+    if (entry.phases?.[label]) {
+      return { label, ...entry.phases[label] };
+    }
+    if (entry.standings) {
+      return {
+        label: label || 'Phase 1', url: entry.url,
+        standings: entry.standings, matches: entry.matches || [],
+        pouleName: entry.pouleName || '', categoryLabel: entry.categoryLabel || '',
+      };
+    }
+    return null;
+  }
+
   /* ── Exports ──────────────────────────────────────────────────── */
 
   window.FffApiModule = {
     parseUrl, fetchStandings, fetchStandingsForTeams, clearCache,
-    buildApiUrl, normalize, // exposés pour debug
+    buildApiUrl, normalize,
+    listPhasesForTeam, getPhaseData, getDefaultPhaseLabel,
+    loadStandingsJson,
   };
 })();

@@ -483,14 +483,45 @@
       ? (teamConfig.division || teamConfig.officialName || teamLabel)
       : teamLabel;
 
+    // Détecte toutes les phases disponibles pour cette équipe + choix actif
+    const standingsData = window.appState?.__standingsJsonData || {};
+    const teamEntryJson = standingsData.teams?.[teamKey];
+    const availablePhases = teamEntryJson?.phases
+      ? Object.keys(teamEntryJson.phases)
+      : (teamEntryJson?.standings ? ['Phase 1'] : []);
+    const PHASE_SEL_KEY = 'cfb6_fff_phase_sel';
+    let selectedPhases = {};
+    try { selectedPhases = JSON.parse(localStorage.getItem(PHASE_SEL_KEY) || '{}') || {}; } catch (_) {}
+    const defaultPhase = teamEntryJson?.defaultPhase
+                      || availablePhases[availablePhases.length - 1]
+                      || '';
+    const activePhase = (selectedPhases[teamKey] && availablePhases.includes(selectedPhases[teamKey]))
+      ? selectedPhases[teamKey]
+      : defaultPhase;
+
     let standings = [];
     let fffMatches = [];                 // matchs scrapés depuis FFF (si dispo)
     let pouleNameFromFff = '';
     if (teamConfig && teamKey) {
       const fffCache = window.appState?.fffStandingsByCat?.[cat] || {};
       const entry   = fffCache[teamKey];
-      if (entry && Array.isArray(entry.standings) && entry.standings.length) {
-        standings = entry.standings.map(row => ({
+
+      // Si l'entrée a plusieurs phases → on prend celle active
+      let effectiveStandings = entry?.standings;
+      let effectiveMatches   = entry?.matches;
+      let effectivePouleName = entry?.pouleName;
+      if (teamEntryJson?.phases && activePhase) {
+        const phaseData = teamEntryJson.phases[activePhase];
+        if (phaseData?.standings) {
+          effectiveStandings = phaseData.standings;
+          effectiveMatches   = phaseData.matches || [];
+          effectivePouleName = phaseData.pouleName || '';
+        }
+      }
+      const effectiveEntry = { standings: effectiveStandings, matches: effectiveMatches, pouleName: effectivePouleName };
+
+      if (effectiveStandings && effectiveStandings.length) {
+        standings = effectiveStandings.map(row => ({
           rank:    row.rank,
           team:    row.team,
           points:  row.pts,
@@ -499,14 +530,14 @@
           draw:    row.draw,
           lost:    row.lost,
           diff:    row.diff,
-          competition: compLabel + (entry.pouleName ? ' — ' + entry.pouleName : ''),
+          teamCode: row.teamCode,
+          competition: compLabel + (effectivePouleName ? ' — ' + effectivePouleName : '') + (activePhase ? ' · ' + activePhase : ''),
           competitionLevel: 'district',
           isOurTeam:  row.team === teamConfig.officialName
                    || /lsca|louverne/i.test(row.team),
         }));
-        pouleNameFromFff = entry.pouleName || '';
+        pouleNameFromFff = effectivePouleName || '';
       } else if (teamConfig.fffUrl) {
-        // Pas encore chargé : placeholder "chargement"
         const isFetching = window.appState?.fffFetchingFor?.[cat];
         standings = [{
           rank: isFetching ? '…' : '-',
@@ -518,10 +549,10 @@
         }];
       }
       // Matchs FFF filtrés sur notre équipe (via code club ou nom)
-      if (entry && Array.isArray(entry.matches) && entry.matches.length) {
+      if (Array.isArray(effectiveMatches) && effectiveMatches.length) {
         const ourCode  = standings.find(r => r.isOurTeam)?.teamCode;
         const ourLabel = teamConfig.officialName || '';
-        fffMatches = entry.matches.filter(m =>
+        fffMatches = effectiveMatches.filter(m =>
           m.homeCode === ourCode || m.awayCode === ourCode
           || (ourLabel && (m.homeTeam === ourLabel || m.awayTeam === ourLabel))
           || /lsca|louverne/i.test(m.homeTeam) || /lsca|louverne/i.test(m.awayTeam)
@@ -591,12 +622,27 @@
         </div>
       </section>` : '';
 
-    // Si on a des matchs FFF, on masque les cartes "obs." pour éviter la double info.
     const hasFffMatches = fffMatches.length > 0;
+
+    // Sélecteur de phase (dropdown + onglets) uniquement si > 1 phase
+    const phaseSelector = (availablePhases.length > 1) ? `
+      <div class="fff-phase-switcher">
+        <span class="fff-phase-label">📅 Phase :</span>
+        <div class="fff-phase-tabs" role="tablist">
+          ${availablePhases.map(p => `
+            <button class="fff-phase-tab ${p === activePhase ? 'on' : ''}" type="button"
+                    role="tab" aria-selected="${p === activePhase}"
+                    data-fff-phase="${h(p)}" data-fff-team-key="${h(teamKey || '')}">
+              ${h(p)}
+            </button>`).join('')}
+        </div>
+      </div>
+    ` : '';
 
     return `
       <div class="team-fff-section">
         <h3 class="team-section-title">📡 Données FFF</h3>
+        ${phaseSelector}
         <div class="team-fff-grid">
           ${standings.length ? utils.renderStandingsCard(standings) : ''}
           ${fffMatchesCard}
@@ -708,6 +754,21 @@ function renderEffectifCard(players, cat) {
   // Elle écrasait la bonne (ligne ~362) qui filtre par équipe spécifique,
   // ce qui faisait apparaître TOUS les classements des équipes de la cat.
   // Désormais seule la version plus haut est utilisée.
+
+  // Handler global : clic sur un onglet de phase FFF → mémorise + re-render
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-fff-phase]');
+    if (!btn) return;
+    const phase = btn.dataset.fffPhase;
+    const key   = btn.dataset.fffTeamKey;
+    if (!key) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem('cfb6_fff_phase_sel') || '{}');
+      stored[key] = phase;
+      localStorage.setItem('cfb6_fff_phase_sel', JSON.stringify(stored));
+    } catch (_) {}
+    window.appUtils?.renderAll?.();
+  });
 
   // Bloc "Comparaison Equipes de U13" supprimé en v7.8.2 — données issues
   // d'observations de la saison précédente, conflit avec les classements FFF live.

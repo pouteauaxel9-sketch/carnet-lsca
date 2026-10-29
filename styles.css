@@ -10149,6 +10149,44 @@ body.season-transition-active { overflow: hidden; }
   letter-spacing: .3px;
 }
 
+/* ── Modal Config FFF — multi-phases par équipe ── */
+.cfg-fff-team {
+  margin-bottom: 16px; padding: 12px;
+  border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;
+}
+.cfg-fff-team-head { margin-bottom: 10px; font-size: 13px; }
+.cfg-fff-phase-row {
+  display: grid; grid-template-columns: 130px 1fr 36px;
+  gap: 6px; margin-bottom: 6px; align-items: center;
+}
+.cfg-fff-phase-label  { font-size: 12px; font-weight: 600; }
+.cfg-fff-phase-url    { font-family: monospace; font-size: 11px; }
+.cfg-fff-phase-del    { padding: 4px 8px; font-size: 14px; }
+.cfg-fff-add-phase    { margin-top: 4px; font-size: 12px; padding: 4px 10px; }
+
+/* ── Sélecteur de phase FFF (Phase 1 / Phase 2 / …) ── */
+.fff-phase-switcher {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 0 0 12px; padding: 6px 10px;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+}
+.fff-phase-label {
+  font-size: 12px; font-weight: 700; color: #475569;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.fff-phase-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.fff-phase-tab {
+  padding: 6px 14px; background: #fff;
+  border: 1px solid #cbd5e1; border-radius: 8px;
+  cursor: pointer; transition: all .12s;
+  font-size: 12px; font-weight: 600; color: #475569;
+}
+.fff-phase-tab:hover { border-color: #94a3b8; color: #0f172a; }
+.fff-phase-tab.on {
+  background: #009640; border-color: #006e2f; color: #fff;
+  box-shadow: 0 2px 6px rgba(0,150,64,0.25);
+}
+
 /* ── Grid 2 colonnes pour section FFF Données (classement + matchs) ── */
 .team-fff-grid {
   display: grid;

@@ -164,6 +164,43 @@ function normalizeMatch(m) {
 
 /* ── Main ─────────────────────────────────────────── */
 
+// Normalise les phases d'une équipe. Supporte 2 formats :
+//   { url: "..." }                                                ← legacy, 1 phase par défaut
+//   { phases: [{ label: "Phase 1", url: "..." }, ...] }           ← nouveau multi-phases
+function normalizeTeamPhases(team) {
+  if (Array.isArray(team.phases) && team.phases.length) {
+    return team.phases
+      .map(p => ({ label: (p.label || '').trim() || 'Phase', url: (p.url || '').trim() }))
+      .filter(p => p.url);
+  }
+  if (team.url) return [{ label: 'Phase 1', url: team.url }];
+  return [];
+}
+
+async function scrapeOnePhase(parsed) {
+  const json = await fetchStanding(parsed);
+  const rows = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
+             : Array.isArray(json) ? json
+             : [];
+  const standings  = rows.map(normalizeRow).sort((a, b) => (a.rank || 99) - (b.rank || 99));
+  const firstPoule = rows[0]?.poule;
+
+  // Matchs (best effort)
+  let matches = [];
+  try {
+    const rawMatches = await fetchMatches(parsed);
+    matches = rawMatches.map(normalizeMatch)
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  } catch (_) { /* pas bloquant */ }
+
+  return {
+    pouleName:     firstPoule?.name || '',
+    categoryLabel: rows[0]?.equipe?.category_label || '',
+    standings,
+    matches,
+  };
+}
+
 async function main() {
   if (!fs.existsSync(URLS_FILE)) {
     console.error('✗ Fichier config manquant :', URLS_FILE);
@@ -183,52 +220,53 @@ async function main() {
 
   let ok = 0, fail = 0;
   for (const key of keys) {
-    const team = teams[key];
-    console.log(`→ ${key} (${team.label || ''})`);
-    const parsed = parseUrl(team.url);
-    if (!parsed) {
-      console.error(`  ✗ URL invalide : ${team.url}`);
-      result.teams[key] = { label: team.label || key, url: team.url, error: 'URL invalide' };
-      fail++;
-      continue;
-    }
-    try {
-      // Classement
-      const json = await fetchStanding(parsed);
-      const rows = Array.isArray(json?.['hydra:member']) ? json['hydra:member']
-                 : Array.isArray(json) ? json
-                 : [];
-      const standings  = rows.map(normalizeRow).sort((a, b) => (a.rank || 99) - (b.rank || 99));
-      const firstPoule = rows[0]?.poule;
+    const team   = teams[key];
+    const phases = normalizeTeamPhases(team);
+    console.log(`→ ${key} (${team.label || ''}) · ${phases.length} phase(s)`);
 
-      // Matchs (best effort, pas bloquant)
-      let matches = [];
-      try {
-        const rawMatches = await fetchMatches(parsed);
-        matches = rawMatches.map(normalizeMatch)
-          .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-        console.log(`  ✓ ${matches.length} matchs récupérés`);
-      } catch (e) {
-        console.warn(`  (pas de matchs : ${e.message})`);
+    const teamResult = {
+      label:        team.label || key,
+      phases:       {},
+      defaultPhase: '',
+    };
+
+    for (const phase of phases) {
+      console.log(`  → ${phase.label}`);
+      const parsed = parseUrl(phase.url);
+      if (!parsed) {
+        console.error(`    ✗ URL invalide : ${phase.url}`);
+        teamResult.phases[phase.label] = { url: phase.url, error: 'URL invalide' };
+        fail++;
+        continue;
       }
-
-      result.teams[key] = {
-        label:         team.label || key,
-        url:           team.url,
-        pouleName:     firstPoule?.name || '',
-        categoryLabel: rows[0]?.equipe?.category_label || '',
-        standings,
-        matches,
-      };
-      console.log(`  ✓ ${standings.length} équipes au classement (poule : ${firstPoule?.name || '?'})`);
-      ok++;
-    } catch (e) {
-      console.error(`  ✗ Échec : ${e.message}`);
-      result.teams[key] = { label: team.label || key, url: team.url, error: e.message };
-      fail++;
+      try {
+        const data = await scrapeOnePhase(parsed);
+        teamResult.phases[phase.label] = { url: phase.url, ...data };
+        console.log(`    ✓ ${data.standings.length} équipes · ${data.matches.length} matchs (poule : ${data.pouleName || '?'})`);
+        ok++;
+      } catch (e) {
+        console.error(`    ✗ Échec : ${e.message}`);
+        teamResult.phases[phase.label] = { url: phase.url, error: e.message };
+        fail++;
+      }
+      await new Promise(r => setTimeout(r, 400));
     }
-    // Petit délai entre équipes pour rester courtois
-    await new Promise(r => setTimeout(r, 500));
+
+    // Phase par défaut = la DERNIÈRE phase valide listée dans la config
+    const validPhases = phases.filter(p => teamResult.phases[p.label]?.standings?.length);
+    teamResult.defaultPhase = (validPhases[validPhases.length - 1] || phases[phases.length - 1])?.label || '';
+
+    // Rétrocompat : expose la phase par défaut à la racine (ancien format {standings, matches})
+    const def = teamResult.phases[teamResult.defaultPhase];
+    if (def?.standings) {
+      teamResult.url           = def.url;
+      teamResult.pouleName     = def.pouleName;
+      teamResult.categoryLabel = def.categoryLabel;
+      teamResult.standings     = def.standings;
+      teamResult.matches       = def.matches;
+    }
+
+    result.teams[key] = teamResult;
   }
 
   fs.mkdirSync(path.dirname(OUTPUT_FILE), { recursive: true });

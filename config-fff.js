@@ -49,11 +49,28 @@
   // modal = { stage: 'edit' | 'copy', edits: { teamKey: url } }
 
   function open() {
+    // Nouvelle structure : edits = { teamKey: [{ label, url }, ...] }
     modal = { stage: 'edit', edits: {} };
-    // Préremplir les edits avec les URLs actuelles
-    const over = loadOverrides();
+    const over = loadOverrides();          // peut être au format string (legacy) ou array
+    const standingsJson = window.appState?.__standingsJsonData || {};
     Object.keys(CFG()).forEach(key => {
-      modal.edits[key] = over[key] || CFG()[key]?.fffUrl || '';
+      let phases;
+      if (over[key]) {
+        // Nouvelle structure override : array de {label,url}
+        if (Array.isArray(over[key])) phases = over[key].slice();
+        else phases = [{ label: 'Phase 1', url: String(over[key]) }];
+      } else if (standingsJson.teams?.[key]?.phases) {
+        // Depuis le JSON scrapé (phases connues)
+        phases = Object.keys(standingsJson.teams[key].phases).map(label => ({
+          label,
+          url: standingsJson.teams[key].phases[label].url || '',
+        }));
+      } else if (CFG()[key]?.fffUrl) {
+        phases = [{ label: 'Phase 1', url: CFG()[key].fffUrl }];
+      } else {
+        phases = [];
+      }
+      modal.edits[key] = phases;
     });
     render();
   }
@@ -117,18 +134,34 @@
             <div style="padding:12px 14px">
               ${byCat[cat].map(key => {
                 const team = CFG_LIST[key];
-                const current = modal.edits[key] || '';
-                const hasUrl = !!current.trim();
+                const phases = modal.edits[key] || [];
+                const hasAny = phases.some(p => (p.url || '').trim());
                 return `
-                  <div style="margin-bottom:12px">
-                    <label style="display:block;font-weight:600;font-size:13px;margin-bottom:4px">
-                      ${hasUrl ? '✅' : '⚪'} ${h(team.teamLabel || key)}
+                  <div class="cfg-fff-team">
+                    <div class="cfg-fff-team-head">
+                      ${hasAny ? '✅' : '⚪'} <strong>${h(team.teamLabel || key)}</strong>
                       <span style="color:#94a3b8;font-weight:400;font-size:11px;margin-left:6px">${h(team.division || '')}</span>
-                    </label>
-                    <input type="url" class="field-input" style="width:100%;font-family:monospace;font-size:12px"
-                           placeholder="https://mayenne.fff.fr/competitions?tab=ranking&id=XXX&phase=X&poule=X&type=ch"
-                           value="${h(current)}"
-                           data-cfg-fff-action="edit-url" data-key="${h(key)}">
+                    </div>
+                    ${phases.map((p, idx) => `
+                      <div class="cfg-fff-phase-row">
+                        <input type="text" class="field-input cfg-fff-phase-label"
+                               placeholder="Phase 1"
+                               value="${h(p.label || '')}"
+                               data-cfg-fff-action="edit-phase-label"
+                               data-key="${h(key)}" data-idx="${idx}">
+                        <input type="url" class="field-input cfg-fff-phase-url"
+                               placeholder="https://mayenne.fff.fr/competitions?tab=ranking&id=XXX&phase=X&poule=X&type=ch"
+                               value="${h(p.url || '')}"
+                               data-cfg-fff-action="edit-phase-url"
+                               data-key="${h(key)}" data-idx="${idx}">
+                        <button class="btn-ghost cfg-fff-phase-del" type="button" title="Supprimer cette phase"
+                                data-cfg-fff-action="del-phase"
+                                data-key="${h(key)}" data-idx="${idx}">🗑</button>
+                      </div>`).join('')}
+                    <button class="btn-ghost cfg-fff-add-phase" type="button"
+                            data-cfg-fff-action="add-phase" data-key="${h(key)}">
+                      + Ajouter une phase
+                    </button>
                   </div>`;
               }).join('')}
             </div>
@@ -153,9 +186,12 @@
       teams: {},
     };
     Object.keys(CFG_LIST).forEach(key => {
-      const url = (modal.edits[key] || '').trim();
-      if (!url) return;
-      payload.teams[key] = { label: CFG_LIST[key].teamLabel || key, url };
+      const phases = (modal.edits[key] || []).filter(p => (p.url || '').trim());
+      if (!phases.length) return;
+      payload.teams[key] = {
+        label: CFG_LIST[key].teamLabel || key,
+        phases: phases.map(p => ({ label: (p.label || '').trim() || 'Phase', url: p.url.trim() })),
+      };
     });
     const json = JSON.stringify(payload, null, 2);
 
@@ -192,16 +228,38 @@
     if (!act) return false;
 
     if (act === 'close') { close(); return true; }
-    if (act === 'edit-url') {
+    if (act === 'edit-phase-label' || act === 'edit-phase-url') {
       const key = target.dataset.key;
-      if (key) modal.edits[key] = target.value;
+      const idx = parseInt(target.dataset.idx, 10);
+      if (!key || isNaN(idx)) return true;
+      modal.edits[key] = modal.edits[key] || [];
+      modal.edits[key][idx] = modal.edits[key][idx] || { label: '', url: '' };
+      if (act === 'edit-phase-label') modal.edits[key][idx].label = target.value;
+      else                            modal.edits[key][idx].url   = target.value;
+      return true;
+    }
+    if (act === 'add-phase') {
+      const key = target.dataset.key;
+      if (!key) return true;
+      modal.edits[key] = modal.edits[key] || [];
+      const n = modal.edits[key].length + 1;
+      modal.edits[key].push({ label: 'Phase ' + n, url: '' });
+      render();
+      return true;
+    }
+    if (act === 'del-phase') {
+      const key = target.dataset.key;
+      const idx = parseInt(target.dataset.idx, 10);
+      if (!key || isNaN(idx)) return true;
+      modal.edits[key].splice(idx, 1);
+      render();
       return true;
     }
     if (act === 'save') {
       const over = {};
       Object.keys(modal.edits).forEach(k => {
-        const v = (modal.edits[k] || '').trim();
-        if (v) over[k] = v;
+        const phases = (modal.edits[k] || []).filter(p => (p.url || '').trim());
+        if (phases.length) over[k] = phases.map(p => ({ label: (p.label || '').trim() || 'Phase', url: p.url.trim() }));
       });
       saveOverrides(over);
       utils().showToast?.('✅ Config enregistrée. Pour que le scraper utilise ces URLs, copie le JSON et pousse-le sur GitHub.');
@@ -232,10 +290,11 @@
     if (handleAction(t)) e.preventDefault();
   });
 
-  // Hook global input (pour l'édition d'URL en temps réel)
+  // Hook global input (pour l'édition temps réel)
   document.addEventListener('input', e => {
     const t = e.target;
-    if (t?.dataset?.cfgFffAction === 'edit-url') handleAction(t);
+    const act = t?.dataset?.cfgFffAction;
+    if (act === 'edit-url' || act === 'edit-phase-label' || act === 'edit-phase-url') handleAction(t);
   });
 
   /* ── Exports ───────────────────────────────────────────── */
