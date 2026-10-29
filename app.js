@@ -2670,6 +2670,46 @@ document.addEventListener('click', event => {
     else showToast('Module config FFF indisponible');
     return;
   }
+  if (action === 'clear-old-observations') {
+    toggleMoreMenu(false);
+    const seasonLabel = state.season || '?';
+    let totalObs = 0, totalPlayers = 0;
+    Object.values(state.data || {}).forEach(catData => {
+      Object.values(catData || {}).forEach(p => {
+        const list = p?.observations?.[state.season];
+        if (Array.isArray(list) && list.length) { totalObs += list.length; totalPlayers++; }
+      });
+    });
+    if (!totalObs) {
+      showToast('Aucune observation à nettoyer pour ' + seasonLabel);
+      return;
+    }
+    const ok = confirm(
+      '⚠️ Supprimer définitivement TOUTES les observations post-match ' +
+      'de la saison ' + seasonLabel + ' ?\n\n' +
+      '• ' + totalObs + ' observations seront effacées (sur ' + totalPlayers + ' joueurs)\n' +
+      '• Les stats de match saisies via la nouvelle grille (matchStats) sont CONSERVÉES\n' +
+      '• Les saisons précédentes ne sont pas touchées\n\n' +
+      'Cette action est irréversible (sauf si tu as un export JSON de secours).'
+    );
+    if (!ok) return;
+    Object.keys(state.data || {}).forEach(cat => {
+      Object.keys(state.data[cat] || {}).forEach(pid => {
+        const p = state.data[cat][pid];
+        if (p?.observations?.[state.season]) {
+          delete p.observations[state.season];
+          // Nettoyage : si observations devient vide, on retire la clé
+          if (p.observations && Object.keys(p.observations).length === 0) {
+            delete p.observations;
+          }
+        }
+      });
+    });
+    saveAppState();
+    renderAll();
+    showToast('🧹 ' + totalObs + ' observations ' + seasonLabel + ' supprimées');
+    return;
+  }
   if (action === 'trigger-import') {
     toggleMoreMenu(false);
     q('#import-file').click();
