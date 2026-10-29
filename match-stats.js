@@ -35,21 +35,56 @@
   }
 
   function listTeamPlayers(cat, teamLabel) {
-    // Tous les joueurs actifs de la catégorie assignés à cette équipe
-    // (ou tous les joueurs de la cat si team non renseigné dans profil)
+    // Retourne la liste à plat (ordre : équipe courante → autres équipes → non assignés)
+    return listTeamPlayersGrouped(cat, teamLabel).flatMap(g => g.players);
+  }
+
+  function listTeamPlayersGrouped(cat, teamLabel) {
     const data = state()?.data?.[cat] || {};
-    return Object.keys(data).filter(pid => {
+    const configTeams = (window.CLUB_DATA?.categories?.[cat]?.teams) || [];
+    const byTeam = {};
+    const unassigned = [];
+
+    Object.keys(data).forEach(pid => {
       const prof = data[pid]?.profil;
-      if (!prof || prof.left) return false;
-      // Match soit par team exact, soit on affiche tous (user cochera manuellement)
-      return !prof.team || prof.team === teamLabel || true;
-    }).sort((a, b) => {
+      if (!prof || prof.left) return;
+      const team = prof.team || '';
+      if (!team) { unassigned.push(pid); return; }
+      (byTeam[team] = byTeam[team] || []).push(pid);
+    });
+
+    const sortByName = arr => arr.sort((a, b) => {
       const pa = data[a]?.profil;
       const pb = data[b]?.profil;
       const na = ((pa?.prenom || '') + ' ' + (pa?.nom || a)).trim().toLowerCase();
       const nb = ((pb?.prenom || '') + ' ' + (pb?.nom || b)).trim().toLowerCase();
       return na.localeCompare(nb);
     });
+
+    const groups = [];
+    // 1) Équipe courante en premier
+    if (byTeam[teamLabel]) {
+      groups.push({ label: teamLabel, isCurrent: true, players: sortByName(byTeam[teamLabel]) });
+      delete byTeam[teamLabel];
+    }
+    // 2) Autres équipes configurées de la cat, dans l'ordre CLUB_DATA
+    configTeams.forEach(t => {
+      if (t === teamLabel) return; // déjà ajoutée
+      if (byTeam[t]?.length) {
+        groups.push({ label: t, isCurrent: false, players: sortByName(byTeam[t]) });
+        delete byTeam[t];
+      }
+    });
+    // 3) Équipes "exotiques" (team pas dans CLUB_DATA)
+    Object.keys(byTeam).forEach(t => {
+      groups.push({ label: t, isCurrent: false, players: sortByName(byTeam[t]) });
+    });
+    // 4) Non assignés en dernier
+    if (unassigned.length) {
+      groups.push({ label: 'Sans équipe assignée', isCurrent: false, players: sortByName(unassigned) });
+    }
+
+    return groups;
   }
 
   function playerDisplayName(cat, pid) {
@@ -175,7 +210,16 @@
                 <span>PASSES</span>
                 <span>NOTE /10</span>
               </div>
-              ${players.map(pid => renderPlayerRow(pid)).join('')}
+              ${listTeamPlayersGrouped(cat, modal.teamLabel).map(g => `
+                <div class="ms-group-head ${g.isCurrent ? 'ms-group-current' : ''}">
+                  <span class="ms-group-label">${g.isCurrent ? '🏆 ' : ''}${h(g.label)} <span class="ms-group-count">(${g.players.length})</span></span>
+                  <span class="ms-group-actions">
+                    <button class="ps-btn" type="button" data-ms-action="group-all" data-group="${h(g.label)}">Tout cocher</button>
+                    <button class="ps-btn" type="button" data-ms-action="group-none" data-group="${h(g.label)}">Tout décocher</button>
+                  </span>
+                </div>
+                ${g.players.map(pid => renderPlayerRow(pid)).join('')}
+              `).join('')}
             </div>
 
             <div class="ms-notes-block">
@@ -266,6 +310,19 @@
         modal.draft.stats[pid].played = val;
       });
       render();
+      return true;
+    }
+    if (act === 'group-all' || act === 'group-none') {
+      const val = act === 'group-all';
+      const groupName = target.dataset.group;
+      const grp = listTeamPlayersGrouped(modal.cat, modal.teamLabel).find(g => g.label === groupName);
+      if (grp) {
+        grp.players.forEach(pid => {
+          modal.draft.stats[pid] = modal.draft.stats[pid] || { played: false, buts: 0, passes: 0, note: '' };
+          modal.draft.stats[pid].played = val;
+        });
+        render();
+      }
       return true;
     }
     if (act === 'inc' || act === 'dec') {

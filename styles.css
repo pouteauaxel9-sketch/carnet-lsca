@@ -10246,6 +10246,24 @@ body.season-transition-active { overflow: hidden; }
 }
 .ms-row:last-child { border-bottom: 0; }
 .ms-row-on { opacity: 1; background: #fff; }
+
+/* En-tête de groupe d'équipe dans la grille stats */
+.ms-group-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px; gap: 10px;
+  background: #f1f5f9; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;
+  font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .4px; color: #475569;
+}
+.ms-group-head:first-child { border-top: 0; }
+.ms-group-head.ms-group-current {
+  background: linear-gradient(90deg, #dcfce7, #f0fdf4);
+  color: #166534;
+}
+.ms-group-label { display: flex; align-items: center; gap: 6px; }
+.ms-group-count { font-weight: 500; color: #94a3b8; margin-left: 4px; }
+.ms-group-current .ms-group-count { color: #16a34a; }
+.ms-group-actions { display: flex; gap: 4px; }
 .ms-cell { display: flex; align-items: center; gap: 4px; }
 .ms-cell-player { gap: 10px; font-weight: 600; cursor: pointer; }
 .ms-cell input[type=number] {
