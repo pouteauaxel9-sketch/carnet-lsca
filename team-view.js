@@ -197,22 +197,63 @@
 
     const matches = Array.from(byKey.values()).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-    let won = 0, draw = 0, lost = 0, gf = 0, ga = 0;
-    matches.forEach(m => {
-      if (m.result === 'W') won++;
-      else if (m.result === 'D') draw++;
-      else if (m.result === 'L') lost++;
-      if (m.ourGoals != null)  gf += m.ourGoals;
-      if (m.theirGoals != null) ga += m.theirGoals;
-    });
+    let won = 0, draw = 0, lost = 0, gf = 0, ga = 0, playedFromFff = null;
 
-    // Série en cours (matchs en partant du plus récent ; arrêter au premier autre résultat)
+    // PRIORITÉ : si on a des données FFF live pour cette équipe, on les utilise
+    // (évite de montrer les stats "fantômes" des anciennes observations non-scopées).
+    const CFG_s = window.TEAM_SOURCE_CONFIG || {};
+    const teamKey_s = Object.keys(CFG_s).find(k => CFG_s[k].teamLabel === team);
+    const fffEntry  = teamKey_s && window.appState?.fffStandingsByCat?.[cat]?.[teamKey_s];
+    const fffStandings = fffEntry?.standings || [];
+    const ourRow = fffStandings.find(r =>
+      (CFG_s[teamKey_s]?.officialName && r.team === CFG_s[teamKey_s].officialName) ||
+      /lsca|louverne/i.test(r.team || '')
+    );
+    if (ourRow) {
+      playedFromFff = ourRow.played || 0;
+      won  = ourRow.won  || 0;
+      draw = ourRow.draw || 0;
+      lost = ourRow.lost || 0;
+      gf   = ourRow.goalsFor  || 0;
+      ga   = ourRow.goalsAgst || 0;
+    } else {
+      // Fallback : stats depuis les anciennes observations (si pas de FFF)
+      matches.forEach(m => {
+        if (m.result === 'W') won++;
+        else if (m.result === 'D') draw++;
+        else if (m.result === 'L') lost++;
+        if (m.ourGoals != null)  gf += m.ourGoals;
+        if (m.theirGoals != null) ga += m.theirGoals;
+      });
+    }
+
+    // Série en cours : basée sur les matchs FFF (si dispo), sinon observations
     let streak = { kind: null, count: 0 };
-    for (const m of matches) {
-      if (!m.result) continue;
-      if (!streak.kind) { streak.kind = m.result; streak.count = 1; }
-      else if (streak.kind === m.result) streak.count++;
-      else break;
+    const fffMatchesForStreak = fffEntry?.matches || [];
+    if (fffMatchesForStreak.length) {
+      // Trier par date desc, ne garder que ceux de notre équipe avec score
+      const ourCode = ourRow?.teamCode;
+      const myMatches = fffMatchesForStreak
+        .filter(m => m.homeScore != null && m.awayScore != null)
+        .filter(m => m.homeCode === ourCode || m.awayCode === ourCode
+                  || /lsca|louverne/i.test(m.homeTeam) || /lsca|louverne/i.test(m.awayTeam))
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      for (const m of myMatches) {
+        const atHome = m.homeCode === ourCode || /lsca|louverne/i.test(m.homeTeam);
+        const myS = atHome ? m.homeScore : m.awayScore;
+        const opS = atHome ? m.awayScore : m.homeScore;
+        const r = myS > opS ? 'W' : myS < opS ? 'L' : 'D';
+        if (!streak.kind) { streak.kind = r; streak.count = 1; }
+        else if (streak.kind === r) streak.count++;
+        else break;
+      }
+    } else {
+      for (const m of matches) {
+        if (!m.result) continue;
+        if (!streak.kind) { streak.kind = m.result; streak.count = 1; }
+        else if (streak.kind === m.result) streak.count++;
+        else break;
+      }
     }
 
     // Leaders : agrégation des matchStats (saisis via le modal "Stats du match"
@@ -287,7 +328,7 @@
 
     return {
       matches,
-      played: matches.filter(m => m.result).length,
+      played: playedFromFff != null ? playedFromFff : matches.filter(m => m.result).length,
       won, draw, lost,
       gf, ga,
       goalDiff: gf - ga,
