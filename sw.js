@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.6.1-phases-config-affichees-avant-scrape';
+const CACHE_VERSION = 'v8.7.0-cleanup-observations-legacy';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -33,10 +33,8 @@ const STATIC_ASSETS = [
   './app.js',
   './auth-local.js',
   './evaluation-seance.js',
-  './observation-match.js',
   './roster.js',
   './import-licences.js',
-  './post-match.js',
   './excel-export.js',
   './team-view.js',
   './transverse-view.js',

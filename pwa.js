@@ -130,9 +130,7 @@
         state.view = view;
         window.appUtils?.renderAll?.();
       }
-      if (action === 'postmatch') {
-        window.PostMatchModule?.open?.(state.cat);
-      }
+      // action 'postmatch' supprimée en v8.7.0 (module post-match retiré)
     };
     setTimeout(apply, 200);
   });

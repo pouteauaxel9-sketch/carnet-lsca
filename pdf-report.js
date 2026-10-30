@@ -44,8 +44,7 @@
     });
 
     const seances = (pdata.seances?.[season] || [null, null, null]).slice(0, 3);
-    const observations = [...(pdata.observations?.[season] || [])]
-      .sort((a, b) => new Date(b.date_match) - new Date(a.date_match));
+    const observations = []; // v8.7.0 : observations post-match désactivées
 
     const score = _pScore(cat, pid, season);
     const level = _getLevel(score);

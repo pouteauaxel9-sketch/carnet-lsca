@@ -94,7 +94,7 @@
     if (!seasonStats) return { topButeurs: [], topPasseurs: [], topNotes: [] };
 
     const arr = players.map(p => {
-      const obs = state()?.data?.[cat]?.[p.name]?.observations?.[season] || [];
+      const obs = []; // v8.7.0 : observations post-match désactivées
       const s = seasonStats(obs);
       return { pid: p.name, stats: s };
     }).filter(r => r.stats && r.stats.matches > 0);

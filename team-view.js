@@ -72,10 +72,15 @@
 
   function teamMatches(cat, team, season) {
     if (!team) return [];
+    // v8.7.0 : teamMatches construit à partir des observations post-match retiré.
+    // Les matchs réels viennent maintenant du scrape FFF (state.fffStandingsByCat).
+    // Fonction conservée pour compat API (TeamModule.teamMatches reste exporté).
+    return [];
+    // eslint-disable-next-line no-unreachable
     const playerNames = teamPlayers(cat, team);
     const map = new Map();
     playerNames.forEach(pid => {
-      const obsList = state()?.data?.[cat]?.[pid]?.observations?.[season] || [];
+      const obsList = [];
       obsList.forEach(o => {
         // Filtre par team : si obs.team set et différent, on skip
         if (o.team && o.team !== team) return;
@@ -422,7 +427,6 @@
         <div class="team-toolbar">
           <button class="btn" type="button" data-action="back-teams">← Retour aux équipes</button>
           <div class="toolbar-right">
-            <button class="btn btn-primary" type="button" data-action="open-postmatch" data-cat="${cat}">+ Saisie post-match</button>
             <button class="btn" type="button" data-action="open-team-compo" data-team="${h(team)}">Composer l'équipe</button>
           </div>
         </div>

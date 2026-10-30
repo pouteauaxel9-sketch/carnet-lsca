@@ -62,12 +62,8 @@
     return wsum ? Math.round(total/wsum) : 0;
   }
   function lastObsDate(cat, pid, season) {
-    const obs = state()?.data?.[cat]?.[pid]?.observations?.[season] || [];
-    if (!obs.length) return null;
-    const sorted = [...obs].sort((a, b) =>
-      (b.date_match || '').localeCompare(a.date_match || '')
-    );
-    return sorted[0]?.date_match || null;
+    // v8.7.0 : lecture des observations post-match désactivée (migrées vers matchStats)
+    return null;
   }
   function daysSince(iso) {
     if (!iso) return Infinity;
@@ -108,7 +104,7 @@
         // Sans obs > 60j
         const last = lastObsDate(cat, pid, season);
         const ds = daysSince(last);
-        const obsCount = (state()?.data?.[cat]?.[pid]?.observations?.[season] || []).length;
+        const obsCount = 0; // v8.7.0 : lecture obs désactivée
         if (obsCount > 0 && ds > ALERT_DAYS && ds !== Infinity) {
           alerts.noObsLong.push({ cat, pid, days: ds, lastDate: last });
         }

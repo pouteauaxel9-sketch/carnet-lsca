@@ -1273,7 +1273,8 @@ function renderBirthdaysCard() {
 }
 
 function getLastObsDate(pid, season = state.season) {
-  const obs = state.data[state.cat]?.[pid]?.observations?.[season] || [];
+  // v8.7.0 : observations post-match désactivées
+  const obs = [];
   if (!obs.length) return null;
   const sorted = [...obs].sort((a, b) => new Date(b.date_match) - new Date(a.date_match));
   return sorted[0]?.date_match || null;
@@ -1742,13 +1743,16 @@ function renderPlayerView() {
   const profileTone = getPlayerTone(pid);
   const compareOptions = players().filter(player => player.name !== pid).map(player => `<option value="${h(player.name)}" ${state.comparePlayer === player.name ? 'selected' : ''}>${h(player.name)}</option>`).join('');
 
-  // 4 onglets (Jonglerie fusionnée dans Séances ; libellé Observations devient Matchs)
+  // 3 onglets (onglet "Matchs" supprimé en v8.7.0 — les stats match se gèrent
+  // via le modal qui s'ouvre au clic sur un match dans la carte "Calendrier FFF"
+  // de la vue équipe).
   const sectionTabs = [
     ['profil', 'Profil'],
     ['evaluation', 'Évaluation'],
     ['seance', 'Séances'],
-    ['observation', 'Matchs']
   ].map(([key, label]) => `<button class="stab ${state.selSection === key ? 'on' : ''}" type="button" data-action="set-section" data-section="${key}">${label}${key === 'evaluation' && score > 0 ? ' (' + score + '%)' : ''}</button>`).join('');
+  // Si l'ancienne sélection pointait sur 'observation' (section supprimée), on bascule sur profil
+  if (state.selSection === 'observation') state.selSection = 'profil';
 
   // Bandeau « lecture coach » permanent (toujours visible)
   const insights = getInsights(pid);
@@ -1771,7 +1775,7 @@ function renderPlayerView() {
   let body = '';
   if (state.selSection === 'profil') body = profileBody(pid);
   else if (state.selSection === 'seance') body = window.SeanceModule?.renderBody?.(pid) ?? '<p>Module séances non chargé.</p>';
-  else if (state.selSection === 'observation') body = window.ObsModule?.renderBody?.(pid) ?? '<p>Module observations non chargé.</p>';
+  // 'observation' retirée en v8.7.0
   else body = evaluationBody(pid);
 
   return `
@@ -1836,9 +1840,7 @@ function renderTeamListShell() {
             </button>
           `).join('')}
         </div>
-        <div class="toolbar-right">
-          <button class="btn btn-primary" type="button" data-action="open-postmatch" data-cat="${state.cat}">+ Saisie post-match</button>
-        </div>
+        <div class="toolbar-right"></div>
       </div>
       <div class="team-listing-hero">
         <div>
@@ -2484,7 +2486,6 @@ const MODULE_DISPATCHERS = [
   { dataAttr: 'obsAction',        module: 'ObsModule' },
   { dataAttr: 'educatorAction',   module: 'EducatorModule' },
   { dataAttr: 'rosterAction',     module: 'RosterModule' },
-  { dataAttr: 'postmatchAction',  module: 'PostMatchModule' },
   { dataAttr: 'attendanceAction', module: 'AttendanceModule' },
   { dataAttr: 'injuryAction',     module: 'InjuryModule' },
   { dataAttr: 'careerAction',     module: 'CareerModule' },
@@ -2822,11 +2823,8 @@ document.addEventListener('click', event => {
     return;
   }
 
-  // Saisie post-match
-  if (action === 'open-postmatch') {
-    window.PostMatchModule?.open?.(target.dataset.cat || state.cat);
-    return;
-  }
+  // (open-postmatch supprimé en v8.7.0 — stats de match se saisissent via le modal
+  //  qui s'ouvre au clic sur un match passé dans la carte "Calendrier FFF")
 
   // Tri tableau catégorie
   if (action === 'sort-cat-table') {

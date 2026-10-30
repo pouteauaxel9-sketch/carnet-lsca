@@ -137,7 +137,7 @@
     const rows = [];
     players.forEach(p => {
       const pid = p.name;
-      const obs = state()?.data?.[cat]?.[pid]?.observations?.[season] || [];
+      const obs = []; // v8.7.0 : observations post-match désactivées
       obs.forEach(o => {
         const row = {
           'Joueur': pid,
@@ -172,7 +172,7 @@
     if (!seasonStats) return XLSX().utils.json_to_sheet([{ Info: 'ObsModule indisponible' }]);
 
     const rows = players.map(p => {
-      const obs = state()?.data?.[cat]?.[p.name]?.observations?.[season] || [];
+      const obs = []; // v8.7.0 : observations post-match désactivées
       const s = seasonStats(obs);
       if (!s) {
         return { 'Joueur': p.name, 'Matchs': 0 };
@@ -206,7 +206,7 @@
       const pid = p.name;
       const data = state()?.data?.[cat]?.[pid] || {};
       const prof = data.profil || {};
-      const obs = (data.observations?.[season] || []);
+      const obs = []; // v8.7.0 : observations post-match désactivées
       const last = obs.slice().sort((a, b) => new Date(b.date_match) - new Date(a.date_match))[0];
 
       // progression vs N-1

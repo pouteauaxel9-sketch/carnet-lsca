@@ -91,7 +91,7 @@
 
   function detect(pid, cat = state()?.cat, season = state()?.season) {
     if (!cat || !season) return [];
-    const obs = state()?.data?.[cat]?.[pid]?.observations?.[season] || [];
+    const obs = []; // v8.7.0 : observations post-match désactivées
     const seasonStats = window.ObsModule?.seasonStats?.(obs);
     const tech = pAvgPct(cat, pid, 'technique', season);
     const tact = pAvgPct(cat, pid, 'tactique',  season);

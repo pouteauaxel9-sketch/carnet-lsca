@@ -57,7 +57,8 @@
     const seasons = SEASONS();
 
     const perSeason = seasons.map(season => {
-      const obs = state()?.data?.[cat]?.[pid]?.observations?.[season] || [];
+      // v8.7.0 : lecture des observations post-match désactivée (migrées vers matchStats)
+      const obs = [];
       const seances = state()?.data?.[cat]?.[pid]?.seances?.[season] || [];
       const stats = seasonStats ? seasonStats(obs) : null;
       const score = pScore(cat, pid, season);
