@@ -346,6 +346,15 @@ function schedulePersist(message = 'Modifications enregistrees') {
   }, SAVE_DELAY);
 }
 
+// flushPersist : force le save immédiat en annulant le debounce.
+// Utilisé par Mode Terrain au close() pour garantir qu'aucune saisie n'est perdue.
+function flushPersist(message = 'Modifications enregistrees') {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = null;
+  saveAppState();
+  updateSaveHints(message, true);
+}
+
 function updateSaveHints(text, saved = false) {
   qq('.save-hint').forEach(el => {
     el.textContent = text;
@@ -1165,6 +1174,43 @@ function renderCategoryAccessCard(categories) {
     </section>`;
 }
 
+// PROTECTION #3 : si une pré-séance du jour existe mais que le Mode Terrain
+// n'a pas été lancé (pas de startedAt), banner jaune bien visible pour éviter
+// que l'éducateur oublie de démarrer et perde ses saisies (cf. bug 03/11/2026).
+function renderPreseanceReminderBanner() {
+  try {
+    const store = JSON.parse(localStorage.getItem('cfb6_live_sessions_v1') || '{}');
+    const today = new Date().toISOString().slice(0, 10);
+    const pending = [];
+    Object.keys(store).forEach(cat => {
+      const s = store[cat]?.[today];
+      if (!s) return;
+      // Pré-séance remplie mais Mode Terrain jamais lancé
+      if (s.preparation && !s.startedAt) {
+        pending.push({ cat, label: (CAT_LABELS?.[cat] || cat).toUpperCase() });
+      }
+    });
+    if (!pending.length) return '';
+    const catList = pending.map(p => p.label).join(', ');
+    const firstCat = pending[0].cat;
+    return `
+      <div class="preseance-banner" style="background:#fef3c7;border:2px solid #f59e0b;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <span style="font-size:28px">⚠️</span>
+        <div style="flex:1;min-width:200px">
+          <strong style="color:#92400e;display:block;font-size:15px">Pré-séance prête (${h(catList)})</strong>
+          <span style="color:#78350f;font-size:13px">Pense à lancer le <strong>Mode Terrain</strong> au coup d'envoi — sinon jonglerie, objectifs et présences ne seront <u>pas</u> sauvegardés dans les bilans.</span>
+        </div>
+        <button class="btn" type="button" data-action="launch-terrain-from-banner" data-cat="${h(firstCat)}"
+                style="background:#dc2626;color:white;font-weight:700;border:none;padding:10px 16px;border-radius:8px;box-shadow:0 2px 8px rgba(220,38,38,.35)">
+          ⚽ Lancer Mode Terrain
+        </button>
+      </div>`;
+  } catch (e) {
+    console.warn('[preseance-banner]', e);
+    return '';
+  }
+}
+
 function renderDashboard() {
   const summary = getClubSummary();
   const categories = Object.keys(CLUB_DATA.categories);
@@ -1178,6 +1224,8 @@ function renderDashboard() {
 
   return `
     <section class="dashboard-shell">
+
+      ${renderPreseanceReminderBanner()}
 
       <!-- Switch catégorie prominent en haut du dashboard -->
       <nav class="dash-cat-switcher" role="tablist" aria-label="Choisir une catégorie">
@@ -2468,7 +2516,7 @@ function loadAll() {
 
 // Exposer les utilitaires pour les modules externes
 window.appUtils = {
-  h, q, qq, showToast, schedulePersist,
+  h, q, qq, showToast, schedulePersist, flushPersist,
   renderMain, renderAll, saveAppState,
   buildDashboardFeeds, renderStandingsCard,
 };
@@ -2798,6 +2846,18 @@ document.addEventListener('click', event => {
 
   if (action === 'live-training') {
     toggleMoreMenu(false);
+    window.LiveTrainingModule?.open?.();
+    return;
+  }
+
+  // PROTECTION #3 : lancement du Mode Terrain depuis le banner dashboard,
+  // en bascule sur la bonne catégorie d'abord.
+  if (action === 'launch-terrain-from-banner') {
+    const targetCat = target.dataset.cat;
+    if (targetCat && state.cat !== targetCat) {
+      state.cat = targetCat;
+      try { localStorage.setItem('cfb6_active_cat', targetCat); } catch {}
+    }
     window.LiveTrainingModule?.open?.();
     return;
   }

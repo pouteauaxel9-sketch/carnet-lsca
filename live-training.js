@@ -289,14 +289,32 @@
 
   /* ── Open / Close ────────────────────────────────────── */
 
-  function open() {
+  async function open() {
     visible = true;
     activeTab = 'juggle';
     searchQuery = '';
+
+    // PROTECTION #3 : Pull Supabase AVANT d'ouvrir pour récupérer d'éventuelles
+    // modifs faites sur un autre appareil (évite l'écrasement multi-device).
+    // On ouvre l'overlay tout de suite pour que l'UI réagisse, puis on
+    // re-render si le pull a changé quelque chose.
     ensureSession();
     ensureObjectivesFromWeek();
     renderOverlay();
     document.body.classList.add('live-training-active');
+
+    try {
+      if (window.SyncModule?.isConfigured?.() && navigator.onLine) {
+        toast('☁ Récupération dernière version…');
+        await window.SyncModule.bootstrap();
+        // Après merge, re-render : les présents / objectifs / juggleLog ont pu bouger.
+        ensureSession();
+        ensureObjectivesFromWeek();
+        if (visible) renderOverlay();
+      }
+    } catch (e) {
+      console.warn('[live-training] pull Supabase échoué, on continue en local :', e);
+    }
   }
 
   function close() {
@@ -317,6 +335,17 @@
     const el = document.getElementById('live-training-overlay');
     if (el) el.remove();
     utils().renderAll?.();
+
+    // PROTECTION #4 : force flush local + push Supabase IMMÉDIAT (pas d'attente du debounce 5s).
+    // Garantit que juggleLog + session sont bien persistés avant qu'on ferme / change d'onglet.
+    try { utils().schedulePersist?.(); } catch {}
+    try { utils().flushPersist?.(); } catch {}
+    if (window.SyncModule?.isConfigured?.() && navigator.onLine) {
+      window.SyncModule.pushNow?.().then(r => {
+        if (r?.ok) toast('☁ Séance sauvegardée dans le cloud');
+        else if (r?.reason === 'offline') toast('📵 Offline — sync au retour réseau');
+      }).catch(e => console.warn('[live-training] push échoué :', e));
+    }
   }
 
   function isOpen() { return visible; }

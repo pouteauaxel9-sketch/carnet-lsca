@@ -537,11 +537,16 @@
 
           </div>
 
-          <div class="modal-footer ps-footer" style="justify-content:space-between">
+          <div class="modal-footer ps-footer" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
             <span class="ps-info">${draft.presentPids.length} présent${draft.presentPids.length > 1 ? 's' : ''} · ${draft.principes.length} principe${draft.principes.length > 1 ? 's' : ''} FFF</span>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn btn-ghost" type="button" data-pre-action="close">Annuler</button>
               <button class="btn btn-primary" type="button" data-pre-action="print">🖨 Générer le PDF</button>
+              <button class="btn" type="button" data-pre-action="launch-terrain"
+                      style="background:#dc2626;color:white;font-weight:700;border:none;box-shadow:0 2px 8px rgba(220,38,38,.35)"
+                      title="Démarre la séance au coup d'envoi — obligatoire pour que la jonglerie, les objectifs et les présences soient sauvegardés dans les bilans">
+                ⚽ Au coup d'envoi : Lancer Mode Terrain
+              </button>
             </div>
           </div>
         </div>
@@ -685,6 +690,13 @@
 
     if (a === 'close') { close(); return true; }
     if (a === 'close-if-backdrop') { if (e && e.target === el) close(); return true; }
+    if (a === 'launch-terrain') {
+      // PROTECTION #2 : ferme la pré-séance et ouvre le Mode Terrain d'un clic.
+      // Garantit que startedAt sera écrit et que la séance comptera dans les bilans.
+      close();
+      setTimeout(() => window.LiveTrainingModule?.open?.(), 100);
+      return true;
+    }
     if (a === 'set-nb') { setNbGroupes(parseInt(el.dataset.n, 10)); return true; }
     if (a === 'reset') { resetRepartition(); return true; }
     if (a === 'random') { applyRandom(); return true; }
