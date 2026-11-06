@@ -6,8 +6,8 @@ const MANUAL_FEEDS_KEY = 'cfb6_feeds';
 // Format : 'https://raw.githubusercontent.com/TON_USERNAME/TON_REPO/main/data/feeds.json'
 // Laisser vide tant que le repo n'est pas créé.
 const GITHUB_DATA_URL = 'https://raw.githubusercontent.com/pouteauaxel9-sketch/carnet-lsca/main/data/feeds.json';
-const CAT_LABELS = { u13: 'U13', u11: 'U11', u9: 'U9', u7: 'U7' };
-const CATS = ['u13', 'u11', 'u9', 'u7'];  // ordre canonique des catégories
+const CAT_LABELS = { seniors: 'Seniors', u18: 'U18', u17: 'U17', u15: 'U15', u13: 'U13', u11: 'U11', u9: 'U9', u7: 'U7' };
+const CATS = ['seniors', 'u18', 'u17', 'u15', 'u13', 'u11', 'u9', 'u7'];  // ordre canonique des catégories (du plus âgé au plus jeune)
 const SEASONS = ['2026-2027', '2025-2026', '2024-2025', '2023-2024'];
 const AC = [
   ['#E6F1FB','#0C447C'],
@@ -37,6 +37,10 @@ const CLUB_DATA = {
   season:'2026-2027',
   femalePlayers:0,
   categories:{
+    seniors:{ teams:['Seniors A','Seniors B','Seniors C','Seniors D'] },
+    u18:{ teams:['U18 A','U18 B'] },
+    u17:{ teams:['U17'] },
+    u15:{ teams:['U15 A','U15 B','U15 C'] },
     u13:{ teams:['U13 A','U13 B','U13 C','U13 D','U12'] },
     u11:{ teams:['U11 A','U11 B','U10'] },
     u9:{ teams:['U9 A','U9 B','U9 C','U9 D'] },
@@ -44,6 +48,16 @@ const CLUB_DATA = {
   },
   standings:[
     // Saison 2026-2027
+    { team:'Seniors A', category:'seniors', rank:'-', points:'-', note:'District Mayenne' },
+    { team:'Seniors B', category:'seniors', rank:'-', points:'-', note:'District Mayenne' },
+    { team:'Seniors C', category:'seniors', rank:'-', points:'-', note:'District Mayenne' },
+    { team:'Seniors D', category:'seniors', rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U18 A',   category:'u18',     rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U18 B',   category:'u18',     rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U17',     category:'u17',     rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U15 A',   category:'u15',     rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U15 B',   category:'u15',     rank:'-', points:'-', note:'District Mayenne' },
+    { team:'U15 C',   category:'u15',     rank:'-', points:'-', note:'District Mayenne' },
     { team:'U13 A', category:'u13', rank:'-', points:'-', note:'District Mayenne D1 · poule C' },
     { team:'U13 B', category:'u13', rank:'-', points:'-', note:'District Mayenne D2 · poule E' },
     { team:'U13 C', category:'u13', rank:'-', points:'-', note:'District Mayenne D3 · poule F' },
@@ -79,6 +93,20 @@ const CLUB_DATA = {
 // Saison 2026-2027 — toutes les équipes engagées du club
 // Les URLs FFF seront ajoutées plus tard quand les championnats seront démarrés.
 const TEAM_SOURCE_CONFIG = {
+  seniorsa:{ key:'seniorsa', category:'seniors', teamLabel:'Seniors A', officialName:'LOUVERNE SP.',   identity:'Louverné Sports', pending:true, division:'District Mayenne' },
+  seniorsb:{ key:'seniorsb', category:'seniors', teamLabel:'Seniors B', officialName:'LOUVERNE SP. 2', identity:'Louverné Sports', pending:true, division:'District Mayenne' },
+  seniorsc:{ key:'seniorsc', category:'seniors', teamLabel:'Seniors C', officialName:'LOUVERNE SP. 3', identity:'Louverné Sports', pending:true, division:'District Mayenne' },
+  seniorsd:{ key:'seniorsd', category:'seniors', teamLabel:'Seniors D', officialName:'LOUVERNE SP. 4', identity:'Louverné Sports', pending:true, division:'District Mayenne' },
+
+  u18a:{ key:'u18a', category:'u18', teamLabel:'U18 A', officialName:'LOUVERNE SP.',   identity:'Louverné Sports', pending:true, division:'District Mayenne' },
+  u18b:{ key:'u18b', category:'u18', teamLabel:'U18 B', officialName:'LOUVERNE SP. 2', identity:'Louverné Sports', pending:true, division:'District Mayenne' },
+
+  u17: { key:'u17',  category:'u17', teamLabel:'U17',   officialName:'LOUVERNE SP.',   identity:'Louverné Sports', pending:true, division:'District Mayenne' },
+
+  u15a:{ key:'u15a', category:'u15', teamLabel:'U15 A', officialName:'LOUVERNE SP.',   identity:'Louverné Sports', pending:true, division:'District Mayenne' },
+  u15b:{ key:'u15b', category:'u15', teamLabel:'U15 B', officialName:'LOUVERNE SP. 2', identity:'Louverné Sports', pending:true, division:'District Mayenne' },
+  u15c:{ key:'u15c', category:'u15', teamLabel:'U15 C', officialName:'LOUVERNE SP. 3', identity:'Louverné Sports', pending:true, division:'District Mayenne' },
+
   u13a:{ key:'u13a', category:'u13', teamLabel:'U13 A', officialName:'GJ LSCA LOUVERNE',    identity:'GJ LSCA', division:'District Mayenne D1 · poule C',
          fffUrl:'https://mayenne.fff.fr/competitions?tab=ranking&id=450413&phase=1&poule=3&type=ch' },
   u13b:{ key:'u13b', category:'u13', teamLabel:'U13 B', officialName:'GJ LSCA LOUVERNE 2',  identity:'GJ LSCA', division:'District Mayenne D2 · poule E',
@@ -114,7 +142,21 @@ const IDEAL_PROFILE = {
   'Gardien': { technique:3, tactique:4, physique:3, mental:4 }
 };
 
+// Grille d'évaluation commune aux grands (u15/u17/u18/seniors) — reprend
+// la grille u13 complète. À affiner catégorie par catégorie si besoin.
+const PILLARS_AINES = [
+  { key:'technique', label:'Technique', criteria:['Jonglerie pied fort','Jonglerie pied faible','Controle / 1re touche','Conduite de balle','Frappe','Dribble 1v1','Passe courte','Passe longue','Centre','Tete'] },
+  { key:'tactique', label:'Tactique', criteria:['Replacement defensif','Pressing','Choix sous pression','Demarquage','Jeu sans ballon','Lecture du jeu','Jeu en equipe','Transition','Animation collective'] },
+  { key:'physique', label:'Physique', criteria:['Vitesse / sprint','Endurance','Coordination','Agilite','Puissance','Equilibre','Impact / duels'] },
+  { key:'mental', label:'Mental', criteria:["Reaction a l'erreur",'Engagement','Communication','Confiance en soi','Respect des consignes','Leadership','Perseverance','Gestion du stress'] },
+  { key:'perso', label:'Personnel', criteria:['Assiduite','Comportement','Investissement perso','Esprit d equipe','Hygiene de vie'] }
+];
+
 const PILLARS = {
+  seniors: PILLARS_AINES,
+  u18:     PILLARS_AINES,
+  u17:     PILLARS_AINES,
+  u15:     PILLARS_AINES,
   u13: [
     { key:'technique', label:'Technique', criteria:['Jonglerie pied fort','Jonglerie pied faible','Controle / 1re touche','Conduite de balle','Frappe','Dribble 1v1','Passe courte','Passe longue'] },
     { key:'tactique', label:'Tactique', criteria:['Replacement defensif','Pressing','Choix sous pression','Demarquage','Jeu sans ballon','Lecture du jeu','Jeu en equipe'] },
@@ -172,9 +214,13 @@ const JDATA = {
     { name:'Trou Soulaim', seasons:{ '2025-2026':13 } }, { name:'Vallet Alois', seasons:{ '2025-2026':50 } },
     { name:'Vannier Julian', seasons:{ '2025-2026':50 } }, { name:'Verger Adam', seasons:{} }
   ] },
-  u11: { target:20, acq:15, players:[] },
-  u9: { target:15, acq:10, players:[] },
-  u7: { target:10, acq:6, players:[] }
+  u11:     { target:20, acq:15, players:[] },
+  u9:      { target:15, acq:10, players:[] },
+  u7:      { target:10, acq:6,  players:[] },
+  u15:     { target:75, acq:50, players:[] },
+  u17:     { target:100, acq:70, players:[] },
+  u18:     { target:100, acq:70, players:[] },
+  seniors: { target:100, acq:70, players:[] }
 };
 
 const WEIGHTS = { technique:0.35, tactique:0.25, physique:0.20, mental:0.15, perso:0.05 };

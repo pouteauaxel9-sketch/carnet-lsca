@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.8.0-protection-mode-terrain';
+const CACHE_VERSION = 'v8.9.0-nouvelles-categories-seniors-u18-u17-u15';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
