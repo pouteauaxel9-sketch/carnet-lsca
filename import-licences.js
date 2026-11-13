@@ -71,15 +71,26 @@
   }
 
   // Détecte la catégorie app depuis le libellé FFF
-  // U6/U7 → u7 ; U8/U9 → u9 ; U10/U11 → u11 ; U12/U13 → u13 ; sinon null
+  // U6/U7 → u7 ; U8/U9 → u9 ; U10/U11 → u11 ; U12/U13 → u13
+  // U14/U15 → u15 ; U16/U17 → u17 ; U18/U19 → u18
+  // Libellé sans numéro U (ex: "Libre Senior", "Vétéran") → seniors
   function mapCategory(fffLabel) {
-    const m = String(fffLabel || '').match(/U\s*(\d{1,2})/i);
-    if (!m) return null;
-    const n = parseInt(m[1], 10);
-    if (n <= 7)  return 'u7';
-    if (n <= 9)  return 'u9';
-    if (n <= 11) return 'u11';
-    if (n <= 13) return 'u13';
+    const label = String(fffLabel || '');
+    const m = label.match(/U\s*(\d{1,2})/i);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (n <= 7)  return 'u7';
+      if (n <= 9)  return 'u9';
+      if (n <= 11) return 'u11';
+      if (n <= 13) return 'u13';
+      if (n <= 15) return 'u15';
+      if (n <= 17) return 'u17';
+      if (n <= 19) return 'u18';
+      // U20+ → traité comme senior
+      return 'seniors';
+    }
+    // Pas de "Uxx" → senior / vétéran / libre adulte
+    if (/senior|v[ée]t[ée]ran|libre|adulte/i.test(label)) return 'seniors';
     return null;
   }
 
@@ -287,7 +298,7 @@
           <li>Les joueurs <strong>déjà présents sont détectés automatiquement</strong> (par n° de licence puis par nom)</li>
           <li>Les champs <strong>vides</strong> sont remplis (nom, prénom, date de naissance, licence)</li>
           <li>Les champs <strong>que tu as déjà saisis ne sont jamais écrasés</strong></li>
-          <li>Catégorie auto depuis le libellé FFF (<em>U6/U7 → U7, U8/U9 → U9, U10/U11 → U11, U12/U13 → U13</em>)</li>
+          <li>Catégorie auto depuis le libellé FFF (<em>U6/U7 → U7, U8/U9 → U9, U10/U11 → U11, U12/U13 → U13, U14/U15 → U15, U16/U17 → U17, U18/U19 → U18, Senior/Vétéran/Libre → Seniors</em>)</li>
         </ul>
         <input type="file" accept="application/pdf" id="import-licences-file"
                style="display:block;width:100%;padding:12px;border:2px dashed #cbd5e1;border-radius:8px"
@@ -303,10 +314,13 @@
 
   function renderPreview() {
     const list = modal.parsed || [];
-    const byCat = { u7: [], u9: [], u11: [], u13: [] };
+    // Buckets dynamiques : toutes les catégories déclarées + fallback pour les inconnues
+    const byCat = {};
+    (window.CATS || ['seniors','u18','u17','u15','u13','u11','u9','u7']).forEach(c => { byCat[c] = []; });
     list.forEach(p => { (byCat[p.cat] || (byCat[p.cat] = [])).push(p); });
-    const catOrder = window.CATS ? window.CATS.slice().reverse() : ['u7', 'u9', 'u11', 'u13'];
-    const CAT_LABELS = window.CAT_LABELS || { u7: 'U7', u9: 'U9', u11: 'U11', u13: 'U13' };
+    // Ordre d'affichage : du plus jeune au plus âgé (reverse de CATS canonique)
+    const catOrder = window.CATS ? window.CATS.slice().reverse() : ['u7','u9','u11','u13','u15','u17','u18','seniors'];
+    const CAT_LABELS = window.CAT_LABELS || { u7:'U7', u9:'U9', u11:'U11', u13:'U13', u15:'U15', u17:'U17', u18:'U18', seniors:'Seniors' };
     return `
       <div class="import-body" style="padding:16px 20px;overflow-y:auto;flex:1">
         <p style="margin:0 0 12px"><strong>${list.length} joueur${list.length > 1 ? 's' : ''}</strong> détecté${list.length > 1 ? 's' : ''} dans le PDF.</p>
@@ -345,7 +359,7 @@
 
   function renderDone() {
     const r = modal.result || { created: [], enriched: [], skipped: [] };
-    const CAT_LABELS = window.CAT_LABELS || { u7: 'U7', u9: 'U9', u11: 'U11', u13: 'U13' };
+    const CAT_LABELS = window.CAT_LABELS || { u7:'U7', u9:'U9', u11:'U11', u13:'U13', u15:'U15', u17:'U17', u18:'U18', seniors:'Seniors' };
     const groupByCat = (arr) => {
       const g = {};
       arr.forEach(x => { (g[x.cat] || (g[x.cat] = [])).push(x); });
