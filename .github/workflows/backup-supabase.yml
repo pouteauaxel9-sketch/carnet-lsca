@@ -1,0 +1,73 @@
+name: Backup Supabase
+
+on:
+  # Chaque dimanche à 22h UTC = 23h hiver / 00h été France
+  # Après la journée de matchs du weekend, avant la semaine suivante.
+  schedule:
+    - cron: '0 22 * * 0'
+  # Déclenchement manuel (ex : avant une refacto risquée)
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dump table ptits_verts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          set -e
+          mkdir -p backups
+          DATE=$(date -u +'%Y-%m-%d')
+          OUT="backups/ptits_verts_${DATE}.json"
+
+          echo "→ Fetch $SUPABASE_URL/rest/v1/ptits_verts?id=eq.main"
+          curl -sS -f \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            -H "Accept: application/json" \
+            "$SUPABASE_URL/rest/v1/ptits_verts?id=eq.main&select=*" \
+            > "$OUT"
+
+          SIZE=$(wc -c < "$OUT")
+          echo "✅ Dumpé dans $OUT (${SIZE} octets)"
+
+          # Rejette si fichier vide ou trop petit (< 100 octets = probable erreur)
+          if [ "$SIZE" -lt 100 ]; then
+            echo "❌ Fichier trop petit, dump probablement vide ou invalide"
+            cat "$OUT"
+            exit 1
+          fi
+
+          # Validation JSON
+          node -e "JSON.parse(require('fs').readFileSync('$OUT','utf8')); console.log('JSON valide')"
+
+      - name: Rotation — garde les 12 derniers backups
+        run: |
+          cd backups
+          # Compte les fichiers ptits_verts_*.json, trie par date (nom), garde les 12 plus récents
+          ls -1 ptits_verts_*.json 2>/dev/null | sort -r | tail -n +13 | while read f; do
+            echo "🗑  Suppression ancien backup : $f"
+            rm "$f"
+          done
+
+      - name: Commit backup
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backups/
+          if git diff --cached --quiet; then
+            echo "⚪ Aucun changement (donnée identique à la semaine dernière)"
+          else
+            git commit -m "backup(supabase): $(date -u +'%Y-%m-%d')"
+            git push origin HEAD:main
+            echo "✅ Backup commité"
+          fi

@@ -1,0 +1,3 @@
+# Backups automatiques de la table Supabase ptits_verts.
+# Workflow .github/workflows/backup-supabase.yml tourne chaque dimanche 22h UTC.
+# Rotation : les 12 derniers fichiers sont conservés (~3 mois d'historique).
