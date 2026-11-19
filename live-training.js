@@ -40,6 +40,13 @@
   let presentPickerOpen = false;
   let searchQuery = '';
   let sunMode = false;
+  // Mobile-first : état spécifique à la vue mobile
+  let activeFoot = 'droit';   // 'droit' | 'gauche' | 'deux' (premier pied par défaut)
+  let hideSaisi = false;      // Masquer les joueurs déjà saisis sur le pied actif
+
+  function isMobileView() {
+    return typeof window !== 'undefined' && window.innerWidth < 768;
+  }
 
   /* ── Helpers ─────────────────────────────────────────── */
 
@@ -362,11 +369,21 @@
     // NB : le click sur les checkbox toggle-present est routé via le dispatcher
     // global d'app.js (MODULE_CLICK_SELECTOR). Ne PAS ajouter ici de listener
     // 'change' supplémentaire — sinon double toggle → l'état revient à zéro.
-    el.className = 'live-overlay' + (sunMode ? ' live-overlay-sun' : '');
+    const mobile = isMobileView();
+    el.className = 'live-overlay' + (sunMode ? ' live-overlay-sun' : '') + (mobile ? ' live-overlay-mobile' : '');
     let body;
     if (activeTab === 'objectifs') body = renderObjectifsView();
+    else if (mobile) body = renderJuggleViewMobile();
     else body = renderJuggleView();
     el.innerHTML = body + (presentPickerOpen ? renderPresentPicker() : '');
+
+    // Mobile : auto-focus sur le premier input non-saisi au render
+    if (mobile && activeTab === 'juggle') {
+      requestAnimationFrame(() => {
+        const first = el.querySelector('.live-mobile-input[data-filled="false"]');
+        if (first && document.activeElement?.tagName !== 'INPUT') first.focus();
+      });
+    }
   }
 
   function renderHeader(subtitle) {
@@ -450,6 +467,117 @@
             : visibleP.map(pid => renderJuggleRow(pid)).join('')}
         </div>
       </div>`;
+  }
+
+  /* ── Vue Jonglerie MOBILE (optimisée bord de terrain, 1 main portrait) ──
+     Workflow : sélectionner un pied → saisir tout le groupe sur ce pied → suivant.
+     Un seul input visible par joueur. Enter = valide + auto-focus suivant non-saisi. */
+
+  function renderJuggleViewMobile() {
+    const cat = state().cat;
+    const pres = presentPids();
+    let visibleP = sortedPlayers(cat).filter(p => pres.includes(p));
+    const today = todayIso();
+
+    // Compter les saisis / non-saisis pour le pied actif
+    const isSaisi = pid => {
+      const log = loadJuggleLog(pid);
+      const entry = log.find(e => e.date === today);
+      return entry && entry[activeFoot] != null && entry[activeFoot] !== '';
+    };
+    const nbSaisi = visibleP.filter(isSaisi).length;
+    const nbTotal = visibleP.length;
+
+    // Filtre recherche
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      visibleP = visibleP.filter(pid => playerLabel(pid).toLowerCase().includes(q));
+    }
+    // Filtre masquage
+    if (hideSaisi) {
+      visibleP = visibleP.filter(pid => !isSaisi(pid));
+    }
+    // Tri : non-saisis en premier, saisis à la fin
+    visibleP.sort((a, b) => {
+      const sa = isSaisi(a), sb = isSaisi(b);
+      if (sa === sb) return playerLabel(a).localeCompare(playerLabel(b));
+      return sa ? 1 : -1;
+    });
+
+    const footLabels = { droit: '🦶 Droit', gauche: '🦶 Gauche', deux: '🦶🦶 2 pieds' };
+    const footTabs = ['droit', 'gauche', 'deux'].map(f => `
+      <button class="live-mobile-foot-tab ${f === activeFoot ? 'on' : ''}" type="button"
+              data-live-action="set-foot" data-foot="${f}">
+        ${footLabels[f]}
+      </button>`).join('');
+
+    const rows = visibleP.length === 0
+      ? `<p class="live-mobile-empty">${pres.length === 0
+          ? 'Aucun présent. Clique 👥 en haut.'
+          : hideSaisi
+            ? '🎉 Tous saisis sur ce pied ! Décoche "Masquer déjà saisis" ou passe au pied suivant.'
+            : 'Aucun joueur ne correspond à la recherche.'}</p>`
+      : visibleP.map(pid => renderJuggleRowMobile(pid)).join('');
+
+    return `
+      <div class="live-shell live-shell-mobile">
+        <header class="live-mobile-head">
+          <button class="live-mobile-close" type="button" data-live-action="close" aria-label="Fermer">×</button>
+          <div class="live-mobile-title">
+            <span class="live-mobile-cat">${h((window.CAT_LABELS?.[cat] || cat).toUpperCase())}</span>
+            <span class="live-mobile-presents" data-live-action="open-presents" title="Gérer les présents">
+              👥 ${nbSaisi}/${nbTotal}
+            </span>
+          </div>
+          <button class="live-mobile-finish" type="button" data-live-action="finish-session" title="Terminer la séance">
+            ✅
+          </button>
+        </header>
+
+        <div class="live-mobile-foot-tabs">${footTabs}</div>
+
+        <div class="live-mobile-toolbar">
+          <input type="search" class="live-mobile-search" placeholder="🔍 Chercher un joueur…"
+                 value="${h(searchQuery)}" data-live-action="search" autocomplete="off">
+          <label class="live-mobile-hide-toggle">
+            <input type="checkbox" ${hideSaisi ? 'checked' : ''} data-live-action="toggle-hide-saisi">
+            Masquer déjà saisis
+          </label>
+        </div>
+
+        <div class="live-mobile-list">
+          ${rows}
+        </div>
+      </div>`;
+  }
+
+  function renderJuggleRowMobile(pid) {
+    const log = loadJuggleLog(pid);
+    const today = todayIso();
+    const todayEntry = log.find(e => e.date === today) || {};
+    const last = log.filter(e => e.date !== today)
+                  .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+    const cur = todayEntry[activeFoot];
+    const prev = last?.[activeFoot];
+    const filled = cur != null && cur !== '';
+
+    // Initiale pour avatar
+    const name = playerLabel(pid);
+    const initial = (name[0] || '?').toUpperCase();
+
+    return `
+      <article class="live-mobile-row ${filled ? 'is-filled' : ''}" data-pid="${h(pid)}">
+        <span class="live-mobile-avatar">${h(initial)}</span>
+        <span class="live-mobile-name">${h(name)}</span>
+        <input type="number" min="0" max="500" step="1" inputmode="numeric"
+               class="live-mobile-input"
+               value="${filled ? cur : ''}"
+               placeholder="${prev != null ? prev : '—'}"
+               data-filled="${filled ? 'true' : 'false'}"
+               data-live-action="save-juggle-mobile"
+               data-pid="${h(pid)}">
+        ${filled ? '<span class="live-mobile-check">✓</span>' : ''}
+      </article>`;
   }
 
   // Migration douce : anciennes entrées avec fort/faible → utiliser comme fallback affichage
@@ -679,6 +807,17 @@
     }
     if (action === 'search') {
       searchQuery = el.value || '';
+      // Mobile : re-render complet pour le tri non-saisi first
+      if (isMobileView()) {
+        renderOverlay();
+        // Re-focus la barre search après re-render (sinon on perd le focus)
+        requestAnimationFrame(() => {
+          const s = document.querySelector('.live-mobile-search');
+          if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); }
+        });
+        return true;
+      }
+      // Desktop : patch juste la liste pour préserver scroll
       const list = document.querySelector('.live-juggle-list');
       if (list) {
         const cat = state().cat;
@@ -699,6 +838,36 @@
       const foot = el.dataset.foot;
       const val = el.value.trim() === '' ? null : Math.max(0, Math.min(500, parseInt(el.value, 10) || 0));
       saveJuggle(pid, foot, val);
+      return true;
+    }
+
+    // ── Mode Terrain MOBILE ──────────────────────────────
+    if (action === 'set-foot') {
+      activeFoot = el.dataset.foot || 'droit';
+      renderOverlay();
+      return true;
+    }
+    if (action === 'toggle-hide-saisi') {
+      hideSaisi = !!el.checked;
+      renderOverlay();
+      return true;
+    }
+    if (action === 'save-juggle-mobile') {
+      const pid = el.dataset.pid;
+      const val = el.value.trim() === '' ? null : Math.max(0, Math.min(500, parseInt(el.value, 10) || 0));
+      saveJuggle(pid, activeFoot, val);
+      // Marque la ligne comme saisie visuellement sans attendre re-render
+      const row = el.closest('.live-mobile-row');
+      if (row && val != null) {
+        row.classList.add('is-filled');
+        el.dataset.filled = 'true';
+        if (!row.querySelector('.live-mobile-check')) {
+          const chk = document.createElement('span');
+          chk.className = 'live-mobile-check';
+          chk.textContent = '✓';
+          row.appendChild(chk);
+        }
+      }
       return true;
     }
 
@@ -770,5 +939,35 @@
       if (!visible) open();
       else close();
     }
+  });
+
+  // Mode Terrain mobile : Enter dans un input de jonglerie → save + focus suivant non-saisi
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const input = e.target;
+    if (!input?.classList?.contains('live-mobile-input')) return;
+    e.preventDefault();
+    // 1) Déclenche le save (handler change natif)
+    input.blur();
+    // 2) Cherche le prochain input non-saisi
+    const all = Array.from(document.querySelectorAll('.live-mobile-input'));
+    const currentIdx = all.indexOf(input);
+    // D'abord cherche après la position courante, puis en revenant au début
+    const nextUnfilled = all.slice(currentIdx + 1).find(i => i.dataset.filled === 'false')
+                      || all.slice(0, currentIdx).find(i => i.dataset.filled === 'false');
+    if (nextUnfilled) {
+      nextUnfilled.focus();
+      nextUnfilled.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      toast('🎉 Tous les joueurs saisis sur ce pied ! Passe au suivant.');
+    }
+  });
+
+  // Re-render à chaque resize (bascule portrait/paysage, orientation device)
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    if (!visible) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => renderOverlay(), 150);
   });
 })();
