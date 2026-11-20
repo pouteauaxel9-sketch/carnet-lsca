@@ -889,12 +889,10 @@ async function refreshRemoteData() {
 }
 
 function renderPrimaryNav() {
-  // v8.11.0 : DirecteurModule retiré → plus de badge alertsCount
-  const weeklyCount = window.WeeklyFocusModule?.badge?.() || 0;
+  // v8.19.0 : Weekly Focus + Season Plan retirés de la nav (basés sur piliers eval supprimés)
   const items = [
     { key:'dashboard',  label:'Accueil' },
     { key:'player',     label:'Joueurs' },
-    { key:'weekly',     label:'Semaine' + (weeklyCount > 0 ? ` (${weeklyCount})` : '') },
     { key:'bilans',     label:'Bilans' },
   ];
 
@@ -1590,18 +1588,16 @@ function profileBody(pid) {
     </div>
   `).join('');
 
-  // Bloc Suivi joueur (mini-onglets : Semaine / Jonglerie / Assiduité)
-  // v8.11.0 : onglet Blessures retiré (InjuryModule supprimé)
-  let followup = state.selFollowup || 'weekly';
-  if (followup === 'injury') followup = 'weekly'; // migration : réinitialise si onglet supprimé
+  // Bloc Suivi joueur (mini-onglets : Jonglerie / Assiduité)
+  // v8.19.0 : onglet "Cette semaine" retiré (WeeklyFocusModule désactivé)
+  let followup = state.selFollowup || 'juggle';
+  if (followup === 'injury' || followup === 'weekly') followup = 'juggle'; // migration
   const followupTabs = [
-    { key: 'weekly',     label: 'Cette semaine',  icon: '📋' },
     { key: 'juggle',     label: 'Jonglerie',      icon: '⚽' },
     { key: 'attendance', label: 'Assiduité',      icon: '📅' },
   ];
   let followupContent = '';
-  if (followup === 'weekly')          followupContent = window.WeeklyFocusModule?.renderPlayerWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucun critère défini cette semaine.</p>';
-  else if (followup === 'juggle')     followupContent = window.SessionsHistoryModule?.renderPlayerJuggleWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucune mesure enregistrée.</p>';
+  if (followup === 'juggle')          followupContent = window.SessionsHistoryModule?.renderPlayerJuggleWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucune mesure enregistrée.</p>';
   else if (followup === 'attendance') followupContent = window.AttendanceModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucun pointage.</p>';
 
   const followupBlock = `
@@ -2118,8 +2114,9 @@ function renderMain() {
     else el.innerHTML = renderTeamListShell();
   }
   else if (state.view === 'weekly') {
-    if (window.WeeklyFocusModule?.render) window.WeeklyFocusModule.render(el);
-    else el.innerHTML = '<p>Module Semaine non chargé.</p>';
+    // v8.19.0 : vue Semaine retirée, redirection vers dashboard
+    state.view = 'dashboard';
+    el.innerHTML = renderDashboard();
   }
   else if (state.view === 'bilans') {
     el.innerHTML = renderBilansMegaView();
@@ -2630,9 +2627,9 @@ const MODULE_DISPATCHERS = [
   { dataAttr: 'attendanceAction', module: 'AttendanceModule' },
   // injuryAction / InjuryModule retiré v8.11.0 (module mort)
   { dataAttr: 'careerAction',     module: 'CareerModule' },
-  { dataAttr: 'weeklyAction',     module: 'WeeklyFocusModule' },
+  // weeklyAction / WeeklyFocusModule retiré v8.19.0 (module desactivé)
   { dataAttr: 'liveAction',       module: 'LiveTrainingModule' },
-  { dataAttr: 'planAction',       module: 'SeasonPlanModule' },
+  // planAction / SeasonPlanModule retiré v8.19.0 (module desactivé)
   // advstatsAction / AdvancedStatsModule retiré v8.11.0 (module mort)
   { dataAttr: 'stxAction',        module: 'SeasonTransitionModule' },
   { dataAttr: 'historyAction',    module: 'SessionsHistoryModule' },
@@ -2673,9 +2670,8 @@ document.addEventListener('click', event => {
     const next = target.dataset.view;
     if (next === 'player')      state.view = state.selPlayer ? 'player' : 'player';
     else if (next === 'team')   { state.view = 'bilans'; state.bilansTab = 'equipes'; state.selTeam = null; }
-    else if (next === 'plan')     { state.view = 'weekly'; state.weeklyView = 'season'; }
-    else if (next === 'analyses') { state.view = 'bilans'; state.bilansTab = 'analyses'; }
-    else if (next === 'direction'){ state.view = 'bilans'; state.bilansTab = 'direction'; }
+    // 'plan', 'analyses', 'direction' redirigés vers bilans équipes (modules retirés v8.11.0/v8.19.0)
+    else if (next === 'plan' || next === 'analyses' || next === 'direction') { state.view = 'bilans'; state.bilansTab = 'equipes'; }
     else if (next === 'categories') { state.view = 'bilans'; state.bilansTab = 'equipes'; state.selTeam = null; }
     else                         state.view = next;
     if (state.view !== 'player') state.selPlayer = null;

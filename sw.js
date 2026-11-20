@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.18.0-mode-terrain-filtre-groupes';
+const CACHE_VERSION = 'v8.19.0-retrait-weekly-season-plan';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -43,8 +43,8 @@ const STATIC_ASSETS = [
   // profiling.js supprimé v8.11.0
   // directeur-view.js supprimé v8.11.0
   './career.js',
-  './weekly-focus.js',
-  './season-plan.js',
+  // weekly-focus.js supprimé v8.19.0
+  // season-plan.js supprimé v8.19.0
   // advanced-stats.js supprimé v8.11.0
   './ux-polish.js',
   './live-training.js',
