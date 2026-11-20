@@ -2914,10 +2914,7 @@ document.addEventListener('click', event => {
     renderAll();
     return;
   }
-  if (action === 'open-team-compo') {
-    showToast('Composition d\'équipe : à venir');
-    return;
-  }
+  // v8.25.0 : handler 'open-team-compo' retiré (bouton supprimé, feature jamais aboutie)
 
   if (action === 'open-category' || action === 'switch-category') {
     state.cat = target.dataset.cat;

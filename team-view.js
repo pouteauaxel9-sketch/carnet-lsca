@@ -424,11 +424,9 @@
 
     return `
       <section class="team-shell">
+        <!-- v8.25.0 : bouton "Composer l'équipe" retiré (jamais utilisé) -->
         <div class="team-toolbar">
           <button class="btn" type="button" data-action="back-teams">← Retour aux équipes</button>
-          <div class="toolbar-right">
-            <button class="btn" type="button" data-action="open-team-compo" data-team="${h(team)}">Composer l'équipe</button>
-          </div>
         </div>
 
         <div class="team-hero">
@@ -437,10 +435,6 @@
             <h1>${h(team)}</h1>
             <p>Effectif de ${players.length} joueur${players.length > 1 ? 's' : ''} · Saison ${h(state().season)}.</p>
           </div>
-          <!-- Bloc stats agrégées désactivé (v7.9.1) : affichait des données
-               d'observations non-scopées par saison → risquait d'afficher
-               des stats de la saison précédente. À réactiver quand les
-               observations seront proprement nettoyées. -->
         </div>
 
         ${renderFFFSection(cat, team)}

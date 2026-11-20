@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.24.0-dashboard-switch-phases';
+const CACHE_VERSION = 'v8.25.0-team-view-nettoyee';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
