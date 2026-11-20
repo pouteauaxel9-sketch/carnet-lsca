@@ -10478,6 +10478,107 @@ body.season-transition-active { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Mode Terrain : flag joueurs en difficulté sur un exo
+   ═══════════════════════════════════════════════════════════ */
+
+.live-obj-struggle-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-top: 10px;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px dashed #fb923c;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.live-obj-struggle-toggle:hover {
+  background: #ffedd5;
+  border-style: solid;
+}
+
+.live-obj-struggle-count {
+  background: #dc2626;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.live-obj-struggle-panel {
+  margin-top: 10px;
+  padding: 12px;
+  background: #fff7ed;
+  border: 1px solid #fb923c;
+  border-radius: 10px;
+}
+
+.live-obj-struggle-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #9a3412;
+}
+
+.live-obj-struggle-close,
+.live-obj-struggle-clear {
+  padding: 4px 10px;
+  background: white;
+  border: 1px solid #fb923c;
+  color: #9a3412;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.live-obj-struggle-clear:hover,
+.live-obj-struggle-close:hover {
+  background: #fed7aa;
+}
+
+.live-struggle-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.live-struggle-chip {
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.live-struggle-chip:active { transform: scale(0.95); }
+
+.live-struggle-chip.on {
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: white;
+  font-weight: 600;
+}
+
+.live-struggle-empty {
+  color: #94a3b8;
+  font-size: 13px;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
    Évaluation : mode Rapide vs Détaillée
    ═══════════════════════════════════════════════════════════ */
 

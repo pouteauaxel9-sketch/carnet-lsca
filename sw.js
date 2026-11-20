@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.15.0-eval-retiree-focus-jonglerie-matchs';
+const CACHE_VERSION = 'v8.16.0-mode-terrain-joueurs-en-difficulte';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

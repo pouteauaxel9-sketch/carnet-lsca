@@ -43,6 +43,8 @@
   // Mobile-first : état spécifique à la vue mobile
   let activeFoot = 'droit';   // 'droit' | 'gauche' | 'deux' (premier pied par défaut)
   let hideSaisi = false;      // Masquer les joueurs déjà saisis sur le pied actif
+  // v8.16.0 : quels objectifs ont leur panneau "joueurs en difficulté" ouvert
+  const expandedStruggling = {}; // { [objKey]: true }
 
   function isMobileView() {
     return typeof window !== 'undefined' && window.innerWidth < 768;
@@ -249,6 +251,25 @@
   function removeObjective(key) {
     setSession(s => {
       s.objectives = s.objectives.filter(o => o.key !== key);
+    });
+  }
+  // v8.16.0 : flag "joueurs en difficulté" par exo — permet de marquer qui doit
+  // retravailler l'exo, sans avoir à noter individuellement chaque joueur.
+  function toggleStruggling(key, pid) {
+    setSession(s => {
+      const o = s.objectives.find(x => x.key === key);
+      if (!o) return;
+      if (!Array.isArray(o.strugglingPids)) o.strugglingPids = [];
+      const idx = o.strugglingPids.indexOf(pid);
+      if (idx >= 0) o.strugglingPids.splice(idx, 1);
+      else o.strugglingPids.push(pid);
+    });
+    haptic();
+  }
+  function clearStruggling(key) {
+    setSession(s => {
+      const o = s.objectives.find(x => x.key === key);
+      if (o) o.strugglingPids = [];
     });
   }
   function addCustomObjective(label) {
@@ -728,7 +749,44 @@
                  value="${h(o.notes || '')}"
                  data-live-action="obj-note" data-key="${h(o.key)}">
         </div>
+        ${renderStrugglingSection(o)}
       </article>`;
+  }
+
+  // v8.16.0 : section joueurs en difficulté — collapsible pour pas encombrer
+  function renderStrugglingSection(o) {
+    const struggling = Array.isArray(o.strugglingPids) ? o.strugglingPids : [];
+    const pres = presentPids();
+    const isOpen = !!expandedStruggling[o.key];
+    if (!isOpen) {
+      return `
+        <button class="live-obj-struggle-toggle" type="button"
+                data-live-action="toggle-struggle-ui" data-key="${h(o.key)}"
+                title="Marquer les joueurs qui ont eu du mal sur cet exo">
+          ⚠ Joueurs en difficulté ${struggling.length > 0 ? `<span class="live-obj-struggle-count">${struggling.length}</span>` : ''}
+        </button>`;
+    }
+    const chips = pres.map(pid => {
+      const on = struggling.includes(pid);
+      return `
+        <button class="live-struggle-chip ${on ? 'on' : ''}" type="button"
+                data-live-action="toggle-struggling" data-key="${h(o.key)}" data-pid="${h(pid)}">
+          ${on ? '⚠ ' : ''}${h(playerLabel(pid))}
+        </button>`;
+    }).join('');
+    return `
+      <div class="live-obj-struggle-panel">
+        <div class="live-obj-struggle-head">
+          <strong>⚠ Joueurs en difficulté sur cet exo</strong>
+          <div style="display:flex;gap:6px">
+            ${struggling.length ? `<button class="live-obj-struggle-clear" type="button" data-live-action="clear-struggling" data-key="${h(o.key)}">Tout décocher</button>` : ''}
+            <button class="live-obj-struggle-close" type="button" data-live-action="toggle-struggle-ui" data-key="${h(o.key)}">Fermer</button>
+          </div>
+        </div>
+        ${pres.length === 0
+          ? '<p class="live-struggle-empty">Aucun présent sélectionné.</p>'
+          : `<div class="live-struggle-chips">${chips}</div>`}
+      </div>`;
   }
 
   /* ── Modal Présents ── */
@@ -903,6 +961,23 @@
     if (action === 'inc-obj')      { bumpObjective(el.dataset.key, el.dataset.field); renderOverlay(); return true; }
     if (action === 'dec-obj')      { decObjective(el.dataset.key, el.dataset.field); renderOverlay(); return true; }
     if (action === 'toggle-acquis'){ toggleAcquis(el.dataset.key); renderOverlay(); return true; }
+    // v8.16.0 : flag joueurs en difficulté
+    if (action === 'toggle-struggle-ui') {
+      const k = el.dataset.key;
+      expandedStruggling[k] = !expandedStruggling[k];
+      renderOverlay();
+      return true;
+    }
+    if (action === 'toggle-struggling') {
+      toggleStruggling(el.dataset.key, el.dataset.pid);
+      renderOverlay();
+      return true;
+    }
+    if (action === 'clear-struggling') {
+      clearStruggling(el.dataset.key);
+      renderOverlay();
+      return true;
+    }
     if (action === 'remove-obj')   {
       if (!confirm('Retirer cet objectif de la séance ?')) return true;
       removeObjective(el.dataset.key);
