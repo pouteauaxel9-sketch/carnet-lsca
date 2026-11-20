@@ -889,13 +889,13 @@ async function refreshRemoteData() {
 }
 
 function renderPrimaryNav() {
-  const alertsCount = window.DirecteurModule?.countAlerts?.() || 0;
+  // v8.11.0 : DirecteurModule retiré → plus de badge alertsCount
   const weeklyCount = window.WeeklyFocusModule?.badge?.() || 0;
   const items = [
     { key:'dashboard',  label:'Accueil' },
     { key:'player',     label:'Joueurs' },
     { key:'weekly',     label:'Semaine' + (weeklyCount > 0 ? ` (${weeklyCount})` : '') },
-    { key:'bilans',     label:'Bilans' + (alertsCount > 0 ? ` (${alertsCount})` : '') },
+    { key:'bilans',     label:'Bilans' },
   ];
 
   // 'team' et 'player' restent actifs même quand on a navigué dans un détail
@@ -1067,7 +1067,7 @@ function renderList() {
           ${prof?.photo ? `<img src="${prof.photo}" alt="${h(pid)}">` : `<span>${h(ini(pid))}</span>`}
         </div>
         <div class="pli-info">
-          <div class="pli-name">${h(pid)}${(() => { const cs = window.InjuryModule?.currentStatus?.(pid, state.cat); if (!cs) return ''; const td = window.InjuryModule.TYPES.find(t => t.key === cs.type) || {}; return ` <span class="pli-inj" title="${h(td.label || '')}">${td.icon || '⚠'}</span>`; })()}</div>
+          <div class="pli-name">${h(pid)}</div>
           <div class="pli-sub">${h(sub)}</div>
         </div>
       </button>
@@ -1438,7 +1438,6 @@ function renderCategoryPlayerTable() {
         <div class="cat-table-name">
           <span class="cat-table-av" style="background:${col[0]};color:${col[1]}">${e.prof?.photo ? `<img src="${e.prof.photo}" alt="">` : h(ini(e.name))}</span>
           <span>${h(e.name)}</span>
-          ${(() => { const cs = window.InjuryModule?.currentStatus?.(e.name, state.cat); if (!cs) return ''; const td = window.InjuryModule.TYPES.find(t => t.key === cs.type) || {}; return `<span class="cat-table-inj" title="${h(td.label || '')}${cs.zone ? ' · ' + h(cs.zone) : ''}">${td.icon || '⚠'}</span>`; })()}
         </div>
       </td>
       <td>${h(e.prof.poste1 || '—')}</td>
@@ -1552,18 +1551,18 @@ function profileBody(pid) {
     </div>
   `).join('');
 
-  // Bloc Suivi joueur (mini-onglets : Semaine / Jonglerie / Blessures / Assiduité)
-  const followup = state.selFollowup || 'weekly';
+  // Bloc Suivi joueur (mini-onglets : Semaine / Jonglerie / Assiduité)
+  // v8.11.0 : onglet Blessures retiré (InjuryModule supprimé)
+  let followup = state.selFollowup || 'weekly';
+  if (followup === 'injury') followup = 'weekly'; // migration : réinitialise si onglet supprimé
   const followupTabs = [
     { key: 'weekly',     label: 'Cette semaine',  icon: '📋' },
     { key: 'juggle',     label: 'Jonglerie',      icon: '⚽' },
-    { key: 'injury',     label: 'Blessures',      icon: '🩹' },
     { key: 'attendance', label: 'Assiduité',      icon: '📅' },
   ];
   let followupContent = '';
-  if (followup === 'weekly')     followupContent = window.WeeklyFocusModule?.renderPlayerWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucun critère défini cette semaine.</p>';
+  if (followup === 'weekly')          followupContent = window.WeeklyFocusModule?.renderPlayerWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucun critère défini cette semaine.</p>';
   else if (followup === 'juggle')     followupContent = window.SessionsHistoryModule?.renderPlayerJuggleWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucune mesure enregistrée.</p>';
-  else if (followup === 'injury')     followupContent = window.InjuryModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucune blessure enregistrée.</p>';
   else if (followup === 'attendance') followupContent = window.AttendanceModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucun pointage.</p>';
 
   const followupBlock = `
@@ -1793,7 +1792,6 @@ function evaluationBody(pid) {
       <div class="detail-card"><div class="card-kicker">Priorite</div><h3>Axe de travail</h3><div class="priority-box"><strong>${weakness ? h(weakness.label) : 'A definir'}</strong><p>${weakness ? `Pilier le plus bas a ${weakness.score}%.` : 'Aucun axe stable pour le moment.'}</p></div></div>
     </div>
     ${renderCategoryComparison(pid)}
-    ${window.ProfilingModule?.renderTags?.(pid) || ''}
     <div class="pillar-nav">${pillarTabs}</div>
     <div class="legend-bar">
       <div class="litem"><div class="ldot" style="background:#FAECE7;border:1px solid #D85A30"></div>1</div>
@@ -1996,31 +1994,26 @@ function renderPlayerEmptyState() {
 }
 
 function renderBilansMegaView() {
-  const alerts = window.DirecteurModule?.countAlerts?.() || 0;
+  // v8.11.0 : onglets Analyses + Direction retirés (modules morts : AdvancedStats, Transverse, Directeur)
   const sub = state.bilansTab || 'equipes';
   const cat = state.cat;
   const catLabel = (CAT_LABELS[cat] || cat).toUpperCase();
   const tabs = [
     { key: 'equipes',   label: 'Équipes' },
     { key: 'seances',   label: '📝 Séances' },
-    { key: 'analyses',  label: 'Analyses' },
-    { key: 'direction', label: 'Direction' + (alerts > 0 ? ` (${alerts})` : '') },
   ];
+  // Reset si on arrive sur un ancien onglet qui n'existe plus
+  if (sub !== 'equipes' && sub !== 'seances') state.bilansTab = 'equipes';
+  const effectiveSub = state.bilansTab || 'equipes';
 
   let body = '';
-  if (sub === 'equipes') {
+  if (effectiveSub === 'equipes') {
     const teamModule = window.TeamModule;
     if (!teamModule) body = '<p>Module équipes non chargé.</p>';
     else if (state.selTeam) body = teamModule.renderTeamBody(cat, state.selTeam);
     else body = renderTeamListShell();
-  } else if (sub === 'seances') {
+  } else if (effectiveSub === 'seances') {
     body = window.SessionsHistoryModule?.renderBody?.(cat) || '<p>Module Séances non chargé.</p>';
-  } else if (sub === 'analyses') {
-    const advHtml = window.AdvancedStatsModule?.renderBody(cat) || '';
-    const trvHtml = window.TransverseModule?.renderBody(cat) || '';
-    body = advHtml + trvHtml || '<p>Module analyses non chargé.</p>';
-  } else if (sub === 'direction') {
-    body = window.DirecteurModule?.renderBody() || '<p>Module direction non chargé.</p>';
   }
 
   return `
@@ -2581,12 +2574,12 @@ const MODULE_DISPATCHERS = [
   { dataAttr: 'educatorAction',   module: 'EducatorModule' },
   { dataAttr: 'rosterAction',     module: 'RosterModule' },
   { dataAttr: 'attendanceAction', module: 'AttendanceModule' },
-  { dataAttr: 'injuryAction',     module: 'InjuryModule' },
+  // injuryAction / InjuryModule retiré v8.11.0 (module mort)
   { dataAttr: 'careerAction',     module: 'CareerModule' },
   { dataAttr: 'weeklyAction',     module: 'WeeklyFocusModule' },
   { dataAttr: 'liveAction',       module: 'LiveTrainingModule' },
   { dataAttr: 'planAction',       module: 'SeasonPlanModule' },
-  { dataAttr: 'advstatsAction',   module: 'AdvancedStatsModule' },
+  // advstatsAction / AdvancedStatsModule retiré v8.11.0 (module mort)
   { dataAttr: 'stxAction',        module: 'SeasonTransitionModule' },
   { dataAttr: 'historyAction',    module: 'SessionsHistoryModule' },
   { dataAttr: 'preAction',        module: 'PreSeanceModule' },

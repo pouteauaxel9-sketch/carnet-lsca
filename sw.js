@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.10.0-mode-terrain-mobile';
+const CACHE_VERSION = 'v8.11.0-cleanup-modules-morts';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -37,15 +37,15 @@ const STATIC_ASSETS = [
   './import-licences.js',
   './excel-export.js',
   './team-view.js',
-  './transverse-view.js',
+  // transverse-view.js supprimé v8.11.0
   './attendance.js',
-  './injury.js',
-  './profiling.js',
-  './directeur-view.js',
+  // injury.js supprimé v8.11.0
+  // profiling.js supprimé v8.11.0
+  // directeur-view.js supprimé v8.11.0
   './career.js',
   './weekly-focus.js',
   './season-plan.js',
-  './advanced-stats.js',
+  // advanced-stats.js supprimé v8.11.0
   './ux-polish.js',
   './live-training.js',
   './sessions-history.js',
