@@ -1592,6 +1592,97 @@ function quickViewBody(pid) {
   `;
 }
 
+// v8.21.0 : agrégation des stats matchs d'un joueur depuis state.data[cat][pid].matchStats
+// Résultat : { matchs, V, N, D, buts, passes, minutes, noteMoy, matchesList }
+function getPlayerMatchStats(cat, pid) {
+  const matchStats = state.data?.[cat]?.[pid]?.matchStats || {};
+  const out = {
+    matchs: 0, V: 0, N: 0, D: 0,
+    buts: 0, passes: 0, minutes: 0,
+    noteSum: 0, noteCount: 0,
+    matchesList: []  // pour affichage détaillé
+  };
+  Object.keys(matchStats).forEach(mkey => {
+    const s = matchStats[mkey];
+    if (!s || !s.played) return;
+    out.matchs++;
+    out.buts   += Number(s.buts || 0);
+    out.passes += Number(s.passes || 0);
+    out.minutes += Number(s.minutes || 0);
+    if (s.note != null && s.note !== '' && !isNaN(Number(s.note))) {
+      out.noteSum += Number(s.note);
+      out.noteCount++;
+    }
+    const m = s.match || {};
+    if (m.homeScore != null && m.awayScore != null && m.homeTeam && m.awayTeam) {
+      const isHome = /lsca|louverne/i.test(m.homeTeam);
+      const myScore = isHome ? m.homeScore : m.awayScore;
+      const oppScore = isHome ? m.awayScore : m.homeScore;
+      let res = '';
+      if (myScore > oppScore) { out.V++; res = 'V'; }
+      else if (myScore < oppScore) { out.D++; res = 'D'; }
+      else { out.N++; res = 'N'; }
+      out.matchesList.push({
+        date: m.date, oppTeam: isHome ? m.awayTeam : m.homeTeam,
+        myScore, oppScore, isHome, res,
+        buts: s.buts || 0, passes: s.passes || 0, minutes: s.minutes || 0, note: s.note
+      });
+    }
+  });
+  out.noteMoy = out.noteCount > 0 ? +(out.noteSum / out.noteCount).toFixed(1) : null;
+  // Tri des matchs par date desc
+  out.matchesList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  return out;
+}
+
+function renderPlayerMatchStatsWidget(pid) {
+  const s = getPlayerMatchStats(state.cat, pid);
+  if (s.matchs === 0) {
+    return `<p class="collapsible-empty">Aucun match joué cette saison. Les stats apparaîtront après saisie dans le modal stats match.</p>`;
+  }
+  const winPct = s.matchs > 0 ? Math.round((s.V / s.matchs) * 100) : 0;
+  const rows = s.matchesList.slice(0, 15).map(m => {
+    const resCol = m.res === 'V' ? '#16a34a' : m.res === 'D' ? '#dc2626' : '#d97706';
+    const dateStr = m.date ? new Date(m.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '—';
+    return `
+      <tr>
+        <td style="color:#64748b;font-size:12px">${h(dateStr)}</td>
+        <td><strong style="color:${resCol}">${m.res}</strong> ${m.myScore}-${m.oppScore}</td>
+        <td style="font-size:13px;color:#475569">${m.isHome ? '🏠' : '✈'} ${h(m.oppTeam)}</td>
+        <td style="text-align:center">${m.buts || '—'}</td>
+        <td style="text-align:center">${m.passes || '—'}</td>
+        <td style="text-align:center">${m.minutes ? m.minutes + '\'' : '—'}</td>
+        <td style="text-align:center">${m.note != null && m.note !== '' ? m.note + '/10' : '—'}</td>
+      </tr>`;
+  }).join('');
+  return `
+    <div class="player-match-stats">
+      <div class="pms-summary">
+        <div class="pms-stat"><strong>${s.matchs}</strong><span>Matchs</span></div>
+        <div class="pms-stat pms-stat-v"><strong>${s.V}</strong><span>Victoires</span></div>
+        <div class="pms-stat pms-stat-n"><strong>${s.N}</strong><span>Nuls</span></div>
+        <div class="pms-stat pms-stat-d"><strong>${s.D}</strong><span>Défaites</span></div>
+        <div class="pms-stat"><strong>${winPct}%</strong><span>% Victoire</span></div>
+      </div>
+      <div class="pms-summary">
+        <div class="pms-stat"><strong>${s.buts}</strong><span>⚽ Buts</span></div>
+        <div class="pms-stat"><strong>${s.passes}</strong><span>🎯 Passes D.</span></div>
+        <div class="pms-stat"><strong>${s.minutes}'</strong><span>⏱ Minutes</span></div>
+        <div class="pms-stat"><strong>${s.noteMoy != null ? s.noteMoy + '/10' : '—'}</strong><span>⭐ Note moy.</span></div>
+      </div>
+      <div class="pms-table-wrap">
+        <table class="pms-table">
+          <thead>
+            <tr><th>Date</th><th>Résultat</th><th>Adversaire</th><th>⚽</th><th>🎯</th><th>⏱</th><th>⭐</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${s.matchesList.length > 15 ? `<p class="pms-more">+ ${s.matchesList.length - 15} matchs plus anciens</p>` : ''}
+      </div>
+    </div>
+  `;
+}
+
 function profileBody(pid) {
   const prof = getProf(pid);
   const gap = getGapToIdeal(pid);
@@ -1608,16 +1699,18 @@ function profileBody(pid) {
     </div>
   `).join('');
 
-  // Bloc Suivi joueur (mini-onglets : Jonglerie / Assiduité)
-  // v8.19.0 : onglet "Cette semaine" retiré (WeeklyFocusModule désactivé)
+  // Bloc Suivi joueur (mini-onglets : Jonglerie / Matchs / Assiduité)
+  // v8.21.0 : ajout onglet Matchs (stats V/N/D + buts + passes depuis matchStats)
   let followup = state.selFollowup || 'juggle';
   if (followup === 'injury' || followup === 'weekly') followup = 'juggle'; // migration
   const followupTabs = [
     { key: 'juggle',     label: 'Jonglerie',      icon: '⚽' },
+    { key: 'matchs',     label: 'Matchs',         icon: '🏆' },
     { key: 'attendance', label: 'Assiduité',      icon: '📅' },
   ];
   let followupContent = '';
   if (followup === 'juggle')          followupContent = window.SessionsHistoryModule?.renderPlayerJuggleWidget?.(pid, state.cat) || '<p class="collapsible-empty">Aucune mesure enregistrée.</p>';
+  else if (followup === 'matchs')     followupContent = renderPlayerMatchStatsWidget(pid);
   else if (followup === 'attendance') followupContent = window.AttendanceModule?.renderWidget?.(pid) || '<p class="collapsible-empty">Aucun pointage.</p>';
 
   const followupBlock = `

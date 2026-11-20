@@ -10478,6 +10478,106 @@ body.season-transition-active { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Stats matchs joueur — bloc dans Suivi joueur
+   ═══════════════════════════════════════════════════════════ */
+
+.player-match-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pms-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.pms-summary:first-child {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.pms-stat {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align: center;
+}
+
+.pms-stat strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.pms-stat span {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: block;
+  margin-top: 4px;
+}
+
+.pms-stat.pms-stat-v strong { color: #16a34a; }
+.pms-stat.pms-stat-n strong { color: #d97706; }
+.pms-stat.pms-stat-d strong { color: #dc2626; }
+
+.pms-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 2px;
+}
+
+.pms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 480px;
+}
+
+.pms-table th {
+  padding: 10px 8px;
+  text-align: left;
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.pms-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #0f172a;
+}
+
+.pms-table tr:last-child td { border-bottom: none; }
+.pms-table tr:hover td { background: #f8fafc; }
+
+.pms-more {
+  padding: 10px 14px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+  font-style: italic;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .pms-summary,
+  .pms-summary:first-child { grid-template-columns: repeat(2, 1fr); }
+  .pms-stat strong { font-size: 18px; }
+}
+
+/* ═══════════════════════════════════════════════════════════
    Dashboard : barre actions rapides (Préparer / Mode Terrain)
    ═══════════════════════════════════════════════════════════ */
 
