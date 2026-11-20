@@ -10478,6 +10478,40 @@ body.season-transition-active { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Dashboard Classements : switch Phase 1 / Phase 2
+   ═══════════════════════════════════════════════════════════ */
+
+.standings-phase-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.standings-phase-btn {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.standings-phase-btn:hover { color: #0f172a; }
+
+.standings-phase-btn.on {
+  background: white;
+  color: #185fa5;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════
    Stats matchs joueur — bloc dans Suivi joueur
    ═══════════════════════════════════════════════════════════ */
 

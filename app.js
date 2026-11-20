@@ -708,22 +708,64 @@ function getRefreshLabel() {
 }
 
 function buildDashboardFeeds(cat = state.cat) {
-  // Pour chaque équipe du club de cette catégorie :
-  //  - Si on a l'URL FFF ET les données déjà chargées depuis l'API DOFA → on affiche
-  //    la poule complète (toutes les équipes de la poule, ligne de notre équipe surlignée)
-  //  - Sinon → ligne "Classement à venir" (en attendant l'URL ou le fetch)
+  // v8.24.0 : lit directement le JSON scrapé (state.__standingsJsonData) pour pouvoir
+  // afficher les phases (Phase 1 / Phase 2 / ...). Fallback sur l'ancien cache pour
+  // les équipes qui ne sont pas dans le JSON.
   const teams = getConfiguredTeamsForCategory(cat);
   const fffCache = state.fffStandingsByCat?.[cat] || {};
+  const scrapedJson = state.__standingsJsonData;
+  const isFetching = state.fffFetchingFor?.[cat];
   const standings = [];
 
-  const isFetching = state.fffFetchingFor?.[cat];
+  // Liste globale des phases disponibles dans la catégorie (toutes équipes confondues)
+  const phasesSet = new Set();
+  if (scrapedJson?.teams) {
+    teams.forEach(team => {
+      const entry = scrapedJson.teams[team.key];
+      if (entry?.phases) {
+        Object.keys(entry.phases).forEach(label => phasesSet.add(label));
+      } else if (entry?.standings) {
+        phasesSet.add('Phase 1');
+      }
+    });
+  }
+  const availablePhases = Array.from(phasesSet);
+
+  // Phase sélectionnée : state.dashPhase (par défaut la plus récente)
+  let selectedPhase = state.dashPhase;
+  if (!selectedPhase || !availablePhases.includes(selectedPhase)) {
+    selectedPhase = availablePhases[availablePhases.length - 1] || null;
+  }
 
   teams.forEach(team => {
     const compLabel = team.division || team.officialName || team.teamLabel;
-    const fffData = team.fffUrl ? fffCache[team.key] : null;
+
+    // Essaie d'abord le JSON scrapé pour la phase sélectionnée
+    const scrapedEntry = scrapedJson?.teams?.[team.key];
+    let phaseData = null;
+    if (scrapedEntry) {
+      if (scrapedEntry.phases) {
+        phaseData = scrapedEntry.phases[selectedPhase];
+        // Si cette équipe n'a pas la phase sélectionnée, prendre la plus récente qu'elle a
+        if (!phaseData) {
+          const labels = Object.keys(scrapedEntry.phases);
+          phaseData = scrapedEntry.phases[labels[labels.length - 1]];
+        }
+      } else if (scrapedEntry.standings && (selectedPhase === 'Phase 1' || !selectedPhase)) {
+        phaseData = {
+          standings: scrapedEntry.standings,
+          matches: scrapedEntry.matches,
+          pouleName: scrapedEntry.pouleName,
+          label: 'Phase 1',
+        };
+      }
+    }
+
+    // Fallback sur le cache fetchStandings
+    const fffData = phaseData || (team.fffUrl ? fffCache[team.key] : null);
 
     if (fffData && Array.isArray(fffData.standings) && fffData.standings.length) {
-      // On a reçu la poule complète : toutes les équipes
+      const phaseSuffix = phaseData?.label ? ' · ' + phaseData.label : '';
       fffData.standings.forEach(row => {
         const isOurs = String(row.teamCode) === String(team.key).toUpperCase()
                     || isSameTeam(row.team, team.officialName);
@@ -734,7 +776,7 @@ function buildDashboardFeeds(cat = state.cat) {
           played: row.played,
           won: row.won, draw: row.draw, lost: row.lost,
           diff: row.diff,
-          competition: compLabel + (fffData.pouleName ? ' — ' + fffData.pouleName : ''),
+          competition: compLabel + (fffData.pouleName ? ' — ' + fffData.pouleName : '') + phaseSuffix,
           competitionLevel: 'district',
           isOurTeam: isOurs,
         });
@@ -761,10 +803,9 @@ function buildDashboardFeeds(cat = state.cat) {
     }
   });
 
-  // Déclenche le fetch asynchrone en arrière-plan (idempotent, cache 1h)
   ensureFffStandings(cat);
 
-  return { standings };
+  return { standings, availablePhases, selectedPhase };
 }
 
 // Compare 2 noms d'équipe (normalisation : minuscules, sans accents, sans ponctuation)
@@ -1119,12 +1160,23 @@ function renderDashEmptyState(message, hint) {
     </div>`;
 }
 
-function renderStandingsCard(standings) {
+function renderStandingsCard(standings, availablePhases = [], selectedPhase = null) {
+  // v8.24.0 : switch phases si plusieurs disponibles
+  const phaseSwitch = availablePhases.length > 1 ? `
+    <div class="standings-phase-switch">
+      ${availablePhases.map(label => `
+        <button class="standings-phase-btn ${selectedPhase === label ? 'on' : ''}" type="button"
+                data-action="set-dash-phase" data-phase="${h(label)}">
+          ${h(label)}
+        </button>`).join('')}
+    </div>` : '';
+
   if (!standings.length) {
     return `
     <section class="dashboard-card">
       <div class="card-head">
         <div><div class="card-kicker">Classement</div><h2>Classements</h2></div>
+        ${phaseSwitch}
       </div>
       <div class="standings-list">${renderDashEmptyState('Classement non disponible', 'En attente de la synchronisation FFF.')}</div>
     </section>`;
@@ -1174,6 +1226,7 @@ function renderStandingsCard(standings) {
     <section class="dashboard-card">
       <div class="card-head">
         <div><div class="card-kicker">Classement</div><h2>Classements</h2></div>
+        ${phaseSwitch}
       </div>
       <div class="standings-list">${groupsHtml}</div>
     </section>`;
@@ -1361,7 +1414,7 @@ function renderDashboard() {
       <!-- v8.23.0 : carte "Infos diverses" retirée (contenait depuis 6 mois le placeholder) -->
       <div class="dashboard-main-grid dashboard-main-grid-compact">
         ${renderCategoryAccessCard(categories)}
-        ${renderStandingsCard(feeds.standings)}
+        ${renderStandingsCard(feeds.standings, feeds.availablePhases, feeds.selectedPhase)}
       </div>
     </section>
   `;
@@ -2883,6 +2936,13 @@ document.addEventListener('click', event => {
     state.selPlayer = null;
     state.selTeam = null;
     renderAll();
+    return;
+  }
+
+  // v8.24.0 : changement de phase affichée sur la carte Classements du dashboard
+  if (action === 'set-dash-phase') {
+    state.dashPhase = target.dataset.phase || null;
+    renderMain();
     return;
   }
 
