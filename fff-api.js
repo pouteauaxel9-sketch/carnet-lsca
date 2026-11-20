@@ -53,16 +53,25 @@
 
   // Extrait id/phase/poule depuis une URL comme :
   //   https://mayenne.fff.fr/competitions?tab=ranking&id=450413&phase=1&poule=3&type=ch
-  // Fonctionne aussi avec les variantes trailing-slash, ordre params différent, etc.
+  //   https://epreuves.fff.fr/competition/engagement/460501-u13-division-1-elite/phase/1/1/accueil
+  // v8.22.0 : supporte les 2 formats FFF
   function parseUrl(url) {
     if (!url) return null;
     try {
       const u = new URL(url);
+      // Format 1 : query string (mayenne.fff.fr)
       const id    = parseInt(u.searchParams.get('id'), 10);
       const phase = parseInt(u.searchParams.get('phase'), 10);
       const poule = parseInt(u.searchParams.get('poule'), 10);
-      if (!id || !phase || !poule) return null;
-      return { competId: id, phaseId: phase, pouleId: poule };
+      if (id && phase && poule) {
+        return { competId: id, phaseId: phase, pouleId: poule };
+      }
+      // Format 2 : path (epreuves.fff.fr)
+      const m = u.pathname.match(/\/competition\/engagement\/(\d+)[^/]*\/phase\/(\d+)\/(\d+)/i);
+      if (m) {
+        return { competId: parseInt(m[1], 10), phaseId: parseInt(m[2], 10), pouleId: parseInt(m[3], 10) };
+      }
+      return null;
     } catch {
       return null;
     }

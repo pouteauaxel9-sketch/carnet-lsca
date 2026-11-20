@@ -36,14 +36,25 @@ if (!SCRAPERAPI_KEY) {
 
 /* ── Parsing URL FFF ──────────────────────────────── */
 
+// Supporte 2 formats :
+// 1. Ancien (district) : https://mayenne.fff.fr/competitions?tab=ranking&id=XXX&phase=X&poule=X&type=ch
+// 2. Nouveau (épreuves) : https://epreuves.fff.fr/competition/engagement/XXX-slug/phase/X/X/accueil
 function parseUrl(url) {
   try {
     const u = new URL(url);
-    const id    = parseInt(u.searchParams.get('id'), 10);
-    const phase = parseInt(u.searchParams.get('phase'), 10);
-    const poule = parseInt(u.searchParams.get('poule'), 10);
-    if (!id || !phase || !poule) return null;
-    return { competId: id, phaseId: phase, pouleId: poule };
+    // Format 1 : query string
+    const idQs    = parseInt(u.searchParams.get('id'), 10);
+    const phaseQs = parseInt(u.searchParams.get('phase'), 10);
+    const pouleQs = parseInt(u.searchParams.get('poule'), 10);
+    if (idQs && phaseQs && pouleQs) {
+      return { competId: idQs, phaseId: phaseQs, pouleId: pouleQs };
+    }
+    // Format 2 : path /competition/engagement/{id}-{slug}/phase/{phase}/{poule}/...
+    const m = u.pathname.match(/\/competition\/engagement\/(\d+)[^/]*\/phase\/(\d+)\/(\d+)/i);
+    if (m) {
+      return { competId: parseInt(m[1], 10), phaseId: parseInt(m[2], 10), pouleId: parseInt(m[3], 10) };
+    }
+    return null;
   } catch { return null; }
 }
 
