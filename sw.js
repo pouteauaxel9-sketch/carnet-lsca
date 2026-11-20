@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.13.0-switcher-cats-favoris';
+const CACHE_VERSION = 'v8.15.0-eval-retiree-focus-jonglerie-matchs';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -32,7 +32,7 @@ const STATIC_ASSETS = [
   './styles.css',
   './app.js',
   './auth-local.js',
-  './evaluation-seance.js',
+  // evaluation-seance.js supprimé v8.15.0
   './roster.js',
   './import-licences.js',
   './excel-export.js',

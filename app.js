@@ -1807,8 +1807,77 @@ function renderCategoryComparison(pid) {
 }
 
 function evaluationBody(pid) {
-  const pillar = pillars()[state.selPillar];
+  // v8.14.0 : 2 modes d'évaluation — Rapide (1 note par pilier) et Détaillée (40 critères)
+  const evalMode = state.evalMode || 'quick';
   const seasonData = state.data[state.cat][pid][state.season];
+  const weakness = getMainWeakness(pid);
+
+  const modeToggle = `
+    <div class="eval-mode-toggle">
+      <button class="eval-mode-btn ${evalMode === 'quick' ? 'on' : ''}" type="button"
+              data-action="set-eval-mode" data-mode="quick"
+              title="5 notes rapides (1 par pilier) — pour tes séances courantes">
+        ⚡ Rapide
+      </button>
+      <button class="eval-mode-btn ${evalMode === 'detail' ? 'on' : ''}" type="button"
+              data-action="set-eval-mode" data-mode="detail"
+              title="40 critères détaillés — pour un bilan trimestriel complet">
+        📊 Détaillée (${pillars().reduce((s, p) => s + p.criteria.length, 0)} critères)
+      </button>
+    </div>`;
+
+  const header = `
+    <div class="detail-grid">
+      <div class="detail-card span-2"><div class="card-kicker">Lecture coach</div><h3>Insights du moment</h3>${insightsMarkup(getInsights(pid))}</div>
+      <div class="detail-card"><div class="card-kicker">Priorite</div><h3>Axe de travail</h3><div class="priority-box"><strong>${weakness ? h(weakness.label) : 'A definir'}</strong><p>${weakness ? `Pilier le plus bas a ${weakness.score}%.` : 'Aucun axe stable pour le moment.'}</p></div></div>
+    </div>
+    ${renderCategoryComparison(pid)}
+    ${modeToggle}
+  `;
+
+  const footer = `
+    <div class="eval-footer">
+      <div class="footer-grid">
+        <div class="fc-block"><label for="fc-coach">Commentaire entraineur</label><textarea id="fc-coach" placeholder="Points forts, axes de progression..." data-action="set-main-comment">${h(seasonData.comments?.main || '')}</textarea></div>
+        <div class="fc-block"><label for="fc-self">Auto-evaluation joueur</label><textarea id="fc-self" placeholder="Ressenti du joueur..." data-action="set-self-comment">${h(seasonData.comments?.self || '')}</textarea></div>
+      </div>
+      <div class="save-row"><span class="save-hint">Saison ${h(state.season)}</span><button class="btn btn-primary" type="button" data-action="save-player">Sauvegarder maintenant</button></div>
+    </div>
+  `;
+
+  // ─── Mode RAPIDE : 1 note par pilier, applique la même note à tous les critères ─────
+  if (evalMode === 'quick') {
+    const quickRows = pillars().map(pillar => {
+      const pct = getPillarPercent(state.cat, pid, pillar.key);
+      // La "note rapide" = moyenne des critères arrondie (ou 0 si rien)
+      const ratings = seasonData.ratings?.[pillar.key] || [];
+      const filled = ratings.filter(r => r > 0);
+      const avg = filled.length ? Math.round(filled.reduce((s,r) => s+r, 0) / filled.length) : 0;
+      const dots = [1,2,3,4,5].map(dot => `
+        <button class="dot ${avg === dot ? 'on-' + dot : ''}" type="button"
+                data-action="set-pillar-quick" data-pillar="${h(pillar.key)}" data-value="${dot}"
+                aria-label="Note ${dot} pour ${h(pillar.label)}">${dot}</button>`).join('');
+      return `
+        <div class="quick-pillar-row" style="border-left:4px solid ${PCOLS[pillar.key]}">
+          <div class="quick-pillar-info">
+            <div class="quick-pillar-name">${h(pillar.label)}</div>
+            <div class="quick-pillar-sub">${pillar.criteria.length} critères · ${pct > 0 ? pct + '%' : 'non noté'}</div>
+          </div>
+          <div class="dots">${dots}</div>
+          ${avg ? `<div class="quick-pillar-label">${h(DLABELS[avg])}</div>` : ''}
+        </div>`;
+    }).join('');
+
+    return `
+      ${header}
+      <div class="quick-eval-explain">💡 Mode Rapide : une note /5 applique la même évaluation à tous les critères du pilier. Pour affiner critère par critère, passe en Détaillée.</div>
+      <div class="quick-pillars">${quickRows}</div>
+      ${footer}
+    `;
+  }
+
+  // ─── Mode DÉTAILLÉ : 40 critères (la vue historique) ──────────────────────
+  const pillar = pillars()[state.selPillar];
   const pillarTabs = pillars().map((item, index) => {
     const pct = getPillarPercent(state.cat, pid, item.key);
     const boost = window.WeeklyFocusModule?.pillarBoost?.(pid, state.cat, item.key);
@@ -1823,14 +1892,8 @@ function evaluationBody(pid) {
     return `<div class="crit-row"><div class="crit-top"><div class="crit-name">${h(criterion)}</div><div class="dots">${dots}</div></div>${val ? `<div class="crit-note">${h(DLABELS[val])}</div>` : ''}<textarea class="crit-comment" rows="2" placeholder="Commentaire sur ce critere..." data-action="set-crit-comment" data-pillar="${h(pillar.key)}" data-index="${index}">${h(comment)}</textarea></div>`;
   }).join('');
 
-  const weakness = getMainWeakness(pid);
-
   return `
-    <div class="detail-grid">
-      <div class="detail-card span-2"><div class="card-kicker">Lecture coach</div><h3>Insights du moment</h3>${insightsMarkup(getInsights(pid))}</div>
-      <div class="detail-card"><div class="card-kicker">Priorite</div><h3>Axe de travail</h3><div class="priority-box"><strong>${weakness ? h(weakness.label) : 'A definir'}</strong><p>${weakness ? `Pilier le plus bas a ${weakness.score}%.` : 'Aucun axe stable pour le moment.'}</p></div></div>
-    </div>
-    ${renderCategoryComparison(pid)}
+    ${header}
     <div class="pillar-nav">${pillarTabs}</div>
     <div class="legend-bar">
       <div class="litem"><div class="ldot" style="background:#FAECE7;border:1px solid #D85A30"></div>1</div>
@@ -1840,84 +1903,36 @@ function evaluationBody(pid) {
       <div class="litem"><div class="ldot" style="background:#DCF7E4;border:1px solid #009640"></div>5</div>
     </div>
     <div class="crit-list">${criteria}</div>
-    <div class="eval-footer">
-      <div class="footer-grid">
-        <div class="fc-block"><label for="fc-coach">Commentaire entraineur</label><textarea id="fc-coach" placeholder="Points forts, axes de progression..." data-action="set-main-comment">${h(seasonData.comments?.main || '')}</textarea></div>
-        <div class="fc-block"><label for="fc-self">Auto-evaluation joueur</label><textarea id="fc-self" placeholder="Ressenti du joueur..." data-action="set-self-comment">${h(seasonData.comments?.self || '')}</textarea></div>
-      </div>
-      <div class="save-row"><span class="save-hint">Saison ${h(state.season)}</span><button class="btn btn-primary" type="button" data-action="save-player">Sauvegarder maintenant</button></div>
-    </div>
+    ${footer}
   `;
 }
 
 function renderPlayerView() {
+  // v8.15.0 : l'évaluation complète (40 critères + score + niveau + radar + comparateur)
+  // est retirée de la UI. On garde uniquement Profil + Séances (jonglerie + stats matchs).
+  // Le code eval reste en place dans app.js pour ne pas casser pdf-report / career / weekly-focus.
   const pid = state.selPlayer;
   ensureData(state.cat, pid, state.season);
 
-  // Migration douce : ancien selSection 'jonglerie' devient 'seance'
+  // Migration : anciennes sections obsolètes
   if (state.selSection === 'jonglerie') state.selSection = 'seance';
-  // Anciennes valeurs 'observation' restent valides (renommées en libellé seulement)
+  if (state.selSection === 'observation') state.selSection = 'profil';
+  if (state.selSection === 'evaluation') state.selSection = 'seance';
 
   const prof = getProf(pid);
-  const score = pScore(state.cat, pid);
-  const level = getLevel(score);
-  const compareScore = state.comparePlayer ? pScore(state.cat, state.comparePlayer) : null;
-  const progress = getProgress(pid);
-  const completion = getCompletion(pid);
-  const values = pillars().map(pillar => getPillarPercent(state.cat, pid, pillar.key));
-  const compareValues = state.comparePlayer ? pillars().map(pillar => getPillarPercent(state.cat, state.comparePlayer, pillar.key)) : [];
-  const hasRadar = values.some(value => value > 0) || compareValues.some(value => value > 0);
   const displayName = (prof.prenom && prof.nom) ? (prof.prenom + ' ' + prof.nom) : pid;
   const piedLabel = prof.pied === 'droit' ? 'Pied droit' : prof.pied === 'gauche' ? 'Pied gauche' : prof.pied === 'ambidextre' ? 'Ambidextre' : null;
-  const strongest = strongestPillar(pid);
-  const weakest = getMainWeakness(pid);
   const profileTone = getPlayerTone(pid);
-  const compareOptions = players().filter(player => player.name !== pid).map(player => `<option value="${h(player.name)}" ${state.comparePlayer === player.name ? 'selected' : ''}>${h(player.name)}</option>`).join('');
 
-  // 3 onglets (onglet "Matchs" supprimé en v8.7.0 — les stats match se gèrent
-  // via le modal qui s'ouvre au clic sur un match dans la carte "Calendrier FFF"
-  // de la vue équipe).
+  // 2 onglets : Profil + Séances (évaluation retirée en v8.15.0)
   const sectionTabs = [
     ['profil', 'Profil'],
-    ['evaluation', 'Évaluation'],
     ['seance', 'Séances'],
-  ].map(([key, label]) => `<button class="stab ${state.selSection === key ? 'on' : ''}" type="button" data-action="set-section" data-section="${key}">${label}${key === 'evaluation' && score > 0 ? ' (' + score + '%)' : ''}</button>`).join('');
-  // Si l'ancienne sélection pointait sur 'observation' (section supprimée), on bascule sur profil
-  if (state.selSection === 'observation') state.selSection = 'profil';
+  ].map(([key, label]) => `<button class="stab ${state.selSection === key ? 'on' : ''}" type="button" data-action="set-section" data-section="${key}">${label}</button>`).join('');
 
-  // v8.12.0 : bandeau coach affiché UNIQUEMENT si le joueur a au moins une évaluation saisie.
-  // Sinon : CTA discret invitant à faire la première évaluation, pas de bandeau vide.
-  const hasEval = score > 0 || completion.percent > 0 || strongest != null || weakest != null;
-  const insights = hasEval ? getInsights(pid).filter(i => i.tone !== 'neutral' || !/Pas d.*alerte/.test(i.text)) : [];
-  const coachBanner = hasEval ? `
-    <div class="coach-banner">
-      <div class="coach-banner-stats">
-        <div class="cb-stat"><span>Score</span><strong>${score > 0 ? score + '%' : '—'}</strong></div>
-        <div class="cb-stat"><span>Niveau</span><strong>${h(level)}</strong></div>
-        <div class="cb-stat"><span>Profil</span><strong>${h(getProfile(pid))}</strong></div>
-        <div class="cb-stat"><span>Priorité</span><strong>${weakest ? h(weakest.label) : '—'}</strong></div>
-        <div class="cb-stat"><span>Point fort</span><strong>${strongest ? h(strongest.label) : '—'}</strong></div>
-        <div class="cb-stat"><span>Dossier</span><strong>${completion.percent}%</strong></div>
-        <div class="cb-stat"><span>Progression</span><strong>${progress ? h(progress.text) : '—'}</strong></div>
-      </div>
-      ${insights.length ? `<div class="coach-banner-insights">${insights.slice(0,2).map(i => `<span class="insight-pill ${i.tone}">${h(i.text)}</span>`).join('')}</div>` : ''}
-    </div>
-  ` : `
-    <div class="first-eval-cta">
-      <span class="first-eval-icon">👋</span>
-      <div class="first-eval-txt">
-        <strong>Joueur pas encore évalué</strong>
-        <span>Clique sur l'onglet <b>Évaluation</b> pour commencer — tu verras apparaître ici son score, son profil et ses axes de progression.</span>
-      </div>
-    </div>
-  `;
-
-  // Corps selon la section (jonglerie supprimée — onglet fusionné dans séances)
   let body = '';
   if (state.selSection === 'profil') body = profileBody(pid);
-  else if (state.selSection === 'seance') body = window.SeanceModule?.renderBody?.(pid) ?? '<p>Module séances non chargé.</p>';
-  // 'observation' retirée en v8.7.0
-  else body = evaluationBody(pid);
+  else body = window.SeanceModule?.renderBody?.(pid) ?? '<p>Module séances non chargé.</p>';
 
   return `
     <div class="profile-card" style="--player-accent:${profileTone}">
@@ -1932,8 +1947,6 @@ function renderPlayerView() {
             <div>
               <div class="hero-name">${h(displayName)}</div>
               <div class="hero-tags">
-                ${hasEval && getProfile(pid) !== 'Profil en construction' ? `<span class="hero-tag">${h(getProfile(pid))}</span>` : ''}
-                ${hasEval && level && !/non.?eval/i.test(level) ? `<span class="hero-tag">Niveau ${h(level)}</span>` : ''}
                 <span class="hero-tag">${h(CAT_LABELS[state.cat])}</span>
                 <span class="hero-tag">Saison ${h(state.season)}</span>
                 ${piedLabel ? `<span class="hero-tag">${h(piedLabel)}</span>` : ''}
@@ -1942,27 +1955,19 @@ function renderPlayerView() {
             <div class="hero-actions">
               <button class="btn" type="button" data-action="back-to-category">Retour catégorie</button>
               <button class="btn" type="button" data-action="open-career" data-pid="${h(pid)}">📅 Carrière</button>
-              <button class="btn" type="button" data-action="print-report">Bilan joueur</button>
+              <button class="btn" type="button" data-action="print-report">📄 Bilan joueur</button>
             </div>
           </div>
           <div class="hero-postes"><span class="poste-main">${h(prof.poste1 || 'Poste non défini')}</span>${prof.poste2 ? `<span class="poste-sec">${h(prof.poste2)}</span>` : ''}</div>
         </div>
-        ${hasRadar ? `<div class="hero-radar"><canvas id="rc" width="180" height="180" aria-label="Radar ${h(pid)}"></canvas></div>` : ''}
       </div>
-
-      ${coachBanner}
 
       <div class="toolbar toolbar-top">
         <div class="section-tabs">${sectionTabs}</div>
         <div class="toolbar-right">
-          ${hasEval ? `<select class="compare-select" id="compare-select" aria-label="Comparer à un autre joueur"><option value="">Comparer à un autre joueur</option>${compareOptions}</select>` : ''}
           ${prof.photo ? `<button class="btn" type="button" data-action="clear-player-photo">Supprimer la photo</button>` : ''}
         </div>
       </div>
-      ${state.comparePlayer ? `<div class="stats-row compare-on">
-        <div class="stat-card compare-card"><div class="stat-val">${score || 0}%</div><div class="stat-label">${h(pid)}</div></div>
-        <div class="stat-card compare-card"><div class="stat-val">${compareScore || 0}%</div><div class="stat-label">${h(state.comparePlayer)}</div></div>
-      </div>` : ''}
       <div class="sec-body">${body}</div>
     </div>
   `;
@@ -2818,6 +2823,34 @@ document.addEventListener('click', event => {
   if (action === 'add-obj') { addObj(); return; }
   if (action === 'delete-obj') { deleteObj(Number(target.dataset.index)); return; }
   if (action === 'set-rating') { setRating(target.dataset.pillar, Number(target.dataset.index), Number(target.dataset.value)); return; }
+  // v8.14.0 : mode d'évaluation rapide / détaillé
+  if (action === 'set-eval-mode') {
+    state.evalMode = target.dataset.mode || 'quick';
+    renderMain();
+    return;
+  }
+  if (action === 'set-pillar-quick') {
+    // Note rapide : applique la même note à tous les critères du pilier
+    const pillarKey = target.dataset.pillar;
+    const value = Number(target.dataset.value);
+    const pillar = pillars().find(p => p.key === pillarKey);
+    if (!pillar) return;
+    ensureData(state.cat, state.selPlayer, state.season);
+    const seasonData = state.data[state.cat][state.selPlayer][state.season];
+    if (!seasonData.ratings[pillarKey]) seasonData.ratings[pillarKey] = [];
+    // Si on reclique sur la même note : reset à 0
+    const currentAvg = (() => {
+      const r = seasonData.ratings[pillarKey].filter(v => v > 0);
+      return r.length ? Math.round(r.reduce((s,v)=>s+v,0) / r.length) : 0;
+    })();
+    const newVal = currentAvg === value ? 0 : value;
+    for (let i = 0; i < pillar.criteria.length; i++) {
+      seasonData.ratings[pillarKey][i] = newVal;
+    }
+    schedulePersist('Note rapide enregistrée');
+    renderMain();
+    return;
+  }
   if (action === 'save-player') { savePlayerNow(); return; }
   if (action === 'print-report') {
     if (window.PDFModule) window.PDFModule.generate(state.selPlayer);
