@@ -1257,6 +1257,30 @@ function renderPreseanceReminderBanner() {
   }
 }
 
+// v8.13.0 : système favoris catégories pour alléger le switcher
+const FAVCATS_KEY = 'cfb6_fav_cats_v1';
+
+function getFavCats() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(FAVCATS_KEY) || 'null');
+    if (Array.isArray(raw) && raw.length) return raw;
+  } catch {}
+  return ['u11', 'u13']; // Par défaut : les 2 cats que coache Axel
+}
+
+function setFavCats(list) {
+  try { localStorage.setItem(FAVCATS_KEY, JSON.stringify(list)); } catch {}
+}
+
+function toggleFavCat(cat) {
+  const favs = getFavCats();
+  const idx = favs.indexOf(cat);
+  if (idx >= 0) favs.splice(idx, 1);
+  else favs.push(cat);
+  if (favs.length === 0) favs.push('u13'); // garde-fou : au moins 1 favori
+  setFavCats(favs);
+}
+
 function renderDashboard() {
   const summary = getClubSummary();
   const categories = Object.keys(CLUB_DATA.categories);
@@ -1268,22 +1292,37 @@ function renderDashboard() {
   const identityFg = isU13 ? '#0f6e56' : '#185fa5';
   const identityBorder = isU13 ? 'rgba(15,110,86,0.25)' : 'rgba(24,95,165,0.25)';
 
+  const favs = getFavCats();
+  const showAll = !!state.showAllCats;
+  // L'onglet actif est toujours visible, même s'il n'est pas favori
+  const visibleCats = showAll
+    ? categories
+    : categories.filter(c => favs.includes(c) || c === state.cat);
+
   return `
     <section class="dashboard-shell">
 
       ${renderPreseanceReminderBanner()}
 
-      <!-- Switch catégorie prominent en haut du dashboard -->
+      <!-- Switch catégorie : favoris uniquement par défaut, tout si showAllCats -->
       <nav class="dash-cat-switcher" role="tablist" aria-label="Choisir une catégorie">
-        ${categories.map(cat => {
+        ${visibleCats.map(cat => {
           const active = state.cat === cat;
+          const isFav = favs.includes(cat);
           return `
             <button class="dash-cat-chip ${active ? 'on' : ''}" type="button"
                     role="tab" aria-selected="${active}"
                     data-action="set-dashboard-cat" data-cat="${cat}">
               <span class="dash-cat-chip-label">${h(CAT_LABELS[cat] || cat.toUpperCase())}</span>
+              ${showAll ? `<span class="dash-cat-chip-fav ${isFav ? 'on' : ''}" title="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}"
+                                  data-action="toggle-fav-cat" data-cat="${cat}">${isFav ? '★' : '☆'}</span>` : ''}
             </button>`;
         }).join('')}
+        <button class="dash-cat-chip-more" type="button"
+                data-action="toggle-show-all-cats"
+                title="${showAll ? 'Masquer les catégories non favorites' : 'Afficher toutes les catégories'}">
+          ${showAll ? '− Moins' : `+ ${categories.length - visibleCats.length} autres`}
+        </button>
       </nav>
 
       <div class="dashboard-hero">
@@ -2732,6 +2771,19 @@ document.addEventListener('click', event => {
     state.selPlayer = null;
     state.selTeam = null;
     renderAll();
+    return;
+  }
+
+  // v8.13.0 : gestion des favoris de catégories dans le switcher dashboard
+  if (action === 'toggle-show-all-cats') {
+    state.showAllCats = !state.showAllCats;
+    renderMain();
+    return;
+  }
+  if (action === 'toggle-fav-cat') {
+    event?.stopPropagation?.(); // empêche le clic de basculer aussi la catégorie
+    toggleFavCat(target.dataset.cat);
+    renderMain();
     return;
   }
 
