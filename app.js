@@ -1347,23 +1347,21 @@ function renderDashboard() {
         <div class="dash-hero-main">
           <div class="dash-identity-badge" style="background:${identityBg};color:${identityFg};border:1px solid ${identityBorder}">${h(currentIdentity)}</div>
           <h1>${h(getClubDisplayName(state.cat))}</h1>
-          <p>Vue globale du club — classements et accès aux catégories.</p>
           ${renderSyncBadge(supabaseConfig)}
         </div>
+        <!-- v8.23.0 : stats allégées — virées Joueuses (toujours 0) et Catégories (redondant) -->
         <div class="dashboard-stats">
           <div class="dash-stat"><span>Joueurs</span><strong>${summary.totalPlayers}</strong></div>
-          <div class="dash-stat"><span>Joueuses</span><strong>${summary.femalePlayers}</strong></div>
           <div class="dash-stat"><span>Équipes</span><strong>${summary.totalTeams}</strong></div>
-          <div class="dash-stat"><span>Catégories</span><strong>${summary.categories}</strong></div>
         </div>
       </div>
 
       ${renderBirthdaysCard()}
 
+      <!-- v8.23.0 : carte "Infos diverses" retirée (contenait depuis 6 mois le placeholder) -->
       <div class="dashboard-main-grid dashboard-main-grid-compact">
         ${renderCategoryAccessCard(categories)}
         ${renderStandingsCard(feeds.standings)}
-        ${renderInfoCard(CLUB_DATA.infos)}
       </div>
     </section>
   `;
