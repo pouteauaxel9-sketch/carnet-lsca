@@ -19,19 +19,22 @@
     "u13c": {
       "label": "U13 C",
       "phases": [
-        { "label": "Phase 1", "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450428&phase=1&poule=6&type=ch" }
+        { "label": "Phase 1", "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450428&phase=1&poule=6&type=ch" },
+        { "label": "Phase 2 - D3", "url": "https://epreuves.fff.fr/competition/engagement/450428-u13-division-3/phase/2/2/resultats-et-calendrier" }
       ]
     },
     "u13d": {
       "label": "U13 D",
       "phases": [
-        { "label": "Phase 1", "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450428&phase=1&poule=5&type=ch" }
+        { "label": "Phase 1", "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450428&phase=1&poule=5&type=ch" },
+        { "label": "Phase 2 - D3", "url": "https://epreuves.fff.fr/competition/engagement/450428-u13-division-3/phase/2/3/resultats-et-calendrier" }
       ]
     },
     "u12": {
       "label": "U12",
       "phases": [
-        { "label": "Phase 1", "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450429&phase=1&poule=2&type=ch" }
+        { "label": "Phase 1", "url": "https://mayenne.fff.fr/competitions?tab=ranking&id=450429&phase=1&poule=2&type=ch" },
+        { "label": "Phase 2 - D1", "url": "https://epreuves.fff.fr/competition/engagement/450429-u12-division-1/phase/2/1/accueil" }
       ]
     }
   }
