@@ -1323,6 +1323,26 @@ function renderDashboard() {
         </button>
       </nav>
 
+      <!-- v8.20.0 : barre d'actions rapides pour accéder aux 2 workflows séance -->
+      <div class="dash-quick-actions">
+        <button class="dash-quick-btn preseance" type="button" data-action="open-pre-seance"
+                title="Préparer la séance d'aujourd'hui : présents, groupes, principes, timing">
+          <span class="dash-quick-icon">📝</span>
+          <div class="dash-quick-txt">
+            <strong>Préparer la séance</strong>
+            <span>Groupes, principes, timing</span>
+          </div>
+        </button>
+        <button class="dash-quick-btn terrain" type="button" data-action="live-training"
+                title="Lancer le Mode Terrain : jonglerie + objectifs au bord du terrain">
+          <span class="dash-quick-icon">⚽</span>
+          <div class="dash-quick-txt">
+            <strong>Mode Terrain</strong>
+            <span>Jonglerie + objectifs</span>
+          </div>
+        </button>
+      </div>
+
       <div class="dashboard-hero">
         <div class="dash-hero-main">
           <div class="dash-identity-badge" style="background:${identityBg};color:${identityFg};border:1px solid ${identityBorder}">${h(currentIdentity)}</div>
@@ -2033,7 +2053,7 @@ function renderPlayerEmptyState() {
       <div class="empty-shortcuts">
         <div class="empty-shortcut-title">Raccourcis</div>
         <div class="empty-shortcuts-list">
-          <button class="btn btn-ghost" type="button" data-action="set-view" data-view="weekly">📋 Vue Semaine</button>
+          <button class="btn btn-ghost" type="button" data-action="open-pre-seance">📝 Préparer séance</button>
           <button class="btn btn-ghost" type="button" data-action="live-training">⚡ Mode Terrain</button>
           <button class="btn btn-ghost" type="button" data-roster-action="open-create">+ Ajouter un joueur</button>
         </div>

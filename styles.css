@@ -10478,6 +10478,68 @@ body.season-transition-active { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Dashboard : barre actions rapides (Préparer / Mode Terrain)
+   ═══════════════════════════════════════════════════════════ */
+
+.dash-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.dash-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: none;
+  border-radius: 14px;
+  color: white;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.dash-quick-btn:active { transform: scale(0.98); }
+.dash-quick-btn:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
+
+.dash-quick-btn.preseance {
+  background: linear-gradient(135deg, #185fa5 0%, #0c447c 100%);
+}
+
+.dash-quick-btn.terrain {
+  background: linear-gradient(135deg, #0f6e56 0%, #085041 100%);
+}
+
+.dash-quick-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.dash-quick-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dash-quick-txt strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.dash-quick-txt span {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+@media (max-width: 640px) {
+  .dash-quick-actions { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════
    Mode Terrain : filtre par groupe (depuis pré-séance)
    ═══════════════════════════════════════════════════════════ */
 
