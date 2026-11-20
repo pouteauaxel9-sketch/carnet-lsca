@@ -10478,6 +10478,44 @@ body.season-transition-active { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Mode Terrain : filtre par groupe (depuis pré-séance)
+   ═══════════════════════════════════════════════════════════ */
+
+.live-mobile-groupes {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  background: white;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.live-mobile-groupe-tab {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.live-mobile-groupe-tab:active { transform: scale(0.95); }
+
+.live-mobile-groupe-tab.on {
+  background: #0f6e56;
+  border-color: #0a5440;
+  color: white;
+  box-shadow: 0 2px 6px rgba(15,110,86,0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════
    Mode Terrain mobile : onglets Jonglerie / Objectifs
    ═══════════════════════════════════════════════════════════ */
 

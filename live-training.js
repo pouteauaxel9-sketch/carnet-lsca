@@ -45,6 +45,32 @@
   let hideSaisi = false;      // Masquer les joueurs déjà saisis sur le pied actif
   // v8.16.0 : quels objectifs ont leur panneau "joueurs en difficulté" ouvert
   const expandedStruggling = {}; // { [objKey]: true }
+  // v8.18.0 : filtre par groupe (défini en pré-séance). 'all' = tous les présents.
+  let activeGroupe = 'all';      // 'all' | '0' | '1' | '2' ...
+
+  // Helpers groupes
+  function getGroupes() {
+    const s = todaySession();
+    const groupes = s?.preparation?.groupes;
+    if (!Array.isArray(groupes)) return [];
+    return groupes.map((g, i) => {
+      const pids = [];
+      (g.teams || []).forEach(t => (t || []).forEach(pid => { if (pid) pids.push(pid); }));
+      return { idx: i, label: g.label || `Groupe ${i + 1}`, pids };
+    }).filter(g => g.pids.length > 0);
+  }
+  function groupePids(groupeIdx) {
+    const groupes = getGroupes();
+    const g = groupes[Number(groupeIdx)];
+    return g ? g.pids : [];
+  }
+  function filteredPresents() {
+    const pres = presentPids();
+    if (activeGroupe === 'all') return pres;
+    const gpids = groupePids(activeGroupe);
+    if (!gpids.length) return pres; // fallback : groupe vide → tous
+    return pres.filter(pid => gpids.includes(pid));
+  }
 
   function isMobileView() {
     return typeof window !== 'undefined' && window.innerWidth < 768;
@@ -463,7 +489,7 @@
 
   function renderJuggleView() {
     const cat = state().cat;
-    const pres = presentPids();
+    const pres = filteredPresents(); // v8.18.0 : filtré par groupe actif
     // On n'affiche QUE les présents (plus de fallback "tous les joueurs"
     // pour ne pas noyer l'éducateur avec les absents).
     let visibleP = sortedPlayers(cat).filter(p => pres.includes(p));
@@ -499,7 +525,7 @@
 
   function renderJuggleViewMobile() {
     const cat = state().cat;
-    const pres = presentPids();
+    const pres = filteredPresents(); // v8.18.0 : filtré par groupe actif
     let visibleP = sortedPlayers(cat).filter(p => pres.includes(p));
     const today = todayIso();
 
@@ -565,7 +591,24 @@
   }
 
   // v8.17.0 : header mobile partagé entre vue Jonglerie et vue Objectifs
+  // v8.18.0 : filtre par groupe (défini en pré-séance) sous le switch onglets
   function renderMobileHead(cat, nbSaisi, nbTotal) {
+    const groupes = getGroupes();
+    const groupeTabs = groupes.length > 0 ? `
+      <div class="live-mobile-groupes">
+        <button class="live-mobile-groupe-tab ${activeGroupe === 'all' ? 'on' : ''}" type="button"
+                data-live-action="set-groupe" data-groupe="all">
+          👥 Tous (${presentPids().length})
+        </button>
+        ${groupes.map(g => {
+          const presentsInGroupe = g.pids.filter(pid => presentPids().includes(pid)).length;
+          return `
+            <button class="live-mobile-groupe-tab ${String(activeGroupe) === String(g.idx) ? 'on' : ''}" type="button"
+                    data-live-action="set-groupe" data-groupe="${g.idx}">
+              ${h(g.label)} (${presentsInGroupe})
+            </button>`;
+        }).join('')}
+      </div>` : '';
     return `
       <header class="live-mobile-head">
         <button class="live-mobile-close" type="button" data-live-action="close" aria-label="Fermer">×</button>
@@ -584,7 +627,8 @@
                 data-live-action="set-tab" data-tab="juggle">⚽ Jonglerie</button>
         <button class="live-mobile-tab ${activeTab === 'objectifs' ? 'on' : ''}" type="button"
                 data-live-action="set-tab" data-tab="objectifs">🎯 Objectifs</button>
-      </div>`;
+      </div>
+      ${groupeTabs}`;
   }
 
   // v8.17.0 : vue Objectifs mobile — objectifs scrollables avec compteurs tactiles
@@ -593,7 +637,7 @@
     const cat = state().cat;
     const s = todaySession();
     const objectives = s?.objectives || [];
-    const pres = presentPids();
+    const pres = filteredPresents(); // v8.18.0 : filtré par groupe actif
 
     const totalReussites = objectives.reduce((sum, o) => sum + (o.reussites || 0), 0);
     const totalTentatives = objectives.reduce((sum, o) => sum + (o.tentatives || 0), 0);
@@ -636,7 +680,7 @@
     const ratioCol = ratio == null ? '#94a3b8' : ratio >= 75 ? '#16a34a' : ratio >= 50 ? '#d97706' : '#dc2626';
     const struggling = Array.isArray(o.strugglingPids) ? o.strugglingPids : [];
     const isOpen = !!expandedStruggling[o.key];
-    const pres = presentPids();
+    const pres = filteredPresents(); // v8.18.0 : seulement les joueurs du groupe actif
 
     const strugglePanel = isOpen ? `
       <div class="live-obj-struggle-panel">
@@ -886,7 +930,7 @@
   // v8.16.0 : section joueurs en difficulté — collapsible pour pas encombrer
   function renderStrugglingSection(o) {
     const struggling = Array.isArray(o.strugglingPids) ? o.strugglingPids : [];
-    const pres = presentPids();
+    const pres = filteredPresents(); // v8.18.0
     const isOpen = !!expandedStruggling[o.key];
     if (!isOpen) {
       return `
@@ -1105,6 +1149,12 @@
     }
     if (action === 'clear-struggling') {
       clearStruggling(el.dataset.key);
+      renderOverlay();
+      return true;
+    }
+    // v8.18.0 : filtre groupe
+    if (action === 'set-groupe') {
+      activeGroupe = el.dataset.groupe === 'all' ? 'all' : el.dataset.groupe;
       renderOverlay();
       return true;
     }
