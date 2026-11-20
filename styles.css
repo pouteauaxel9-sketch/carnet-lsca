@@ -10478,6 +10478,177 @@ body.season-transition-active { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Mode Terrain mobile : onglets Jonglerie / Objectifs
+   ═══════════════════════════════════════════════════════════ */
+
+.live-mobile-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 8px 10px 0;
+  background: linear-gradient(180deg, rgba(24,95,165,0.15) 0%, #f8fafc 100%);
+  flex-shrink: 0;
+}
+
+.live-mobile-tab {
+  padding: 12px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px 10px 0 0;
+  background: rgba(255,255,255,0.6);
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.live-mobile-tab:active { transform: scale(0.97); }
+
+.live-mobile-tab.on {
+  background: white;
+  color: #185fa5;
+  border-color: #cbd5e1;
+  border-bottom: none;
+}
+
+/* Vue Objectifs mobile */
+.live-obj-summary-mobile {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.live-obj-summary-mobile .live-obj-stat {
+  text-align: center;
+  padding: 8px 4px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.live-obj-summary-mobile strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  color: #185fa5;
+}
+
+.live-obj-summary-mobile span {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.live-obj-card-mobile {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  margin: 10px 12px;
+}
+
+.live-obj-card-mobile.is-acquis {
+  background: #ecfdf5;
+  border-color: #10b981;
+}
+
+.live-obj-counters-mobile {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px 44px 1fr 44px;
+  gap: 4px;
+  margin: 12px 0 8px;
+  align-items: center;
+}
+
+.live-obj-btn-mobile {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #185fa5;
+  font-size: 22px;
+  font-weight: 800;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.live-obj-btn-mobile:active { transform: scale(0.95); }
+
+.live-obj-btn-mobile.inc.reussite {
+  background: #10b981;
+  color: white;
+  border-color: #059669;
+}
+
+.live-obj-btn-mobile.inc.tentative {
+  background: #185fa5;
+  color: white;
+  border-color: #0c447c;
+}
+
+.live-obj-btn-mobile.dec {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.live-obj-count-cell {
+  text-align: center;
+}
+
+.live-obj-count-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.live-obj-count-lbl {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.live-obj-ratio-mobile {
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 6px 0;
+}
+
+.live-obj-actions-mobile {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.live-obj-add-mobile {
+  display: grid;
+  grid-template-columns: 1fr 48px;
+  gap: 8px;
+  padding: 10px 12px 20px;
+}
+
+.live-obj-add-mobile input {
+  padding: 12px 14px;
+  font-size: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  min-height: 44px;
+}
+
+.live-obj-add-mobile button {
+  min-height: 44px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+/* ═══════════════════════════════════════════════════════════
    Mode Terrain : flag joueurs en difficulté sur un exo
    ═══════════════════════════════════════════════════════════ */
 

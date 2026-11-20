@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.16.0-mode-terrain-joueurs-en-difficulte';
+const CACHE_VERSION = 'v8.17.0-mode-terrain-mobile-onglets-objectifs';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

@@ -393,12 +393,15 @@
     const mobile = isMobileView();
     el.className = 'live-overlay' + (sunMode ? ' live-overlay-sun' : '') + (mobile ? ' live-overlay-mobile' : '');
     let body;
-    if (activeTab === 'objectifs') body = renderObjectifsView();
-    else if (mobile) body = renderJuggleViewMobile();
-    else body = renderJuggleView();
+    if (mobile) {
+      // v8.17.0 : sur mobile, toujours la vue mobile (jonglerie OU objectifs)
+      body = activeTab === 'objectifs' ? renderObjectifsViewMobile() : renderJuggleViewMobile();
+    } else {
+      body = activeTab === 'objectifs' ? renderObjectifsView() : renderJuggleView();
+    }
     el.innerHTML = body + (presentPickerOpen ? renderPresentPicker() : '');
 
-    // Mobile : auto-focus sur le premier input non-saisi au render
+    // Mobile : auto-focus sur le premier input non-saisi au render (jonglerie uniquement)
     if (mobile && activeTab === 'juggle') {
       requestAnimationFrame(() => {
         const first = el.querySelector('.live-mobile-input[data-filled="false"]');
@@ -542,18 +545,7 @@
 
     return `
       <div class="live-shell live-shell-mobile">
-        <header class="live-mobile-head">
-          <button class="live-mobile-close" type="button" data-live-action="close" aria-label="Fermer">×</button>
-          <div class="live-mobile-title">
-            <span class="live-mobile-cat">${h((window.CAT_LABELS?.[cat] || cat).toUpperCase())}</span>
-            <span class="live-mobile-presents" data-live-action="open-presents" title="Gérer les présents">
-              👥 ${nbSaisi}/${nbTotal}
-            </span>
-          </div>
-          <button class="live-mobile-finish" type="button" data-live-action="finish-session" title="Terminer la séance">
-            ✅
-          </button>
-        </header>
+        ${renderMobileHead(cat, nbSaisi, nbTotal)}
 
         <div class="live-mobile-foot-tabs">${footTabs}</div>
 
@@ -570,6 +562,144 @@
           ${rows}
         </div>
       </div>`;
+  }
+
+  // v8.17.0 : header mobile partagé entre vue Jonglerie et vue Objectifs
+  function renderMobileHead(cat, nbSaisi, nbTotal) {
+    return `
+      <header class="live-mobile-head">
+        <button class="live-mobile-close" type="button" data-live-action="close" aria-label="Fermer">×</button>
+        <div class="live-mobile-title">
+          <span class="live-mobile-cat">${h((window.CAT_LABELS?.[cat] || cat).toUpperCase())}</span>
+          <span class="live-mobile-presents" data-live-action="open-presents" title="Gérer les présents">
+            👥 ${nbSaisi != null ? nbSaisi + '/' + nbTotal : presentPids().length}
+          </span>
+        </div>
+        <button class="live-mobile-finish" type="button" data-live-action="finish-session" title="Terminer la séance">
+          ✅
+        </button>
+      </header>
+      <div class="live-mobile-tabs">
+        <button class="live-mobile-tab ${activeTab === 'juggle' ? 'on' : ''}" type="button"
+                data-live-action="set-tab" data-tab="juggle">⚽ Jonglerie</button>
+        <button class="live-mobile-tab ${activeTab === 'objectifs' ? 'on' : ''}" type="button"
+                data-live-action="set-tab" data-tab="objectifs">🎯 Objectifs</button>
+      </div>`;
+  }
+
+  // v8.17.0 : vue Objectifs mobile — objectifs scrollables avec compteurs tactiles
+  function renderObjectifsViewMobile() {
+    ensureObjectivesFromWeek();
+    const cat = state().cat;
+    const s = todaySession();
+    const objectives = s?.objectives || [];
+    const pres = presentPids();
+
+    const totalReussites = objectives.reduce((sum, o) => sum + (o.reussites || 0), 0);
+    const totalTentatives = objectives.reduce((sum, o) => sum + (o.tentatives || 0), 0);
+    const ratio = totalTentatives > 0 ? Math.round((totalReussites / totalTentatives) * 100) : null;
+    const acquis = objectives.filter(o => o.acquis).length;
+
+    const list = objectives.length === 0
+      ? `<div class="live-mobile-empty">
+           <p>Aucun objectif défini.</p>
+           <p style="font-size:12px;color:#94a3b8;margin-top:8px">
+             Ajoute-en un ci-dessous, ou définis les principes dans la pré-séance.
+           </p>
+         </div>`
+      : `<div class="live-obj-list">${objectives.map(renderObjectiveCardMobile).join('')}</div>`;
+
+    return `
+      <div class="live-shell live-shell-mobile">
+        ${renderMobileHead(cat, null, null)}
+
+        <div class="live-obj-summary live-obj-summary-mobile">
+          <div class="live-obj-stat"><strong>${pres.length}</strong><span>Présents</span></div>
+          <div class="live-obj-stat"><strong>${acquis}/${objectives.length}</strong><span>Acquis</span></div>
+          <div class="live-obj-stat"><strong>${ratio != null ? ratio + '%' : '—'}</strong><span>Ratio</span></div>
+        </div>
+
+        <div class="live-mobile-list">
+          ${list}
+          <form class="live-obj-add live-obj-add-mobile" onsubmit="return false;">
+            <input type="text" placeholder="+ Ajouter un objectif"
+                   maxlength="80" id="live-obj-new-input">
+            <button class="btn btn-primary" type="button" data-live-action="add-custom-obj">+</button>
+          </form>
+        </div>
+      </div>`;
+  }
+
+  // Carte objectif mobile — plus compacte que desktop
+  function renderObjectiveCardMobile(o) {
+    const ratio = o.tentatives > 0 ? Math.round((o.reussites / o.tentatives) * 100) : null;
+    const ratioCol = ratio == null ? '#94a3b8' : ratio >= 75 ? '#16a34a' : ratio >= 50 ? '#d97706' : '#dc2626';
+    const struggling = Array.isArray(o.strugglingPids) ? o.strugglingPids : [];
+    const isOpen = !!expandedStruggling[o.key];
+    const pres = presentPids();
+
+    const strugglePanel = isOpen ? `
+      <div class="live-obj-struggle-panel">
+        <div class="live-obj-struggle-head">
+          <strong>⚠ En difficulté</strong>
+          <div style="display:flex;gap:6px">
+            ${struggling.length ? `<button class="live-obj-struggle-clear" type="button" data-live-action="clear-struggling" data-key="${h(o.key)}">Vider</button>` : ''}
+            <button class="live-obj-struggle-close" type="button" data-live-action="toggle-struggle-ui" data-key="${h(o.key)}">Fermer</button>
+          </div>
+        </div>
+        ${pres.length === 0
+          ? '<p class="live-struggle-empty">Aucun présent.</p>'
+          : `<div class="live-struggle-chips">${pres.map(pid => {
+              const on = struggling.includes(pid);
+              return `<button class="live-struggle-chip ${on ? 'on' : ''}" type="button"
+                              data-live-action="toggle-struggling" data-key="${h(o.key)}" data-pid="${h(pid)}">
+                        ${on ? '⚠ ' : ''}${h(playerLabel(pid))}
+                      </button>`;
+            }).join('')}</div>`}
+      </div>` : '';
+
+    return `
+      <article class="live-obj-card live-obj-card-mobile ${o.acquis ? 'is-acquis' : ''}" data-key="${h(o.key)}">
+        <div class="live-obj-head">
+          <div class="live-obj-title">
+            ${o.principleNum ? `<span class="live-obj-num">#${o.principleNum}</span>` : ''}
+            <span>${h(o.label)}</span>
+          </div>
+          <button class="live-obj-rm" type="button" data-live-action="remove-obj" data-key="${h(o.key)}" title="Retirer">×</button>
+        </div>
+
+        <div class="live-obj-counters-mobile">
+          <button class="live-obj-btn-mobile dec" type="button" data-live-action="dec-obj" data-key="${h(o.key)}" data-field="reussites">−</button>
+          <div class="live-obj-count-cell">
+            <div class="live-obj-count-val">${o.reussites || 0}</div>
+            <div class="live-obj-count-lbl">Réussies</div>
+          </div>
+          <button class="live-obj-btn-mobile inc reussite" type="button" data-live-action="inc-obj" data-key="${h(o.key)}" data-field="reussites">+</button>
+
+          <button class="live-obj-btn-mobile dec" type="button" data-live-action="dec-obj" data-key="${h(o.key)}" data-field="tentatives">−</button>
+          <div class="live-obj-count-cell">
+            <div class="live-obj-count-val">${o.tentatives || 0}</div>
+            <div class="live-obj-count-lbl">Tentatives</div>
+          </div>
+          <button class="live-obj-btn-mobile inc tentative" type="button" data-live-action="inc-obj" data-key="${h(o.key)}" data-field="tentatives">+</button>
+        </div>
+
+        <div class="live-obj-ratio-mobile" style="color:${ratioCol}">
+          ${ratio != null ? ratio + '% de réussite' : 'Pas encore de tentatives'}
+        </div>
+
+        <div class="live-obj-actions live-obj-actions-mobile">
+          <label class="live-obj-acquis-toggle">
+            <input type="checkbox" ${o.acquis ? 'checked' : ''} data-live-action="toggle-acquis" data-key="${h(o.key)}">
+            <span>✓ Acquis</span>
+          </label>
+          <button class="live-obj-struggle-toggle" type="button"
+                  data-live-action="toggle-struggle-ui" data-key="${h(o.key)}">
+            ⚠ Difficulté ${struggling.length ? `<span class="live-obj-struggle-count">${struggling.length}</span>` : ''}
+          </button>
+        </div>
+        ${strugglePanel}
+      </article>`;
   }
 
   function renderJuggleRowMobile(pid) {
