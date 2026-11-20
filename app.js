@@ -1846,9 +1846,11 @@ function renderPlayerView() {
   // Si l'ancienne sélection pointait sur 'observation' (section supprimée), on bascule sur profil
   if (state.selSection === 'observation') state.selSection = 'profil';
 
-  // Bandeau « lecture coach » permanent (toujours visible)
-  const insights = getInsights(pid);
-  const coachBanner = `
+  // v8.12.0 : bandeau coach affiché UNIQUEMENT si le joueur a au moins une évaluation saisie.
+  // Sinon : CTA discret invitant à faire la première évaluation, pas de bandeau vide.
+  const hasEval = score > 0 || completion.percent > 0 || strongest != null || weakest != null;
+  const insights = hasEval ? getInsights(pid).filter(i => i.tone !== 'neutral' || !/Pas d.*alerte/.test(i.text)) : [];
+  const coachBanner = hasEval ? `
     <div class="coach-banner">
       <div class="coach-banner-stats">
         <div class="cb-stat"><span>Score</span><strong>${score > 0 ? score + '%' : '—'}</strong></div>
@@ -1859,7 +1861,15 @@ function renderPlayerView() {
         <div class="cb-stat"><span>Dossier</span><strong>${completion.percent}%</strong></div>
         <div class="cb-stat"><span>Progression</span><strong>${progress ? h(progress.text) : '—'}</strong></div>
       </div>
-      <div class="coach-banner-insights">${insights.slice(0,2).map(i => `<span class="insight-pill ${i.tone}">${h(i.text)}</span>`).join('')}</div>
+      ${insights.length ? `<div class="coach-banner-insights">${insights.slice(0,2).map(i => `<span class="insight-pill ${i.tone}">${h(i.text)}</span>`).join('')}</div>` : ''}
+    </div>
+  ` : `
+    <div class="first-eval-cta">
+      <span class="first-eval-icon">👋</span>
+      <div class="first-eval-txt">
+        <strong>Joueur pas encore évalué</strong>
+        <span>Clique sur l'onglet <b>Évaluation</b> pour commencer — tu verras apparaître ici son score, son profil et ses axes de progression.</span>
+      </div>
     </div>
   `;
 
@@ -1883,8 +1893,8 @@ function renderPlayerView() {
             <div>
               <div class="hero-name">${h(displayName)}</div>
               <div class="hero-tags">
-                <span class="hero-tag">${h(getProfile(pid))}</span>
-                <span class="hero-tag">Niveau ${h(level)}</span>
+                ${hasEval && getProfile(pid) !== 'Profil en construction' ? `<span class="hero-tag">${h(getProfile(pid))}</span>` : ''}
+                ${hasEval && level && !/non.?eval/i.test(level) ? `<span class="hero-tag">Niveau ${h(level)}</span>` : ''}
                 <span class="hero-tag">${h(CAT_LABELS[state.cat])}</span>
                 <span class="hero-tag">Saison ${h(state.season)}</span>
                 ${piedLabel ? `<span class="hero-tag">${h(piedLabel)}</span>` : ''}
@@ -1906,8 +1916,8 @@ function renderPlayerView() {
       <div class="toolbar toolbar-top">
         <div class="section-tabs">${sectionTabs}</div>
         <div class="toolbar-right">
-          <select class="compare-select" id="compare-select" aria-label="Comparer à un autre joueur"><option value="">Comparer à un autre joueur</option>${compareOptions}</select>
-          <button class="btn" type="button" data-action="clear-player-photo">Supprimer la photo</button>
+          ${hasEval ? `<select class="compare-select" id="compare-select" aria-label="Comparer à un autre joueur"><option value="">Comparer à un autre joueur</option>${compareOptions}</select>` : ''}
+          ${prof.photo ? `<button class="btn" type="button" data-action="clear-player-photo">Supprimer la photo</button>` : ''}
         </div>
       </div>
       ${state.comparePlayer ? `<div class="stats-row compare-on">

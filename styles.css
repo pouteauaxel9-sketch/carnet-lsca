@@ -10478,6 +10478,49 @@ body.season-transition-active { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   CTA Première évaluation — remplace le coach-banner vide
+   ═══════════════════════════════════════════════════════════ */
+
+.first-eval-cta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  background: linear-gradient(135deg, #eff6ff 0%, #ecfdf5 100%);
+  border: 1px dashed #93c5fd;
+  border-radius: 12px;
+}
+
+.first-eval-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.first-eval-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.first-eval-txt strong {
+  color: #185fa5;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.first-eval-txt span {
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.first-eval-txt b {
+  color: #185fa5;
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════
    MODE TERRAIN MOBILE — optimisé bord de terrain, 1 main portrait
    ═══════════════════════════════════════════════════════════ */
 
