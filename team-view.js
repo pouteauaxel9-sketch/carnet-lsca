@@ -327,14 +327,16 @@
     const liveCache = teamKey && window.appState?.fffStandingsByCat?.[cat]?.[teamKey]?.matches;
     if (Array.isArray(liveCache)) allTeamFffMatches.push(...liveCache);
     // Source 2 : JSON scrapé par GitHub Actions (toutes les phases)
-    const scrapedJson = window.appState?.__standingsJsonData;
-    const scrapedEntry = teamKey && scrapedJson?.teams?.[teamKey];
-    if (scrapedEntry?.phases) {
-      Object.values(scrapedEntry.phases).forEach(p => {
+    // v8.35.1 FIX : renommé pour éviter le conflit avec scrapedJson/scrapedEntry déjà
+    // déclarés plus haut dans la même fonction (SyntaxError → module crashe).
+    const scrapedJsonLeaders = window.appState?.__standingsJsonData;
+    const scrapedEntryLeaders = teamKey && scrapedJsonLeaders?.teams?.[teamKey];
+    if (scrapedEntryLeaders?.phases) {
+      Object.values(scrapedEntryLeaders.phases).forEach(p => {
         if (Array.isArray(p.matches)) allTeamFffMatches.push(...p.matches);
       });
-    } else if (Array.isArray(scrapedEntry?.matches)) {
-      allTeamFffMatches.push(...scrapedEntry.matches);
+    } else if (Array.isArray(scrapedEntryLeaders?.matches)) {
+      allTeamFffMatches.push(...scrapedEntryLeaders.matches);
     }
 
     const myMatchKeys = new Set();
