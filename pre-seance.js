@@ -159,6 +159,32 @@
     } else {
       // Nouvelle préparation : présents par défaut = Mode Terrain du jour, sinon tout l'effectif
       let presentPids = livePresentPids.length ? cleanArray(livePresentPids) : sortedPlayers(cat);
+
+      // v8.29.0 : récupère les groupes de la DERNIÈRE pré-séance de cette catégorie
+      // pour éviter de refaire la compo à chaque nouvelle séance.
+      // On intersecte avec les présents du jour (si quelqu'un est absent aujourd'hui,
+      // il est retiré ; les nouveaux présents restent à placer dans le pool).
+      const lastPrep = findLastPreparation(store, cat, date);
+      let defaultGroupes;
+      let defaultNbGroupes = 3;
+      let defaultPool = presentPids.slice();
+      let reusedFromDate = null;
+      if (lastPrep?.groupes?.length) {
+        const presentSet = new Set(presentPids);
+        const reusedGroupes = lastPrep.groupes.map(g => ({
+          teams: (g.teams || [[], []]).map(t => cleanArray(t).filter(pid => presentSet.has(pid)))
+        }));
+        defaultGroupes = reusedGroupes;
+        defaultNbGroupes = lastPrep.nbGroupes || reusedGroupes.length || 3;
+        // Pool = présents du jour NON assignés aux groupes rechargés
+        const assigned = new Set();
+        reusedGroupes.forEach(g => g.teams.forEach(t => t.forEach(pid => assigned.add(pid))));
+        defaultPool = presentPids.filter(pid => !assigned.has(pid));
+        reusedFromDate = lastPrep._date;
+      } else {
+        defaultGroupes = Array.from({ length: 3 }, () => ({ teams: [[], []] }));
+      }
+
       draft = {
         cat, date,
         theme: week?.theme || '',
@@ -166,17 +192,40 @@
         selectedPrincipleNums: [], // rien coché par défaut → sélection consciente à faire
         objectif: '',
         presentPids,
-        nbGroupes: 3,
-        groupes: Array.from({ length: 3 }, () => ({ teams: [[], []] })),
-        pool: presentPids.slice(),
+        nbGroupes: defaultNbGroupes,
+        groupes: defaultGroupes,
+        pool: defaultPool,
         contenuHtml: '',
         contenuFile: '',
         timing: 'Échauffement · 10 min\nAtelier 1 · 20 min\nAtelier 2 · 20 min\nJeu final · 15 min\nDébrief · 5 min',
         rappels: '',
       };
+      if (reusedFromDate) {
+        toast(`📋 Groupes repris de la séance du ${formatDateFr(reusedFromDate)}`);
+      }
     }
 
     renderEditor();
+  }
+
+  // v8.29.0 : trouve la préparation la plus récente antérieure à la date actuelle,
+  // pour pouvoir réutiliser ses groupes dans la nouvelle séance.
+  function findLastPreparation(store, cat, currentDate) {
+    const byDate = store[cat] || {};
+    const dates = Object.keys(byDate)
+      .filter(d => d < currentDate && byDate[d]?.preparation?.groupes?.length)
+      .sort((a, b) => b.localeCompare(a)); // plus récent en premier
+    if (!dates.length) return null;
+    const last = byDate[dates[0]].preparation;
+    return { ...last, _date: dates[0] };
+  }
+
+  function formatDateFr(iso) {
+    try {
+      const d = new Date(iso);
+      if (isNaN(d)) return iso;
+      return d.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' });
+    } catch { return iso; }
   }
 
   function close() {

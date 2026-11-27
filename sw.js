@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.28.0-fix-jonglerie-perte-de-saisie';
+const CACHE_VERSION = 'v8.29.0-groupes-persistants-entre-seances';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
