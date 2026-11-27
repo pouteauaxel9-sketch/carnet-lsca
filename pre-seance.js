@@ -682,9 +682,9 @@
                   }
                   return filtered.map(pid => {
                     const present = draft.presentPids.includes(pid);
-                    const team = playerTeam(pid, draft.cat);
-                    const teamTag = team ? `<span class="ps-chip-team">${h(team)}</span>` : '';
-                    // v8.37.1 : colorage par équipe de groupe assignée
+                    // v8.37.2 : affichage épuré — on retire le badge équipe officielle (U13 A/B/C)
+                    // qui doublonne avec le filtre d'équipe au-dessus. Seul le badge de groupe
+                    // reste pour indiquer la position.
                     const slot = present ? findPlayerSlot(pid) : null;
                     let slotCls = '';
                     let slotBadge = '';
@@ -692,16 +692,16 @@
                     if (slot) {
                       const c = TEAM_COLORS[slot.ti];
                       slotCls = 'ps-present-chip-assigned ps-present-chip-' + c.key;
-                      slotBadge = `<span class="ps-chip-slot" style="background:${c.bg};color:${c.text}">G${slot.gi + 1}·${slot.ti + 1}</span>`;
+                      slotBadge = `<span class="ps-chip-slot" style="background:${c.bg};color:${c.text}">G${slot.gi + 1}</span>`;
                       slotStyle = `border-left:4px solid ${c.bg};`;
                     } else if (present) {
                       slotCls = 'ps-present-chip-pool';
-                      slotStyle = 'border-left:4px solid #94a3b8;';
+                      slotStyle = 'border-left:3px solid #94a3b8;';
                     }
                     return `<button class="ps-present-chip ${present ? 'on' : ''} ${slotCls}" type="button"
                             style="${slotStyle}"
                             data-pre-action="toggle-present" data-pid="${h(pid)}">
-                      ${present ? '✓' : '☐'} ${h(playerLabel(pid, draft.cat))}${slotBadge}${teamTag}
+                      ${present ? '✓' : '☐'} ${h(playerLabel(pid, draft.cat))}${slotBadge}
                     </button>`;
                   }).join('');
                 })()}
