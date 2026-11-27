@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Mockup — Fiche pré-séance Idée 2 v3 (équipe active)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f8f8f4;
+    color: #0f172a;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  h1 { color: #185fa5; font-size: 22px; margin-bottom: 4px; }
+  h2 { color: #0f6e56; font-size: 14px; margin: 16px 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .subtitle { color: #64748b; font-size: 13px; margin-bottom: 16px; }
+  .instructions {
+    background: #eff6ff;
+    border-left: 4px solid #185fa5;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    color: #0c447c;
+    line-height: 1.5;
+  }
+  .active-banner {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .active-banner.none { background: #f1f5f9; color: #64748b; }
+  .active-banner button {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  /* Layout principal : liste joueurs à gauche, groupes à droite */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+  }
+
+  /* Liste joueurs */
+  .players-list {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    max-height: 700px;
+    overflow-y: auto;
+  }
+  .player-row {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .player-row:last-child { border-bottom: none; }
+  .player-row:hover { background: #f8fafc; }
+  .player-row.in-active-team { background: #ecfdf5; }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; font-size: 13px;
+    flex-shrink: 0;
+  }
+  .name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #0f172a;
+  }
+  .pstatus {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
+  .pstatus.assigned { color: #0f6e56; font-weight: 600; }
+  .pstatus.abs { color: #94a3b8; font-style: italic; }
+  .mini-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 10px;
+    color: white;
+  }
+  .mini-badge.g1A { background: #10b981; }
+  .mini-badge.g1B { background: #0891b2; }
+  .mini-badge.g2A { background: #059669; }
+  .mini-badge.g2B { background: #0c4a6e; }
+  .mini-badge.g3A { background: #d97706; }
+  .mini-badge.g3B { background: #b45309; }
+  .mini-badge.abs { background: #94a3b8; }
+  .row-actions { display: flex; gap: 4px; }
+  .xbtn {
+    width: 26px; height: 26px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #94a3b8;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .xbtn:hover { color: #dc2626; border-color: #fca5a5; }
+
+  /* Groupes à droite */
+  .groupes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+  .groupe-card {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+  }
+  .groupe-head {
+    padding: 10px 14px;
+    background: #f8fafc;
+    font-size: 13px;
+    font-weight: 700;
+    border-bottom: 1px solid #e2e8f0;
+    color: #0f172a;
+  }
+  .teams-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .team-slot {
+    padding: 10px;
+    min-height: 140px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .team-slot:first-child { border-right: 1px dashed #e2e8f0; }
+  .team-slot:hover { background: #f8fafc; }
+  .team-slot.active {
+    box-shadow: inset 0 0 0 3px #10b981;
+    background: #ecfdf5;
+  }
+  .team-slot.active .team-head { color: #059669; }
+  .team-head {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    color: white;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+  .team-slot .team-head.A { background: #10b981; }
+  .team-slot .team-head.B { background: #0891b2; }
+  .team-players {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #475569;
+  }
+  .team-empty {
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 11px;
+    text-align: center;
+    padding: 8px 0;
+  }
+  .team-tip {
+    font-size: 10px;
+    color: #10b981;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 4px;
+    display: none;
+  }
+  .team-slot.active .team-tip { display: block; }
+
+  .summary {
+    background: linear-gradient(135deg, #185fa5 0%, #0f6e56 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .summary-stats { display: flex; gap: 16px; }
+  .summary-stats b { font-size: 16px; display: block; }
+
+  .toolbar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .tbtn {
+    padding: 5px 10px;
+    border: 1px solid #cbd5e1;
+    background: white;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .tbtn:hover { border-color: #185fa5; color: #185fa5; }
+  .tbtn.abs { color: #dc2626; border-color: #fca5a5; }
+</style>
+</head>
+<body>
+
+<h1>📝 Fiche pré-séance — U13 (Mockup v3)</h1>
+<p class="subtitle">Clique une équipe (G1-A, G1-B, G2-A...) pour l'activer → clique les joueurs à mettre dedans.</p>
+
+<div class="instructions">
+  💡 <strong>Étape 1</strong> : clique sur une Équipe (A verte ou B bleue) dans un groupe à droite → elle devient active (contour vert).<br>
+  <strong>Étape 2</strong> : clique sur les joueurs à gauche → ils sont ajoutés automatiquement dans l'équipe active.<br>
+  <strong>✗</strong> dans la liste = marquer absent · reclique sur un joueur assigné = le sort du groupe.
+</div>
+
+<div class="active-banner none" id="active-banner">
+  Aucune équipe active — clique sur une équipe pour commencer à placer les joueurs
+</div>
+
+<div class="summary">
+  <div><strong>Composition du jour</strong></div>
+  <div class="summary-stats">
+    <div><b id="sum-pres">0</b>Présents</div>
+    <div><b id="sum-abs">0</b>Absents</div>
+    <div><b id="sum-pool">10</b>À placer</div>
+  </div>
+</div>
+
+<div class="main-grid">
+  <!-- Colonne gauche : liste joueurs -->
+  <div>
+    <h2>Joueurs (10)</h2>
+    <div class="toolbar">
+      <button class="tbtn" onclick="markAllPresent()">✓ Tous présents</button>
+      <button class="tbtn abs" onclick="clearAll()">↺ Réinitialiser</button>
+    </div>
+    <div class="players-list" id="players"></div>
+  </div>
+
+  <!-- Colonne droite : groupes -->
+  <div>
+    <h2>Groupes (3 × 2 équipes)</h2>
+    <div class="groupes-grid">
+      <div class="groupe-card">
+        <div class="groupe-head">🎯 Groupe 1</div>
+        <div class="teams-split">
+          <div class="team-slot" data-slot="g1A" onclick="setActive('g1A')">
+            <span class="team-head A">Équipe A</span>
+            <div class="team-players" id="g1A-list"></div>
+            <div class="team-tip">✅ Cliquez les joueurs</div>
+          </div>
+          <div class="team-slot" data-slot="g1B" onclick="setActive('g1B')">
+            <span class="team-head B">Équipe B</span>
+            <div class="team-players" id="g1B-list"></div>
+            <div class="team-tip">✅ Cliquez les joueurs</div>
+          </div>
+        </div>
+      </div>
+      <div class="groupe-card">
+        <div class="groupe-head">🎯 Groupe 2</div>
+        <div class="teams-split">
+          <div class="team-slot" data-slot="g2A" onclick="setActive('g2A')">
+            <span class="team-head A">Équipe A</span>
+            <div class="team-players" id="g2A-list"></div>
+            <div class="team-tip">✅ Cliquez les joueurs</div>
+          </div>
+          <div class="team-slot" data-slot="g2B" onclick="setActive('g2B')">
+            <span class="team-head B">Équipe B</span>
+            <div class="team-players" id="g2B-list"></div>
+            <div class="team-tip">✅ Cliquez les joueurs</div>
+          </div>
+        </div>
+      </div>
+      <div class="groupe-card">
+        <div class="groupe-head">🎯 Groupe 3</div>
+        <div class="teams-split">
+          <div class="team-slot" data-slot="g3A" onclick="setActive('g3A')">
+            <span class="team-head A">Équipe A</span>
+            <div class="team-players" id="g3A-list"></div>
+            <div class="team-tip">✅ Cliquez les joueurs</div>
+          </div>
+          <div class="team-slot" data-slot="g3B" onclick="setActive('g3B')">
+            <span class="team-head B">Équipe B</span>
+            <div class="team-players" id="g3B-list"></div>
+            <div class="team-tip">✅ Cliquez les joueurs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PLAYERS = [
+  { name: 'ALLAIN Enzo', color: '#185fa5' },
+  { name: 'BARANGER Sacha', color: '#0f6e56' },
+  { name: 'BAZILLER Paul', color: '#9333ea' },
+  { name: 'BODINIER Noam', color: '#dc2626' },
+  { name: 'BOIREAU Mylan', color: '#0891b2' },
+  { name: 'BOREJKO Antoni', color: '#ca8a04' },
+  { name: 'BOULAIN Pierre', color: '#db2777' },
+  { name: 'CHATILLON Aaron', color: '#059669' },
+  { name: 'MORILLON Adam', color: '#7c3aed' },
+  { name: 'VERGER Adam', color: '#ea580c' },
+];
+
+const SLOT_LABELS = {
+  g1A: 'Groupe 1 · Équipe A', g1B: 'Groupe 1 · Équipe B',
+  g2A: 'Groupe 2 · Équipe A', g2B: 'Groupe 2 · Équipe B',
+  g3A: 'Groupe 3 · Équipe A', g3B: 'Groupe 3 · Équipe B',
+};
+
+const state = {}; // name -> 'g1A' | 'g1B' | ... | 'abs' | undefined
+let activeSlot = null;
+
+function initials(n) { return n.split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0,2); }
+
+function setActive(slot) {
+  activeSlot = (activeSlot === slot) ? null : slot;
+  render();
+}
+
+function clickPlayer(name) {
+  const cur = state[name];
+  if (cur === 'abs') return; // ignore clic sur absent
+  // Si pas d'équipe active : rien
+  if (!activeSlot) {
+    alert('Clique d\'abord sur une équipe (G1-A, G1-B, G2-A...) à droite pour l\'activer.');
+    return;
+  }
+  // Si déjà dans l'équipe active : enlève
+  if (cur === activeSlot) delete state[name];
+  // Sinon : place dans l'équipe active
+  else state[name] = activeSlot;
+  render();
+}
+
+function removeFromGroup(name, e) {
+  e.stopPropagation();
+  delete state[name];
+  render();
+}
+
+function markAbs(name, e) {
+  e.stopPropagation();
+  state[name] = 'abs';
+  render();
+}
+
+function unmarkAbs(name, e) {
+  e.stopPropagation();
+  delete state[name];
+  render();
+}
+
+function markAllPresent() {
+  PLAYERS.forEach(p => { if (state[p.name] === 'abs') delete state[p.name]; });
+  render();
+}
+
+function clearAll() {
+  for (const k in state) delete state[k];
+  activeSlot = null;
+  render();
+}
+
+function render() {
+  // Liste joueurs
+  const container = document.getElementById('players');
+  container.innerHTML = PLAYERS.map(p => {
+    const s = state[p.name];
+    const inActive = s === activeSlot;
+    let badge = '';
+    let statusTxt = 'À placer';
+    let statusCls = '';
+    if (s && s !== 'abs') { badge = '<span class="mini-badge ' + s + '">' + SLOT_LABELS[s].replace('Groupe ', 'G').replace(' · Équipe ', '-') + '</span>'; statusTxt = SLOT_LABELS[s]; statusCls = 'assigned'; }
+    else if (s === 'abs') { badge = '<span class="mini-badge abs">Absent</span>'; statusTxt = 'Absent'; statusCls = 'abs'; }
+
+    const absBtn = s === 'abs'
+      ? '<button class="xbtn" onclick="unmarkAbs(\'' + p.name + '\', event)" title="Marquer présent">↺</button>'
+      : '<button class="xbtn" onclick="markAbs(\'' + p.name + '\', event)" title="Marquer absent">✗</button>';
+
+    return '<div class="player-row ' + (inActive ? 'in-active-team' : '') + '" onclick="clickPlayer(\'' + p.name + '\')">' +
+      '<div class="avatar" style="background:' + p.color + '">' + initials(p.name) + '</div>' +
+      '<div>' +
+        '<div class="name">' + p.name + '</div>' +
+        '<div class="pstatus ' + statusCls + '">' + badge + '</div>' +
+      '</div>' +
+      '<div class="row-actions">' + absBtn + '</div>' +
+    '</div>';
+  }).join('');
+
+  // Slots
+  document.querySelectorAll('.team-slot').forEach(el => {
+    const slot = el.dataset.slot;
+    el.classList.toggle('active', slot === activeSlot);
+    const list = PLAYERS.filter(p => state[p.name] === slot).map(p => '<div>• ' + p.name + '</div>').join('');
+    const listEl = document.getElementById(slot + '-list');
+    listEl.innerHTML = list || '<div class="team-empty">(vide)</div>';
+  });
+
+  // Banner
+  const banner = document.getElementById('active-banner');
+  if (activeSlot) {
+    banner.className = 'active-banner';
+    banner.innerHTML = '🎯 Équipe active : <strong>' + SLOT_LABELS[activeSlot] + '</strong>' +
+                       ' — clique les joueurs de la liste à gauche pour les ajouter' +
+                       ' <button onclick="setActive(null)">Désactiver</button>';
+  } else {
+    banner.className = 'active-banner none';
+    banner.innerHTML = 'Aucune équipe active — clique sur une équipe à droite pour commencer à placer les joueurs';
+  }
+
+  // Résumé
+  const pres = PLAYERS.filter(p => state[p.name] && state[p.name] !== 'abs').length;
+  const abs = PLAYERS.filter(p => state[p.name] === 'abs').length;
+  const pool = PLAYERS.length - pres - abs;
+  document.getElementById('sum-pres').textContent = pres;
+  document.getElementById('sum-abs').textContent = abs;
+  document.getElementById('sum-pool').textContent = pool;
+}
+
+render();
+</script>
+
+</body>
+</html>

@@ -10485,6 +10485,66 @@ body.season-transition-active { overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Pré-séance : mode clic-rapide "Équipe active"
+   ═══════════════════════════════════════════════════════════ */
+
+.ps-active-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 10px 0;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(16,185,129,0.25);
+  flex-wrap: wrap;
+}
+
+.ps-active-cancel {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ps-active-cancel:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.ps-team-box {
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ps-team-box:hover {
+  transform: translateY(-1px);
+}
+
+.ps-team-active-badge {
+  background: #10b981;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 800;
+  margin-left: 6px;
+  animation: pulse-active 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-active {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ═══════════════════════════════════════════════════════════
    Bilans Séances : bloc "Joueurs à retravailler" (cumul difficulté)
    ═══════════════════════════════════════════════════════════ */
 

@@ -22,6 +22,9 @@
   const SESSIONS_KEY = 'cfb6_live_sessions_v1';
 
   let draft = null;
+  // v8.37.0 : équipe active pour le mode clic-rapide
+  // { gi: 0, ti: 0 } = Groupe 1 - Équipe 1 · null = mode drag-and-drop classique
+  let activeSlot = null;
   let saveTimer = null;
   let teamFilter = '';   // '' = toutes équipes · sinon nom d'équipe (ex. 'U11 A')
 
@@ -309,15 +312,46 @@
 
   function togglePresent(pid) {
     if (!draft) return;
+    // v8.37.0 : si une équipe est active, clic joueur = place/retire dans cette équipe
+    // + marque présent automatiquement.
+    if (activeSlot) {
+      const { gi, ti } = activeSlot;
+      const g = draft.groupes[gi];
+      if (g && g.teams[ti]) {
+        const inSlot = g.teams[ti].indexOf(pid);
+        if (inSlot >= 0) {
+          // Déjà dans cette équipe active : on l'enlève du groupe (reste présent dans le pool)
+          g.teams[ti].splice(inSlot, 1);
+          if (!draft.pool.includes(pid)) draft.pool.push(pid);
+        } else {
+          // Marquer présent + retirer d'autres équipes/pool + placer ici
+          if (!draft.presentPids.includes(pid)) draft.presentPids.push(pid);
+          removePlayerFromAll(pid);
+          g.teams[ti].push(pid);
+        }
+        persistDraft();
+        renderEditor();
+        return;
+      }
+    }
+    // Mode classique : toggle présent/absent
     const idx = draft.presentPids.indexOf(pid);
     if (idx >= 0) {
-      // Retirer des présents : nettoyer aussi du pool et des groupes
       draft.presentPids.splice(idx, 1);
       removePlayerFromAll(pid);
     } else {
-      // Ajouter aux présents : mettre dans le pool
       draft.presentPids.push(pid);
       if (!draft.pool.includes(pid)) draft.pool.push(pid);
+    }
+    renderEditor();
+  }
+
+  // v8.37.0 : activer / désactiver une équipe pour le mode clic-rapide
+  function setActiveSlot(gi, ti) {
+    if (activeSlot && activeSlot.gi === gi && activeSlot.ti === ti) {
+      activeSlot = null; // reclic sur même slot → désactive
+    } else {
+      activeSlot = { gi: Number(gi), ti: Number(ti) };
     }
     renderEditor();
   }
@@ -536,7 +570,7 @@
                 </label>
                 ${draft.contenuFile ? `<span class="ps-file-info">🖼 ${h(draft.contenuFile)}</span>` : ''}
               </div>
-              <p class="ps-hint">💡 Glisse-dépose les joueurs du pool vers les équipes (Équipe 1 vert · Équipe 2 bleu).</p>
+              <p class="ps-hint">💡 <strong>Mode rapide</strong> : clique sur une Équipe (A verte ou B bleue) dans un groupe → elle devient active → clique les joueurs à ajouter. Ou glisse-dépose classique.</p>
             </section>
 
             <!-- Grille 4 champs 2x2 -->
@@ -590,6 +624,14 @@
                           data-pre-action="set-rappels">${h(draft.rappels)}</textarea>
               </section>
             </div>
+
+            <!-- v8.37.0 : bandeau Équipe active quand mode clic-rapide -->
+            ${activeSlot ? `
+              <div class="ps-active-banner">
+                <span>🎯 Équipe active : <strong>Groupe ${activeSlot.gi + 1} · ${TEAM_COLORS[activeSlot.ti]?.label || 'Équipe'}</strong> — clique les joueurs ci-dessous pour les ajouter</span>
+                <button class="ps-active-cancel" type="button" data-pre-action="set-active-slot" data-group="${activeSlot.gi}" data-team="${activeSlot.ti}">Désactiver</button>
+              </div>
+            ` : ''}
 
             <!-- Sélection des présents (tous les joueurs de la catégorie, toggle) -->
             <section class="ps-presents-section">
@@ -736,16 +778,21 @@
                 </select>
               </div>
             ` : '';
+            // v8.37.0 : équipe cliquable → active le mode clic-rapide
+            const isActive = activeSlot && activeSlot.gi === gi && activeSlot.ti === ti;
             return `
-              <div class="ps-team-box ps-team-${c.key}" data-drop-zone="team" data-group="${gi}" data-team="${ti}"
-                   style="background:${c.bg}20; border-color:${c.bg}">
+              <div class="ps-team-box ps-team-${c.key} ${isActive ? 'ps-team-active' : ''}"
+                   data-drop-zone="team" data-group="${gi}" data-team="${ti}"
+                   data-pre-action="set-active-slot"
+                   style="background:${c.bg}20; border-color:${isActive ? '#10b981' : c.bg}; ${isActive ? 'box-shadow:0 0 0 3px #10b981, 0 4px 12px rgba(16,185,129,0.25);' : ''}">
                 <div class="ps-team-head" style="background:${c.bg}; color:${c.text}">
                   ${c.label} <span class="ps-team-count">(${team.length})</span>
+                  ${isActive ? '<span class="ps-team-active-badge">🎯 Active</span>' : ''}
                 </div>
                 ${formationPicker}
                 <div class="ps-team-chips">
                   ${team.map((pid, pi) => renderDraggableChip(pid, 'team-' + gi + '-' + ti, slotPostes[pi] || '')).join('') ||
-                    '<div class="ps-team-empty">Dépose ici</div>'}
+                    (isActive ? '<div class="ps-team-empty">✅ Clique les joueurs</div>' : '<div class="ps-team-empty">Dépose ici</div>')}
                 </div>
               </div>`;
           }).join('')}
@@ -821,6 +868,18 @@
     if (a === 'by-team') { applyByTeam(); return true; }
     if (a === 'reuse-last') { applyReuseLast(); return true; }
     if (a === 'toggle-present') { togglePresent(el.dataset.pid); return true; }
+    if (a === 'set-active-slot') {
+      // v8.37.0 : clic sur une Équipe (A ou B) d'un groupe = l'active pour placer les joueurs
+      // On évite la propagation si on clic sur un chip joueur à l'intérieur
+      if (el.closest('.ps-chip-drag') || el.closest('.ps-formation-sel')) return false;
+      const gi = el.dataset.group;
+      const ti = el.dataset.team;
+      if (gi !== undefined && ti !== undefined) {
+        setActiveSlot(gi, ti);
+        return true;
+      }
+      return false;
+    }
     if (a === 'all-presents') { setAllPresents(true); return true; }
     if (a === 'none-presents') { setAllPresents(false); return true; }
     if (a === 'filter-team') {

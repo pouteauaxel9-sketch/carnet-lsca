@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Mockup — Fiche pré-séance Idée 2 v2 (avec équipes A/B)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f8f8f4;
+    color: #0f172a;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { color: #185fa5; font-size: 24px; margin-bottom: 8px; }
+  h2 { color: #0f6e56; font-size: 16px; margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .subtitle { color: #64748b; font-size: 13px; margin-bottom: 20px; }
+  .instructions {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    color: #78350f;
+    line-height: 1.5;
+  }
+
+  .players-list {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .player-row {
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .player-row:last-child { border-bottom: none; }
+  .player-row:hover { background: #f8fafc; }
+  .avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: white; font-size: 15px;
+    flex-shrink: 0;
+  }
+  .name { font-weight: 600; font-size: 14px; color: #0f172a; }
+  .status { font-size: 11px; color: #94a3b8; margin-top: 4px; font-style: italic; }
+  .status.assigned { font-style: normal; font-weight: 600; }
+  .status.g1A { color: #059669; }
+  .status.g1B { color: #0891b2; }
+  .status.g2A { color: #065f46; }
+  .status.g2B { color: #0c4a6e; }
+  .status.g3A { color: #92400e; }
+  .status.g3B { color: #7c2d12; }
+  .status.abs { color: #64748b; }
+
+  /* Boutons groupes (compact G1/G2/G3) */
+  .groupe-buttons { display: flex; gap: 6px; align-items: center; }
+  .gbtn {
+    min-width: 54px;
+    height: 38px;
+    border: 1.5px solid #cbd5e1;
+    background: white;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.1s;
+  }
+  .gbtn:hover { border-color: #185fa5; color: #185fa5; }
+  .gbtn.abs { color: #94a3b8; min-width: 38px; }
+  .gbtn.abs.on { background: #94a3b8; color: white; border-color: #64748b; }
+  .gbtn.on {
+    color: white;
+    border: none;
+  }
+  .gbtn.on.g1 { background: linear-gradient(90deg, #10b981 50%, #0891b2 50%); }
+  .gbtn.on.g2 { background: linear-gradient(90deg, #059669 50%, #0c4a6e 50%); }
+  .gbtn.on.g3 { background: linear-gradient(90deg, #d97706 50%, #b45309 50%); }
+  .gbtn .team-pill {
+    background: white;
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+  }
+  .gbtn.on.g1 .team-pill.A { color: #059669; }
+  .gbtn.on.g1 .team-pill.B { color: #0891b2; }
+  .gbtn.on.g2 .team-pill.A { color: #065f46; }
+  .gbtn.on.g2 .team-pill.B { color: #0c4a6e; }
+  .gbtn.on.g3 .team-pill.A { color: #92400e; }
+  .gbtn.on.g3 .team-pill.B { color: #7c2d12; }
+
+  /* Aperçu groupes */
+  .groupes-preview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr) 150px;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  .groupe-card {
+    background: white;
+    border-radius: 10px;
+    padding: 14px;
+    min-height: 180px;
+  }
+  .groupe-card.g1 { background: linear-gradient(180deg, #ecfdf5 0%, #cffafe 100%); border: 2px solid #10b981; }
+  .groupe-card.g2 { background: linear-gradient(180deg, #d1fae5 0%, #dbeafe 100%); border: 2px solid #0f6e56; }
+  .groupe-card.g3 { background: linear-gradient(180deg, #fef3c7 0%, #fed7aa 100%); border: 2px solid #d97706; }
+  .groupe-card.abs { background: #f1f5f9; border: 2px solid #94a3b8; }
+  .groupe-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 10px;
+    color: #0f172a;
+    text-align: center;
+  }
+  .teams-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .team-col {
+    background: rgba(255,255,255,0.7);
+    border-radius: 8px;
+    padding: 8px;
+    min-height: 90px;
+  }
+  .team-col-head {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    color: white;
+    display: inline-block;
+  }
+  .g1 .team-col:first-child .team-col-head { background: #10b981; }
+  .g1 .team-col:last-child .team-col-head  { background: #0891b2; }
+  .g2 .team-col:first-child .team-col-head { background: #059669; }
+  .g2 .team-col:last-child .team-col-head  { background: #0c4a6e; }
+  .g3 .team-col:first-child .team-col-head { background: #d97706; }
+  .g3 .team-col:last-child .team-col-head  { background: #b45309; }
+  .team-players {
+    font-size: 11px;
+    color: #475569;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .abs .team-split { display: none; }
+  .abs .absents-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  .summary {
+    background: linear-gradient(135deg, #185fa5 0%, #0f6e56 100%);
+    color: white;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .summary-main { font-weight: 700; font-size: 15px; }
+  .summary-stats { display: flex; gap: 20px; font-size: 13px; }
+  .summary-stats b { font-size: 18px; display: block; }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #475569;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<h1>📝 Fiche pré-séance — U13 (Mockup Idée 2 v2)</h1>
+<p class="subtitle">Un seul tap = place dans un groupe. Reclic = bascule Équipe A↔B. 3e clic = enlève.</p>
+
+<div class="instructions">
+  💡 <strong>Clique G1/G2/G3</strong> pour placer le joueur en Équipe A du groupe choisi.<br>
+  <strong>Reclique</strong> sur le même bouton → bascule en Équipe B.<br>
+  <strong>3e clic</strong> → retire du groupe. Clique <code>✗</code> pour absent.
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:#10b981"></div>Groupe 1 - Équipe A (verte)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#0891b2"></div>Groupe 1 - Équipe B (bleue)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#059669"></div>Groupe 2 - Équipe A</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#0c4a6e"></div>Groupe 2 - Équipe B</div>
+</div>
+
+<div class="summary">
+  <div class="summary-main">Composition du jour</div>
+  <div class="summary-stats">
+    <div><b id="sum-pres">0</b>Présents</div>
+    <div><b id="sum-abs">0</b>Absents</div>
+    <div><b id="sum-pool">10</b>À placer</div>
+  </div>
+</div>
+
+<h2>Joueurs de la catégorie (10)</h2>
+<div class="players-list" id="players"></div>
+
+<h2>Aperçu temps réel</h2>
+<div class="groupes-preview">
+  <div class="groupe-card g1">
+    <div class="groupe-title">🟢 Groupe 1</div>
+    <div class="teams-split">
+      <div class="team-col">
+        <span class="team-col-head">Équipe A</span>
+        <div class="team-players" id="g1A-list"></div>
+      </div>
+      <div class="team-col">
+        <span class="team-col-head">Équipe B</span>
+        <div class="team-players" id="g1B-list"></div>
+      </div>
+    </div>
+  </div>
+  <div class="groupe-card g2">
+    <div class="groupe-title">🔵 Groupe 2</div>
+    <div class="teams-split">
+      <div class="team-col">
+        <span class="team-col-head">Équipe A</span>
+        <div class="team-players" id="g2A-list"></div>
+      </div>
+      <div class="team-col">
+        <span class="team-col-head">Équipe B</span>
+        <div class="team-players" id="g2B-list"></div>
+      </div>
+    </div>
+  </div>
+  <div class="groupe-card g3">
+    <div class="groupe-title">🟠 Groupe 3</div>
+    <div class="teams-split">
+      <div class="team-col">
+        <span class="team-col-head">Équipe A</span>
+        <div class="team-players" id="g3A-list"></div>
+      </div>
+      <div class="team-col">
+        <span class="team-col-head">Équipe B</span>
+        <div class="team-players" id="g3B-list"></div>
+      </div>
+    </div>
+  </div>
+  <div class="groupe-card abs">
+    <div class="groupe-title">⚪ Absents</div>
+    <div class="absents-list" id="abs-list"></div>
+  </div>
+</div>
+
+<script>
+const PLAYERS = [
+  { name: 'ALLAIN Enzo', color: '#185fa5' },
+  { name: 'BARANGER Sacha', color: '#0f6e56' },
+  { name: 'BAZILLER Paul', color: '#9333ea' },
+  { name: 'BODINIER Noam', color: '#dc2626' },
+  { name: 'BOIREAU Mylan', color: '#0891b2' },
+  { name: 'BOREJKO Antoni', color: '#ca8a04' },
+  { name: 'BOULAIN Pierre', color: '#db2777' },
+  { name: 'CHATILLON Aaron', color: '#059669' },
+  { name: 'MORILLON Adam', color: '#7c3aed' },
+  { name: 'VERGER Adam', color: '#ea580c' },
+];
+
+// state[name] = 'g1A' | 'g1B' | 'g2A' | 'g2B' | 'g3A' | 'g3B' | 'abs' | undefined
+const state = {};
+
+function initials(name) {
+  return name.split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2);
+}
+
+function labelFor(s) {
+  if (!s) return { txt: 'À placer', cls: '' };
+  if (s === 'abs') return { txt: '⚪ Absent', cls: 'abs' };
+  const g = s[1];
+  const t = s[2];
+  return { txt: '🎯 Groupe ' + g + ' · Équipe ' + t, cls: s };
+}
+
+function toggle(name, groupNum) {
+  const cur = state[name];
+  const A = 'g' + groupNum + 'A';
+  const B = 'g' + groupNum + 'B';
+  if (cur === A)      state[name] = B;
+  else if (cur === B) delete state[name];
+  else                state[name] = A;
+  render();
+}
+
+function toggleAbs(name) {
+  if (state[name] === 'abs') delete state[name];
+  else state[name] = 'abs';
+  render();
+}
+
+function render() {
+  const container = document.getElementById('players');
+  container.innerHTML = PLAYERS.map(p => {
+    const s = state[p.name];
+    const lab = labelFor(s);
+
+    // Bouton G1 : affiche état (A, B, ou vide)
+    function gBtn(num) {
+      const A = 'g' + num + 'A', B = 'g' + num + 'B';
+      const isOn = s === A || s === B;
+      const team = s === A ? 'A' : (s === B ? 'B' : '');
+      return '<button class="gbtn ' + (isOn ? 'on g' + num : '') + '" onclick="toggle(\'' + p.name + '\',' + num + ')">' +
+             'G' + num +
+             (team ? '<span class="team-pill ' + team + '">' + team + '</span>' : '') +
+             '</button>';
+    }
+
+    const absBtnCls = s === 'abs' ? 'abs on' : 'abs';
+    const absBtn = '<button class="gbtn ' + absBtnCls + '" onclick="toggleAbs(\'' + p.name + '\')">✗</button>';
+
+    return '<div class="player-row">' +
+      '<div class="avatar" style="background:' + p.color + '">' + initials(p.name) + '</div>' +
+      '<div>' +
+        '<div class="name">' + p.name + '</div>' +
+        '<div class="status ' + (lab.cls ? 'assigned ' + lab.cls : '') + '">' + lab.txt + '</div>' +
+      '</div>' +
+      '<div class="groupe-buttons">' + gBtn(1) + gBtn(2) + gBtn(3) + absBtn + '</div>' +
+    '</div>';
+  }).join('');
+
+  // Remplir aperçu
+  function filterBy(key) {
+    return PLAYERS.filter(p => state[p.name] === key).map(p => '<div>' + p.name + '</div>').join('');
+  }
+  ['g1A','g1B','g2A','g2B','g3A','g3B'].forEach(k => {
+    const el = document.getElementById(k + '-list');
+    if (el) el.innerHTML = filterBy(k);
+  });
+  document.getElementById('abs-list').innerHTML = filterBy('abs');
+
+  const presCount = PLAYERS.filter(p => state[p.name] && state[p.name] !== 'abs').length;
+  const absCount  = PLAYERS.filter(p => state[p.name] === 'abs').length;
+  const poolCount = PLAYERS.length - presCount - absCount;
+  document.getElementById('sum-pres').textContent = presCount;
+  document.getElementById('sum-abs').textContent  = absCount;
+  document.getElementById('sum-pool').textContent = poolCount;
+}
+
+render();
+</script>
+
+</body>
+</html>
