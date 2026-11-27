@@ -345,23 +345,16 @@ textarea:focus-visible{
 .player-list{
   flex:1;
   overflow-y:auto;
-  padding:6px 0 0;
-  /* v8.36.0 : fond doux en bas pour atténuer le vide quand la liste est courte */
-  background: linear-gradient(to bottom, transparent 0%, transparent 85%, rgba(15, 110, 86, 0.03) 100%);
-}
-.player-list-footer{
-  text-align:center;
-  font-size:11px;
-  color:#94a3b8;
-  padding:14px 10px 20px;
-  font-style:italic;
-  letter-spacing:0.3px;
+  padding:8px 0 20px;
+  /* v8.36.1 : background uni qui occupe toute la hauteur même liste courte */
+  background: rgba(255,255,255,0.3);
 }
 .pli{
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:10px 14px;
+  gap:12px;
+  padding:14px 14px;
+  min-height:62px;
   cursor:pointer;
   border-bottom:1px solid var(--border1);
   transition:background 0.12s ease,border-color 0.12s ease;
@@ -370,8 +363,8 @@ textarea:focus-visible{
 .pli:hover{background:var(--bg2)}
 .pli.on{background:var(--blue-light);border-left-color:var(--blue)}
 .pli-av{
-  width:38px;
-  height:38px;
+  width:42px;
+  height:42px;
   border-radius:50%;
   display:flex;
   align-items:center;

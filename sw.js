@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.36.0-fiche-joueur-encore-allegee';
+const CACHE_VERSION = 'v8.36.1-liste-joueurs-items-plus-grands';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

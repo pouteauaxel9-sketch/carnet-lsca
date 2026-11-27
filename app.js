@@ -1111,15 +1111,8 @@ function renderList() {
     `;
   }).join('');
 
-  // v8.36.0 : footer discret qui comble le vide sous la liste quand peu de joueurs
-  const footerHtml = list.length > 0 ? `
-    <div class="player-list-footer">
-      — Fin de liste · ${list.length} joueur${list.length > 1 ? 's' : ''} —
-    </div>
-  ` : '';
-
   q('#player-list').innerHTML = rowsHtml
-    ? rowsHtml + footerHtml
+    ? rowsHtml
     : `<div class="empty-state" style="margin:12px;padding:2rem 1rem">
          <p>Aucun joueur ne correspond a la recherche ou au filtre actif.</p>
        </div>`;
