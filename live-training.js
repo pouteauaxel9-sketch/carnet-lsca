@@ -1033,6 +1033,14 @@
       return true;
     }
     if (action === 'set-tab') {
+      // v8.28.0 : snapshot inputs jonglerie avant re-render (idem set-foot)
+      document.querySelectorAll('.live-mobile-input').forEach(inp => {
+        const pid = inp.dataset.pid;
+        if (!pid) return;
+        const raw = inp.value;
+        const val = raw.trim() === '' ? null : Math.max(0, Math.min(500, parseInt(raw, 10) || 0));
+        saveJuggle(pid, activeFoot, val);
+      });
       activeTab = el.dataset.tab || 'juggle';
       renderOverlay();
       return true;
@@ -1075,6 +1083,16 @@
 
     // ── Mode Terrain MOBILE ──────────────────────────────
     if (action === 'set-foot') {
+      // v8.28.0 FIX : snapshot tous les inputs jonglerie en cours avant le re-render
+      // pour que les frappes non-encore-sauvées (ex: tape 42, change pied sans Enter)
+      // soient persistées. Évite la perte de data lors du switch Droit → Gauche.
+      document.querySelectorAll('.live-mobile-input').forEach(inp => {
+        const pid = inp.dataset.pid;
+        if (!pid) return;
+        const raw = inp.value;
+        const val = raw.trim() === '' ? null : Math.max(0, Math.min(500, parseInt(raw, 10) || 0));
+        saveJuggle(pid, activeFoot, val);
+      });
       activeFoot = el.dataset.foot || 'droit';
       renderOverlay();
       return true;
@@ -1088,7 +1106,7 @@
       const pid = el.dataset.pid;
       const val = el.value.trim() === '' ? null : Math.max(0, Math.min(500, parseInt(el.value, 10) || 0));
       saveJuggle(pid, activeFoot, val);
-      // Marque la ligne comme saisie visuellement sans attendre re-render
+      // v8.28.0 : feedback visuel + flash vert "saved"
       const row = el.closest('.live-mobile-row');
       if (row && val != null) {
         row.classList.add('is-filled');
@@ -1099,6 +1117,16 @@
           chk.textContent = '✓';
           row.appendChild(chk);
         }
+        // Flash visuel bref
+        el.classList.add('just-saved');
+        clearTimeout(el._savedTimer);
+        el._savedTimer = setTimeout(() => el.classList.remove('just-saved'), 600);
+      } else if (row && val == null) {
+        // Valeur effacée : retirer check et classe filled
+        row.classList.remove('is-filled');
+        el.dataset.filled = 'false';
+        const chk = row.querySelector('.live-mobile-check');
+        if (chk) chk.remove();
       }
       return true;
     }
@@ -1154,6 +1182,14 @@
     }
     // v8.18.0 : filtre groupe
     if (action === 'set-groupe') {
+      // v8.28.0 : snapshot avant re-render pour ne pas perdre les frappes en cours
+      document.querySelectorAll('.live-mobile-input').forEach(inp => {
+        const pid = inp.dataset.pid;
+        if (!pid) return;
+        const raw = inp.value;
+        const val = raw.trim() === '' ? null : Math.max(0, Math.min(500, parseInt(raw, 10) || 0));
+        saveJuggle(pid, activeFoot, val);
+      });
       activeGroupe = el.dataset.groupe === 'all' ? 'all' : el.dataset.groupe;
       renderOverlay();
       return true;

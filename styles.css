@@ -11417,6 +11417,15 @@ body.season-transition-active { overflow: hidden; }
   font-weight: 800;
 }
 
+/* v8.28.0 : flash visuel quand une saisie est sauvegardée */
+.live-mobile-input.just-saved {
+  animation: just-saved-flash 0.6s ease-out;
+}
+@keyframes just-saved-flash {
+  0%   { background: #dcfce7; border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.3); }
+  100% { background: white;   border-color: #cbd5e1; box-shadow: none; }
+}
+
 .live-mobile-empty {
   padding: 40px 20px;
   text-align: center;

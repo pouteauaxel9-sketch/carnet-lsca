@@ -3303,7 +3303,8 @@ document.addEventListener('change', event => {
 /* Registre des actions transitant par l'event 'input' (text / number)
    Chaque entrée liste les valeurs d'action qui doivent être routées vers le module. */
 const INPUT_DISPATCHERS = [
-  { dataAttr: 'liveAction',    module: 'LiveTrainingModule',    actions: ['search', 'save-juggle'] },
+  // v8.28.0 FIX : 'save-juggle-mobile' + 'obj-note' ajoutés (manquaient → save perdu au re-render)
+  { dataAttr: 'liveAction',    module: 'LiveTrainingModule',    actions: ['search', 'save-juggle', 'save-juggle-mobile', 'obj-note'] },
   { dataAttr: 'historyAction', module: 'SessionsHistoryModule', actions: ['edit-juggle', 'set-obj-past', 'set-bilan-note'] },
   { dataAttr: 'weeklyAction',  module: 'WeeklyFocusModule',     actions: ['set-theme', 'set-note', 'edit-item-objective'] },
   { dataAttr: 'preAction',     module: 'PreSeanceModule',       actions: ['set-contenu', 'set-objectif', 'set-timing', 'set-rappels', 'set-formation'] },

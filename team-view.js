@@ -269,10 +269,28 @@
     // observations post-match pour ne rien casser.
     const CFG = window.TEAM_SOURCE_CONFIG || {};
     const teamKey = Object.keys(CFG).find(k => CFG[k].teamLabel === team);
-    const teamFffMatches = (teamKey && window.appState?.fffStandingsByCat?.[cat]?.[teamKey]?.matches) || [];
+
+    // v8.27.0 FIX : agréger les matchs de TOUTES les phases disponibles pour cette équipe.
+    // Avant : seule la source live fetchStandings était lue → les matchs Phase 2 scrapés
+    // par GitHub Actions dans data/standings.json étaient ignorés.
+    const allTeamFffMatches = [];
+    // Source 1 : cache live fetchStandings (généralement Phase 1 via URL TEAM_SOURCE_CONFIG)
+    const liveCache = teamKey && window.appState?.fffStandingsByCat?.[cat]?.[teamKey]?.matches;
+    if (Array.isArray(liveCache)) allTeamFffMatches.push(...liveCache);
+    // Source 2 : JSON scrapé par GitHub Actions (toutes les phases)
+    const scrapedJson = window.appState?.__standingsJsonData;
+    const scrapedEntry = teamKey && scrapedJson?.teams?.[teamKey];
+    if (scrapedEntry?.phases) {
+      Object.values(scrapedEntry.phases).forEach(p => {
+        if (Array.isArray(p.matches)) allTeamFffMatches.push(...p.matches);
+      });
+    } else if (Array.isArray(scrapedEntry?.matches)) {
+      allTeamFffMatches.push(...scrapedEntry.matches);
+    }
+
     const myMatchKeys = new Set();
     if (window.MatchStatsModule?.matchKey) {
-      teamFffMatches.forEach(m => myMatchKeys.add(window.MatchStatsModule.matchKey(m)));
+      allTeamFffMatches.forEach(m => myMatchKeys.add(window.MatchStatsModule.matchKey(m)));
     }
 
     const data = window.appState?.data?.[cat] || {};
@@ -422,6 +440,20 @@
       : 'Pas encore de série';
     const streakClass = s.streak.kind === 'W' ? 'streak-win' : s.streak.kind === 'D' ? 'streak-draw' : s.streak.kind === 'L' ? 'streak-loss' : '';
 
+    // v8.26.0 : la carte "Derniers matchs" (observations manuelles legacy) n'apparaît
+    // QUE si la phase FFF active pour cette équipe est 'Phase 1' (= ancien championnat).
+    // Pour les autres phases (Phase 2 D1 Elite, etc.) elle est cachée car ces matchs
+    // historiques n'ont rien à voir avec la nouvelle phase.
+    let showLegacyMatches = false;
+    try {
+      const sel = JSON.parse(localStorage.getItem('cfb6_fff_phase_sel') || '{}');
+      const CFG = window.TEAM_SOURCE_CONFIG || {};
+      const teamKey = Object.keys(CFG).find(k => CFG[k].teamLabel === team);
+      const activePhase = teamKey ? sel[teamKey] : null;
+      // Affiche si Phase 1 explicite OU si pas de phase sélectionnée (fallback = Phase 1)
+      showLegacyMatches = !activePhase || /phase\s*1/i.test(activePhase);
+    } catch { showLegacyMatches = true; }
+
     return `
       <section class="team-shell">
         <!-- v8.25.0 : bouton "Composer l'équipe" retiré (jamais utilisé) -->
@@ -444,7 +476,7 @@
           ${renderLeadersCard('Top passeurs', s.topPasseurs, 'passes_d')}
           ${renderLeadersCard('Top notes', s.topNotes, 'noteAvg')}
           ${renderMinutesCard(s.topMinutes)}
-          ${hasFffMatchesForTeam ? '' : renderRecentMatchesCard(s.matches)}
+          ${hasFffMatchesForTeam || !showLegacyMatches ? '' : renderRecentMatchesCard(s.matches)}
           ${renderEffectifCard(players, cat)}
         </div>
       </section>`;
@@ -712,14 +744,16 @@
   }
 
   function renderRecentMatchesCard(matches) {
+    // v8.26.0 : clarifie que ces données viennent des anciennes observations manuelles,
+    // d'où le titre "Historique Phase 1" — ne s'affiche que quand Phase 1 est active.
     if (!matches.length) {
       return `<section class="dashboard-card">
-        <div class="card-head"><div><div class="card-kicker">Calendrier</div><h2>Derniers matchs</h2></div></div>
+        <div class="card-head"><div><div class="card-kicker">Historique Phase 1</div><h2>Derniers matchs saisis</h2></div></div>
         <div class="dash-empty"><div class="dash-empty-msg">Aucun match observé</div></div>
       </section>`;
     }
     return `<section class="dashboard-card span-2">
-      <div class="card-head"><div><div class="card-kicker">Calendrier</div><h2>Derniers matchs (${matches.length})</h2></div></div>
+      <div class="card-head"><div><div class="card-kicker">Historique Phase 1</div><h2>Derniers matchs saisis (${matches.length})</h2></div></div>
       <div class="team-matches-list">
         ${matches.slice(0, 10).map(m => {
           const dateStr = m.date ? new Date(m.date).toLocaleDateString('fr-FR') : '—';
