@@ -424,9 +424,11 @@
   /* ── Rendu : page équipe ──────────────────────────────── */
 
   function renderTeamBody(cat, team) {
+    // v8.33.0 : variables winPct/streakLabel/streakClass retirées — calculées mais jamais
+    // affichées dans le JSX de cette vue (restes de code mort). Infos toujours visibles
+    // dans la carte de la liste d'équipes (renderTeamListShell).
     const s = teamSummary(cat, team, state().season);
     const players = teamPlayers(cat, team);
-    const winPct = s.played ? Math.round((s.won / s.played) * 100) : 0;
 
     // Est-ce qu'on a des matchs FFF pour cette équipe ? Si oui, on cache
     // la carte "Derniers matchs" (observations) pour éviter la double info.
@@ -435,10 +437,6 @@
     const hasFffMatchesForTeam = teamKey0
       ? !!(window.appState?.fffStandingsByCat?.[cat]?.[teamKey0]?.matches?.length)
       : false;
-    const streakLabel = s.streak.count
-      ? (s.streak.kind === 'W' ? s.streak.count + ' victoires d\'affilée' : s.streak.kind === 'D' ? s.streak.count + ' nuls' : s.streak.count + ' défaites d\'affilée')
-      : 'Pas encore de série';
-    const streakClass = s.streak.kind === 'W' ? 'streak-win' : s.streak.kind === 'D' ? 'streak-draw' : s.streak.kind === 'L' ? 'streak-loss' : '';
 
     // v8.26.0 : la carte "Derniers matchs" (observations manuelles legacy) n'apparaît
     // QUE si la phase FFF active pour cette équipe est 'Phase 1' (= ancien championnat).
