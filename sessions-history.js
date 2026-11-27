@@ -109,6 +109,63 @@
     return renderList(cat);
   }
 
+  // v8.31.0 : agrégation "Joueurs en difficulté" sur toutes les séances enregistrées.
+  // Pour chaque joueur, on compte combien de fois il a été flaggé "en difficulté"
+  // sur un exo, et on liste les thèmes (labels d'objectifs) concernés.
+  function renderStrugglingSummary(sessions, dates) {
+    // Compile : { pid: { count, byObjective: { label: count }, lastDate } }
+    const map = {};
+    dates.forEach(d => {
+      const s = sessions[d];
+      (s?.objectives || []).forEach(o => {
+        const struggling = Array.isArray(o.strugglingPids) ? o.strugglingPids : [];
+        struggling.forEach(pid => {
+          if (!map[pid]) map[pid] = { count: 0, byObjective: {}, lastDate: null };
+          map[pid].count++;
+          const lbl = o.label || 'Objectif';
+          map[pid].byObjective[lbl] = (map[pid].byObjective[lbl] || 0) + 1;
+          if (!map[pid].lastDate || d > map[pid].lastDate) map[pid].lastDate = d;
+        });
+      });
+    });
+    const sorted = Object.entries(map)
+      .map(([pid, v]) => ({ pid, ...v }))
+      .sort((a, b) => b.count - a.count);
+    if (sorted.length === 0) {
+      return `
+        <section class="sh-section-block sh-struggling-empty">
+          <h3 class="sh-section-title">⚠️ Joueurs à retravailler</h3>
+          <p class="sh-struggling-empty-msg">
+            Aucun joueur flaggé "en difficulté" pour l'instant.
+            Pendant tes séances, utilise le bouton <strong>⚠ Difficulté</strong> sur un objectif pour signaler les joueurs qui doivent retravailler l'exo.
+          </p>
+        </section>`;
+    }
+    const top = sorted.slice(0, 10);
+    const rows = top.map(p => {
+      const topObjs = Object.entries(p.byObjective)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([lbl, n]) => `<span class="sh-strug-tag">${h(lbl)} <strong>×${n}</strong></span>`)
+        .join('');
+      const lastStr = p.lastDate ? new Date(p.lastDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '—';
+      return `
+        <div class="sh-strug-row">
+          <div class="sh-strug-name-col">
+            <strong class="sh-strug-name">${h(p.pid)}</strong>
+            <span class="sh-strug-sub">Dernière fois : ${h(lastStr)}</span>
+          </div>
+          <div class="sh-strug-count"><strong>${p.count}</strong><span>flag${p.count > 1 ? 's' : ''}</span></div>
+          <div class="sh-strug-tags">${topObjs || '<span class="sh-strug-sub">—</span>'}</div>
+        </div>`;
+    }).join('');
+    return `
+      <section class="sh-section-block sh-struggling-block">
+        <h3 class="sh-section-title">⚠️ Joueurs à retravailler ${sorted.length > 10 ? `(top 10 sur ${sorted.length})` : `(${sorted.length})`}</h3>
+        <div class="sh-struggling-list">${rows}</div>
+      </section>`;
+  }
+
   /* ── Liste : 5 dernières + toggle + stats catégorie ──── */
 
   function renderList(cat) {
@@ -151,6 +208,8 @@
           <div class="sh-stat"><strong>${totalAcquis}/${totalObj}</strong><span>Objectifs acquis</span></div>
           <div class="sh-stat"><strong>${ratio != null ? ratio + '%' : '—'}</strong><span>Ratio réussite</span></div>
         </div>
+
+        ${renderStrugglingSummary(sessions, dates)}
 
         <section class="sh-section-block">
           <h3 class="sh-section-title">📝 Séances ${showAll ? `(${dates.length})` : `— 5 dernières`}</h3>
