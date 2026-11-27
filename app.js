@@ -2113,9 +2113,9 @@ function renderPlayerView() {
               </div>
             </div>
             <div class="hero-actions">
+              <!-- v8.32.0 : bouton "Bilan joueur" PDF retiré (jamais utilisé) -->
               <button class="btn" type="button" data-action="back-to-category">Retour catégorie</button>
               <button class="btn" type="button" data-action="open-career" data-pid="${h(pid)}">📅 Carrière</button>
-              <button class="btn" type="button" data-action="print-report">📄 Bilan joueur</button>
             </div>
           </div>
           <div class="hero-postes"><span class="poste-main">${h(prof.poste1 || 'Poste non défini')}</span>${prof.poste2 ? `<span class="poste-sec">${h(prof.poste2)}</span>` : ''}</div>
@@ -3016,11 +3016,7 @@ document.addEventListener('click', event => {
     return;
   }
   if (action === 'save-player') { savePlayerNow(); return; }
-  if (action === 'print-report') {
-    if (window.PDFModule) window.PDFModule.generate(state.selPlayer);
-    else generateReport();
-    return;
-  }
+  // v8.32.0 : handler 'print-report' retiré (bouton supprimé, module en sommeil)
   if (action === 'clear-player-photo') { clearPlayerPhoto(); return; }
 
   // Menu actions secondaires (Importer JSON / Exporter JSON / Imprimer / Config FFF)
@@ -3215,11 +3211,7 @@ document.addEventListener('click', event => {
   }
 
   if (action === 'save-player') { savePlayerNow(); return; }
-  if (action === 'print-report') {
-    if (window.PDFModule) window.PDFModule.generate(state.selPlayer);
-    else generateReport();
-    return;
-  }
+  // v8.32.0 : handler 'print-report' retiré (bouton supprimé, module en sommeil)
   if (action === 'clear-player-photo') { clearPlayerPhoto(); return; }
   if (action === 'snapshot-morpho') {
     if (typeof snapshotMorphoNow === 'function') snapshotMorphoNow();

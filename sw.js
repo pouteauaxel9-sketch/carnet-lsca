@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.31.0-bilans-joueurs-a-retravailler';
+const CACHE_VERSION = 'v8.32.0-bilan-pdf-sommeil';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 
@@ -55,8 +55,8 @@ const STATIC_ASSETS = [
   './config-fff.js',
   './match-stats.js',
   './pre-seance.js',
-  './pdf-report.js',
-  './pdf-logos.js',
+  // pdf-report.js supprimé v8.32.0
+  // pdf-logos.js supprimé v8.32.0
   './pwa.js',
   './manifest.json',
   // CDN
