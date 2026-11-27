@@ -346,6 +346,21 @@
     renderEditor();
   }
 
+  // v8.37.1 : helper pour trouver l'équipe/groupe d'un joueur (ou null si non assigné)
+  function findPlayerSlot(pid) {
+    if (!draft) return null;
+    for (let gi = 0; gi < draft.groupes.length; gi++) {
+      const g = draft.groupes[gi];
+      if (!g || !g.teams) continue;
+      for (let ti = 0; ti < g.teams.length; ti++) {
+        if (Array.isArray(g.teams[ti]) && g.teams[ti].includes(pid)) {
+          return { gi, ti };
+        }
+      }
+    }
+    return null;
+  }
+
   // v8.37.0 : activer / désactiver une équipe pour le mode clic-rapide
   function setActiveSlot(gi, ti) {
     if (activeSlot && activeSlot.gi === gi && activeSlot.ti === ti) {
@@ -669,9 +684,24 @@
                     const present = draft.presentPids.includes(pid);
                     const team = playerTeam(pid, draft.cat);
                     const teamTag = team ? `<span class="ps-chip-team">${h(team)}</span>` : '';
-                    return `<button class="ps-present-chip ${present ? 'on' : ''}" type="button"
+                    // v8.37.1 : colorage par équipe de groupe assignée
+                    const slot = present ? findPlayerSlot(pid) : null;
+                    let slotCls = '';
+                    let slotBadge = '';
+                    let slotStyle = '';
+                    if (slot) {
+                      const c = TEAM_COLORS[slot.ti];
+                      slotCls = 'ps-present-chip-assigned ps-present-chip-' + c.key;
+                      slotBadge = `<span class="ps-chip-slot" style="background:${c.bg};color:${c.text}">G${slot.gi + 1}·${slot.ti + 1}</span>`;
+                      slotStyle = `border-left:4px solid ${c.bg};`;
+                    } else if (present) {
+                      slotCls = 'ps-present-chip-pool';
+                      slotStyle = 'border-left:4px solid #94a3b8;';
+                    }
+                    return `<button class="ps-present-chip ${present ? 'on' : ''} ${slotCls}" type="button"
+                            style="${slotStyle}"
                             data-pre-action="toggle-present" data-pid="${h(pid)}">
-                      ${present ? '✓' : '☐'} ${h(playerLabel(pid, draft.cat))}${teamTag}
+                      ${present ? '✓' : '☐'} ${h(playerLabel(pid, draft.cat))}${slotBadge}${teamTag}
                     </button>`;
                   }).join('');
                 })()}

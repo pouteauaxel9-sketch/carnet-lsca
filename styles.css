@@ -10539,6 +10539,35 @@ body.season-transition-active { overflow: hidden; }
   animation: pulse-active 1.5s ease-in-out infinite;
 }
 
+/* v8.37.1 : chips présents colorés selon leur équipe de groupe */
+.ps-present-chip-assigned {
+  background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.8) 100%);
+}
+
+.ps-present-chip-vert {
+  box-shadow: inset 0 0 0 1px rgba(0, 150, 64, 0.3);
+  background: linear-gradient(90deg, rgba(0,150,64,0.08) 0%, rgba(0,150,64,0.02) 100%);
+}
+
+.ps-present-chip-bleu {
+  box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.3);
+  background: linear-gradient(90deg, rgba(2,132,199,0.08) 0%, rgba(2,132,199,0.02) 100%);
+}
+
+.ps-present-chip-pool {
+  background: linear-gradient(90deg, rgba(148,163,184,0.08) 0%, rgba(148,163,184,0.02) 100%);
+}
+
+.ps-chip-slot {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
 @keyframes pulse-active {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
