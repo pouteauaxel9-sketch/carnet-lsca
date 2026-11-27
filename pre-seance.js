@@ -19,6 +19,16 @@
     { key: 'bleu', label: 'Équipe 2', bg: '#0284c7', text: '#fff' },
   ];
 
+  // v8.37.3 : une couleur par groupe (max 6 groupes). L'équipe (1/2) reste indiquée par A/B.
+  const GROUP_COLORS = [
+    { bg: '#059669', text: '#fff', soft: 'rgba(5,150,105,0.08)' },  // G1 vert
+    { bg: '#0284c7', text: '#fff', soft: 'rgba(2,132,199,0.08)' },  // G2 bleu
+    { bg: '#d97706', text: '#fff', soft: 'rgba(217,119,6,0.08)' },  // G3 orange
+    { bg: '#9333ea', text: '#fff', soft: 'rgba(147,51,234,0.08)' }, // G4 violet
+    { bg: '#db2777', text: '#fff', soft: 'rgba(219,39,119,0.08)' }, // G5 rose
+    { bg: '#0891b2', text: '#fff', soft: 'rgba(8,145,178,0.08)' },  // G6 cyan
+  ];
+
   const SESSIONS_KEY = 'cfb6_live_sessions_v1';
 
   let draft = null;
@@ -682,18 +692,17 @@
                   }
                   return filtered.map(pid => {
                     const present = draft.presentPids.includes(pid);
-                    // v8.37.2 : affichage épuré — on retire le badge équipe officielle (U13 A/B/C)
-                    // qui doublonne avec le filtre d'équipe au-dessus. Seul le badge de groupe
-                    // reste pour indiquer la position.
+                    // v8.37.3 : couleur par GROUPE (G1/G2/G3...), lettre A/B pour l'équipe.
                     const slot = present ? findPlayerSlot(pid) : null;
                     let slotCls = '';
                     let slotBadge = '';
                     let slotStyle = '';
                     if (slot) {
-                      const c = TEAM_COLORS[slot.ti];
-                      slotCls = 'ps-present-chip-assigned ps-present-chip-' + c.key;
-                      slotBadge = `<span class="ps-chip-slot" style="background:${c.bg};color:${c.text}">G${slot.gi + 1}</span>`;
-                      slotStyle = `border-left:4px solid ${c.bg};`;
+                      const groupC = GROUP_COLORS[slot.gi % GROUP_COLORS.length];
+                      const teamLetter = slot.ti === 0 ? 'A' : 'B';
+                      slotCls = 'ps-present-chip-assigned';
+                      slotBadge = `<span class="ps-chip-slot" style="background:${groupC.bg};color:${groupC.text}">G${slot.gi + 1}${teamLetter}</span>`;
+                      slotStyle = `border-left:4px solid ${groupC.bg};background:${groupC.soft};`;
                     } else if (present) {
                       slotCls = 'ps-present-chip-pool';
                       slotStyle = 'border-left:3px solid #94a3b8;';
@@ -784,10 +793,12 @@
   }
 
   function renderGroupCard(g, gi) {
+    // v8.37.3 : couleur distincte par groupe dans le header
+    const groupC = GROUP_COLORS[gi % GROUP_COLORS.length];
     return `
-      <article class="ps-group-card">
-        <header class="ps-group-head">
-          <strong>Groupe ${gi + 1}</strong>
+      <article class="ps-group-card" style="border-top:4px solid ${groupC.bg}">
+        <header class="ps-group-head" style="background:${groupC.soft}">
+          <strong style="color:${groupC.bg}">Groupe ${gi + 1}</strong>
           <span class="ps-group-count">${g.teams[0].length + g.teams[1].length} joueur${(g.teams[0].length + g.teams[1].length) > 1 ? 's' : ''}</span>
         </header>
         <div class="ps-group-teams">
