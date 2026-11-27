@@ -1089,16 +1089,14 @@ function renderList() {
   const summary = getCategorySummary(state.cat);
   q('#sb-count').textContent = CAT_LABELS[state.cat] + ' - ' + list.length + ' / ' + summary.count + ' joueurs';
 
-  q('#player-list').innerHTML = list.map(player => {
+  const rowsHtml = list.map(player => {
     const pid = player.name;
     const col = avCol(pid);
     const prof = state.data[state.cat][pid]?.profil;
-    const score = pScore(state.cat, pid);
-    const sub = score > 0
-      ? getLevel(score) + ' - ' + score + '%'
-      : player.seasons[state.season] != null
-        ? 'Jonglerie ' + player.seasons[state.season]
-        : 'Aucune saisie';
+    // v8.36.0 : plus de score eval → simplifie la sous-ligne (jonglerie ou "Aucune saisie")
+    const sub = player.seasons[state.season] != null
+      ? 'Jonglerie ' + player.seasons[state.season]
+      : 'Aucune saisie';
 
     return `
       <button class="pli ${state.selPlayer === pid && state.view === 'player' ? 'on' : ''}" type="button" data-action="select-player" data-player="${h(pid)}" data-alpha="${h((pid.charAt(0) || '?').toUpperCase())}">
@@ -1111,11 +1109,20 @@ function renderList() {
         </div>
       </button>
     `;
-  }).join('') || `
-    <div class="empty-state" style="margin:12px;padding:2rem 1rem">
-      <p>Aucun joueur ne correspond a la recherche ou au filtre actif.</p>
+  }).join('');
+
+  // v8.36.0 : footer discret qui comble le vide sous la liste quand peu de joueurs
+  const footerHtml = list.length > 0 ? `
+    <div class="player-list-footer">
+      — Fin de liste · ${list.length} joueur${list.length > 1 ? 's' : ''} —
     </div>
-  `;
+  ` : '';
+
+  q('#player-list').innerHTML = rowsHtml
+    ? rowsHtml + footerHtml
+    : `<div class="empty-state" style="margin:12px;padding:2rem 1rem">
+         <p>Aucun joueur ne correspond a la recherche ou au filtre actif.</p>
+       </div>`;
 }
 
 function renderSyncBadge(supabaseConfig) {
@@ -1834,41 +1841,10 @@ function profileBody(pid) {
       </div>
     </div>
 
-    <div class="detail-grid detail-grid-compact">
-      <div class="detail-card span-2">
-        <div class="card-kicker">Lecture coach</div>
-        <h3>Insights automatiques</h3>
-        ${insightsMarkup(insights)}
-      </div>
-      <div class="detail-card">
-        <div class="card-kicker">Priorite</div>
-        <h3>Axe principal</h3>
-        <div class="priority-box">
-          <strong>${weakest ? h(weakest.label) : 'A definir'}</strong>
-          <p>${weakest ? `Pilier le plus faible : ${weakest.score}%.` : 'Aucun axe prioritaire pour l\'instant.'}</p>
-        </div>
-      </div>
-      ${evolutionCard(pid)}
-    </div>
-
+    <!-- v8.36.0 : blocs Lecture coach / Axe principal / Evolution du score / Écart poste
+         retirés — ils dépendaient de l'évaluation 40 critères (supprimée en v8.15) et
+         affichaient systématiquement "A définir / Pas d'alerte / Pas assez de saisons". -->
     ${followupBlock}
-
-    ${gap ? `
-      <details class="player-collapsible" data-section="gap-poste">
-        <summary class="player-collapsible-summary">
-          <span>🎯 Écart au poste principal</span>
-          <span class="player-collapsible-chevron">▾</span>
-        </summary>
-        <div class="player-collapsible-body">
-          <div class="gap-list">
-            ${Object.entries(gap).map(([key, value]) => {
-              const pct = Math.max(4, Math.round((1 - Math.min(value, 5) / 5) * 100));
-              return `<div class="gap-row"><span>${h(key)}</span><div class="gap-bar"><div class="gap-bar-fill" style="width:${pct}%"></div></div><strong>${value.toFixed(1)}</strong></div>`;
-            }).join('')}
-          </div>
-          <div class="gap-help">Plus la valeur est basse, plus le profil actuel se rapproche du poste principal.</div>
-        </div>
-      </details>` : ''}
 
     <div class="form-section-title">Objectifs de saison</div>
     <div class="obj-list">${objRows}<button class="add-obj" type="button" data-action="add-obj">+ Ajouter un objectif</button></div>

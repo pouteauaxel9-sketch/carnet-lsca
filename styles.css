@@ -342,7 +342,21 @@ textarea:focus-visible{
 }
 .ftag:hover{background:var(--bg2)}
 .ftag.on{background:var(--text1);color:#fff;border-color:var(--text1)}
-.player-list{flex:1;overflow-y:auto;padding:6px 0}
+.player-list{
+  flex:1;
+  overflow-y:auto;
+  padding:6px 0 0;
+  /* v8.36.0 : fond doux en bas pour atténuer le vide quand la liste est courte */
+  background: linear-gradient(to bottom, transparent 0%, transparent 85%, rgba(15, 110, 86, 0.03) 100%);
+}
+.player-list-footer{
+  text-align:center;
+  font-size:11px;
+  color:#94a3b8;
+  padding:14px 10px 20px;
+  font-style:italic;
+  letter-spacing:0.3px;
+}
 .pli{
   display:flex;
   align-items:center;
