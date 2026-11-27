@@ -22,7 +22,7 @@
  *  - APIs externes : network-only
  */
 
-const CACHE_VERSION = 'v8.29.0-groupes-persistants-entre-seances';
+const CACHE_VERSION = 'v8.30.0-reprise-groupes-meme-prep-existante-vide';
 const STATIC_CACHE  = 'cfb-static-'  + CACHE_VERSION;
 const RUNTIME_CACHE = 'cfb-runtime-' + CACHE_VERSION;
 

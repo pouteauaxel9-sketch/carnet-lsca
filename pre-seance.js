@@ -133,20 +133,55 @@
       const cleanedGroupes = (existing.groupes || []).map(g => ({
         teams: (g.teams || [[], []]).map(t => cleanArray(t))
       }));
+
+      // v8.30.0 FIX : si la prépa existe mais que les groupes sont VIDES (0 assigné),
+      // c'est souvent une prépa auto-créée (par ouverture du Mode Terrain sans passer
+      // par la Fiche pré-séance). Dans ce cas on va chercher les groupes de la dernière
+      // séance antérieure avec vrais groupes, pour éviter de refaire la compo.
+      const totalAssigned = cleanedGroupes.reduce(
+        (sum, g) => sum + (g.teams || []).reduce((s, t) => s + (t?.length || 0), 0),
+        0
+      );
+      let finalGroupes = cleanedGroupes.length
+        ? cleanedGroupes
+        : Array.from({ length: existing.nbGroupes || 3 }, () => ({ teams: [[], []] }));
+      let finalNbGroupes = existing.nbGroupes || 3;
+      let reusedFromDate = null;
+
+      const existingPresents = (existing.presentPids && existing.presentPids.length)
+        ? cleanArray(existing.presentPids)
+        : (livePresentPids.length ? cleanArray(livePresentPids) : sortedPlayers(cat));
+
+      if (totalAssigned === 0) {
+        const lastPrep = findLastPreparation(store, cat, date);
+        if (lastPrep?.groupes?.length) {
+          const presentSet = new Set(existingPresents);
+          finalGroupes = lastPrep.groupes.map(g => ({
+            teams: (g.teams || [[], []]).map(t =>
+              (Array.isArray(t) ? t : []).filter(pid => validPids.has(pid) && presentSet.has(pid))
+            )
+          }));
+          finalNbGroupes = lastPrep.nbGroupes || finalGroupes.length;
+          reusedFromDate = lastPrep._date;
+        }
+      }
+
+      const assignedSet = new Set();
+      finalGroupes.forEach(g => g.teams.forEach(t => t.forEach(pid => assignedSet.add(pid))));
+      const finalPool = reusedFromDate
+        ? existingPresents.filter(pid => !assignedSet.has(pid))
+        : cleanArray(existing.pool);
+
       draft = {
         cat, date,
         theme: existing.theme || week?.theme || '',
         principes: existing.principes || items,
         selectedPrincipleNums: Array.isArray(existing.selectedPrincipleNums) ? existing.selectedPrincipleNums : [],
         objectif: existing.objectif || '',
-        presentPids: (existing.presentPids && existing.presentPids.length)
-          ? cleanArray(existing.presentPids)
-          : (livePresentPids.length ? cleanArray(livePresentPids) : sortedPlayers(cat)),
-        nbGroupes: existing.nbGroupes || 3,
-        groupes: cleanedGroupes.length
-          ? cleanedGroupes
-          : Array.from({ length: existing.nbGroupes || 3 }, () => ({ teams: [[], []] })),
-        pool: cleanArray(existing.pool),
+        presentPids: existingPresents,
+        nbGroupes: finalNbGroupes,
+        groupes: finalGroupes,
+        pool: finalPool,
         contenuHtml: existing.contenuHtml || '',
         contenuFile: existing.contenuFile || '',
         timing: existing.timing || 'Échauffement · 10 min\nAtelier 1 · 20 min\nAtelier 2 · 20 min\nJeu final · 15 min\nDébrief · 5 min',
@@ -155,7 +190,11 @@
       // Si l'utilisateur a modifié les principes de la semaine depuis, resynchroniser
       draft.principes = items;
       draft.theme = week?.theme || draft.theme;
-      toast('📝 Préparation existante rechargée');
+      if (reusedFromDate) {
+        toast(`📋 Groupes repris de la séance du ${formatDateFr(reusedFromDate)}`);
+      } else {
+        toast('📝 Préparation existante rechargée');
+      }
     } else {
       // Nouvelle préparation : présents par défaut = Mode Terrain du jour, sinon tout l'effectif
       let presentPids = livePresentPids.length ? cleanArray(livePresentPids) : sortedPlayers(cat);
@@ -370,6 +409,32 @@
     renderEditor();
   }
 
+  // v8.29.0 : reprend les groupes de la dernière séance antérieure.
+  // Utilisable à tout moment (notamment quand une prépa existe déjà aujourd'hui vide).
+  function applyReuseLast() {
+    if (!draft) return;
+    const store = loadSessions();
+    const lastPrep = findLastPreparation(store, draft.cat, draft.date);
+    if (!lastPrep || !lastPrep.groupes?.length) {
+      toast('Aucune séance précédente avec des groupes à reprendre.');
+      return;
+    }
+    const validPids = new Set(sortedPlayers(draft.cat));
+    const presentSet = new Set(draft.presentPids);
+    const reusedGroupes = lastPrep.groupes.map(g => ({
+      teams: (g.teams || [[], []]).map(t =>
+        (Array.isArray(t) ? t : []).filter(pid => validPids.has(pid) && presentSet.has(pid))
+      )
+    }));
+    const assigned = new Set();
+    reusedGroupes.forEach(g => g.teams.forEach(t => t.forEach(pid => assigned.add(pid))));
+    draft.groupes = reusedGroupes;
+    draft.nbGroupes = reusedGroupes.length || draft.nbGroupes;
+    draft.pool = draft.presentPids.filter(pid => !assigned.has(pid));
+    toast(`📋 Groupes repris de la séance du ${formatDateFr(lastPrep._date)}`);
+    renderEditor();
+  }
+
   /* ── Import image séance ────────────────────────────── */
 
   async function importImage(file) {
@@ -459,6 +524,10 @@
                   <button class="ps-btn" type="button" data-pre-action="reset">Vider</button>
                   <button class="ps-btn" type="button" data-pre-action="random">🎲 Aléatoire</button>
                   <button class="ps-btn" type="button" data-pre-action="by-team">👥 Par équipe</button>
+                  <button class="ps-btn ps-btn-reuse" type="button" data-pre-action="reuse-last"
+                          title="Reprend la composition des groupes de la dernière séance">
+                    📋 Reprendre dernière séance
+                  </button>
                 </div>
                 <span class="ps-config-sep">·</span>
                 <label class="ps-file-btn ps-file-btn-inline">
@@ -750,6 +819,7 @@
     if (a === 'reset') { resetRepartition(); return true; }
     if (a === 'random') { applyRandom(); return true; }
     if (a === 'by-team') { applyByTeam(); return true; }
+    if (a === 'reuse-last') { applyReuseLast(); return true; }
     if (a === 'toggle-present') { togglePresent(el.dataset.pid); return true; }
     if (a === 'all-presents') { setAllPresents(true); return true; }
     if (a === 'none-presents') { setAllPresents(false); return true; }
