@@ -202,39 +202,88 @@
 
     const matches = Array.from(byKey.values()).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-    let won = 0, draw = 0, lost = 0, gf = 0, ga = 0, playedFromFff = null;
+    let won = 0, draw = 0, lost = 0, gf = 0, ga = 0, playedFromFff = null, pts = 0;
 
-    // PRIORITÉ : si on a des données FFF live pour cette équipe, on les utilise
-    // (évite de montrer les stats "fantômes" des anciennes observations non-scopées).
+    // v8.35.0 : CUMUL Phase 1 + Phase 2 (bilan saison complet).
+    // Priorité au JSON scrapé car il contient TOUTES les phases proprement séparées.
+    // Fallback fetchStandings live (une seule phase) puis observations si rien.
     const CFG_s = window.TEAM_SOURCE_CONFIG || {};
     const teamKey_s = Object.keys(CFG_s).find(k => CFG_s[k].teamLabel === team);
     const fffEntry  = teamKey_s && window.appState?.fffStandingsByCat?.[cat]?.[teamKey_s];
-    const fffStandings = fffEntry?.standings || [];
-    const ourRow = fffStandings.find(r =>
-      (CFG_s[teamKey_s]?.officialName && r.team === CFG_s[teamKey_s].officialName) ||
-      /lsca|louverne/i.test(r.team || '')
-    );
-    if (ourRow) {
-      playedFromFff = ourRow.played || 0;
-      won  = ourRow.won  || 0;
-      draw = ourRow.draw || 0;
-      lost = ourRow.lost || 0;
-      gf   = ourRow.goalsFor  || 0;
-      ga   = ourRow.goalsAgst || 0;
-    } else {
-      // Fallback : stats depuis les anciennes observations (si pas de FFF)
-      matches.forEach(m => {
-        if (m.result === 'W') won++;
-        else if (m.result === 'D') draw++;
-        else if (m.result === 'L') lost++;
-        if (m.ourGoals != null)  gf += m.ourGoals;
-        if (m.theirGoals != null) ga += m.theirGoals;
-      });
+    const officialName = CFG_s[teamKey_s]?.officialName;
+
+    function findOurRow(standings) {
+      if (!Array.isArray(standings)) return null;
+      return standings.find(r =>
+        (officialName && r.team === officialName) ||
+        /lsca|louverne/i.test(r.team || '')
+      );
     }
 
-    // Série en cours : basée sur les matchs FFF (si dispo), sinon observations
+    // Priorité 1 : agréger toutes les phases du JSON scrapé
+    const scrapedJson = window.appState?.__standingsJsonData;
+    const scrapedEntry = teamKey_s && scrapedJson?.teams?.[teamKey_s];
+    const rowsAcrossPhases = [];
+    let ourRow = null; // On garde une "row de référence" pour teamCode (série en cours)
+    if (scrapedEntry?.phases) {
+      Object.keys(scrapedEntry.phases).forEach(label => {
+        const row = findOurRow(scrapedEntry.phases[label]?.standings);
+        if (row) rowsAcrossPhases.push(row);
+      });
+    } else if (scrapedEntry?.standings) {
+      const row = findOurRow(scrapedEntry.standings);
+      if (row) rowsAcrossPhases.push(row);
+    }
+
+    if (rowsAcrossPhases.length) {
+      rowsAcrossPhases.forEach(r => {
+        playedFromFff = (playedFromFff || 0) + (r.played || 0);
+        won  += r.won  || 0;
+        draw += r.draw || 0;
+        lost += r.lost || 0;
+        gf   += r.goalsFor  || 0;
+        ga   += r.goalsAgst || 0;
+        pts  += r.pts || r.points || 0;
+      });
+      ourRow = rowsAcrossPhases[rowsAcrossPhases.length - 1]; // dernière phase pour teamCode
+    } else {
+      // Priorité 2 : fetchStandings live (une seule phase)
+      const liveRow = findOurRow(fffEntry?.standings);
+      if (liveRow) {
+        playedFromFff = liveRow.played || 0;
+        won  = liveRow.won  || 0;
+        draw = liveRow.draw || 0;
+        lost = liveRow.lost || 0;
+        gf   = liveRow.goalsFor  || 0;
+        ga   = liveRow.goalsAgst || 0;
+        pts  = liveRow.pts || liveRow.points || 0;
+        ourRow = liveRow;
+      } else {
+        // Priorité 3 : observations manuelles (fallback ultime)
+        matches.forEach(m => {
+          if (m.result === 'W') won++;
+          else if (m.result === 'D') draw++;
+          else if (m.result === 'L') lost++;
+          if (m.ourGoals != null)  gf += m.ourGoals;
+          if (m.theirGoals != null) ga += m.theirGoals;
+        });
+      }
+    }
+
+    // v8.34.0 : série en cours — même fusion de sources que ci-dessus
     let streak = { kind: null, count: 0 };
-    const fffMatchesForStreak = fffEntry?.matches || [];
+    const allFffMatches = [];
+    if (Array.isArray(fffEntry?.matches)) allFffMatches.push(...fffEntry.matches);
+    const scrapedJson2 = window.appState?.__standingsJsonData;
+    const scrapedEntry2 = teamKey_s && scrapedJson2?.teams?.[teamKey_s];
+    if (scrapedEntry2?.phases) {
+      Object.values(scrapedEntry2.phases).forEach(p => {
+        if (Array.isArray(p.matches)) allFffMatches.push(...p.matches);
+      });
+    } else if (Array.isArray(scrapedEntry2?.matches)) {
+      allFffMatches.push(...scrapedEntry2.matches);
+    }
+    const fffMatchesForStreak = allFffMatches;
     if (fffMatchesForStreak.length) {
       // Trier par date desc, ne garder que ceux de notre équipe avec score
       const ourCode = ourRow?.teamCode;
